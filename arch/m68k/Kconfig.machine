@@ -178,6 +178,17 @@ config NEXT
 	  computers. If you plan to use this kernel on a NeXT, say Y here
 	  otherwise say N.
 
+config NEXT
+	bool "NeXT support"
+	depends on MMU
+	select MMU_MOTOROLA if MMU
+	select LEGACY_TIMER_TICK
+#	select HAVE_ARCH_NVRAM_OPS
+	help
+	  This option enables support for the NeXT series of
+	  computers. If you plan to use this kernel on a NeXT, say Y here
+	  otherwise say N.
+
 config PILOT
 	bool
 
