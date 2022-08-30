@@ -10,3 +10,4 @@ m68k-linux-gnu-objcopy --output-target=binary vmlinux vmlinux.binary_$DATE
 sudo cp vmlinux.netimg_$DATE /srv/tftp/
 sudo cp vmlinux.netimg_aout_$DATE /srv/tftp/
 sudo ln -sf vmlinux.netimg_aout_$DATE /srv/tftp/boot
+# m68k-linux-gnu-objdump -D vmlinux|less
