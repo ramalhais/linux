@@ -314,11 +314,6 @@ void __init setup_arch(char **cmdline_p)
 		config_next();
 		break;
 #endif
-#ifdef CONFIG_NEXT
-	case MACH_NEXT:
-		config_next();
-		break;
-#endif
 #ifdef CONFIG_COLDFIRE
 	case MACH_M54XX:
 	case MACH_M5441X:
