@@ -1,6 +1,7 @@
 #!/bin/bash -x
 export ARCH=m68k CROSS_COMPILE=m68k-linux-gnu- GCC_SUFFIX=-9
 # make tinyconfig
+make next_defconfig
 make -j5
 DATE=$(date +%Y%m%d_%H%M%S)
 m68k-linux-gnu-objcopy --output-target=binary vmlinux vmlinux.binary_$DATE
