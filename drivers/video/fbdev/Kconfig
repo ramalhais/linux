@@ -2237,6 +2237,34 @@ config FB_SM712
 	  called sm712fb. If you want to compile it as a module, say M
 	  here and read <file:Documentation/kbuild/modules.rst>.
 
+config FB_NEXT
+	tristate "NeXT framebuffer support"
+	depends on FB && CONFIG_NEXT
+#	select FB_FOREIGN_ENDIAN
+#	select FB_BIG_ENDIAN
+#	select FB_CFB_REV_PIXELS_IN_BYTE
+#	select FB_CFB_FILLRECT
+#	select FB_CFB_COPYAREA
+#	select FB_CFB_IMAGEBLIT
+	select FONT_8x16 if FRAMEBUFFER_CONSOLE
+	help
+	  This is the frame buffer device driver for NeXT.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called nextfb.
+
+config FB_NEXT_MONO
+	bool "NeXT Monochrome support"
+	depends on FB_NEXT
+	help
+	  This enables support for the NeXT Monochrome.
+
+config FB_NEXT_COLOR
+	bool "NeXT Color support"
+	depends on FB_NEXT
+	help
+	  This enables support for the NeXT Color.
+
 source "drivers/video/fbdev/omap/Kconfig"
 source "drivers/video/fbdev/omap2/Kconfig"
 source "drivers/video/fbdev/mmp/Kconfig"

@@ -21,7 +21,7 @@
 #define NR_IRQS 72
 #elif defined(CONFIG_Q40)
 #define NR_IRQS	43
-#elif defined(CONFIG_AMIGA) || !defined(CONFIG_MMU)
+#elif defined(CONFIG_AMIGA) || !defined(CONFIG_MMU) || defined(CONFIG_NEXT)
 #define NR_IRQS	32
 #elif defined(CONFIG_APOLLO)
 #define NR_IRQS	24
