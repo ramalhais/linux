@@ -1765,10 +1765,7 @@ L(mmu_fixup_done):
 #endif
 
 // We can't use PROM mg_putc after this
-	putc	'I'
-	// FIXME: test infinite loop
-1: 	nop
-	jmp 1b
+//	putc	'I'
 	leds	0x10
 
 /*
@@ -1810,7 +1807,7 @@ L(cache68030):
 	.chip	68k
 L(cache_done):
 
-	putc	'J'
+//	putc	'J'
 
 /*
  * Setup initial stack pointer
@@ -1818,7 +1815,7 @@ L(cache_done):
 	lea	init_task,%curptr
 	lea	init_thread_union+THREAD_SIZE,%sp
 
-	putc	'K'
+//	putc	'K'
 
 	subl	%a6,%a6		/* clear a6 for gdb */
 
@@ -1830,7 +1827,7 @@ L(cache_done):
 
 /* jump to the kernel start */
 
-	putc	'\n'
+//	putc	'\n'
 	leds	0x55
 
 	jbsr	start_kernel
