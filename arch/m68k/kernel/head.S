@@ -264,6 +264,7 @@
 #include <asm/bootinfo-q40.h>
 #include <asm/bootinfo-virt.h>
 #include <asm/bootinfo-vme.h>
+#include <asm/bootinfo-next.h>
 #include <asm/setup.h>
 #include <asm/entry.h>
 #include <asm/page.h>
@@ -280,8 +281,12 @@
 #endif
 
 #undef MMU_PRINT
+#define MMU_PRINT
 #undef MMU_NOCACHE_KERNEL
-#undef DEBUG
+//#undef DEBUG
+#define DEBUG 1
+//#define DEBUG_QEMU 1
+#undef DEBUG_QEMU
 
 /*
  * For the head.S console, there are three supported fonts, 6x11, 8x16 and 8x8.
@@ -536,6 +541,7 @@ func_define	putn,1
 #define is_not_q40(lab) cmpl &MACH_Q40,%pc@(m68k_machtype); jne lab
 #define is_not_sun3x(lab) cmpl &MACH_SUN3X,%pc@(m68k_machtype); jne lab
 #define is_not_virt(lab) cmpl &MACH_VIRT,%pc@(m68k_machtype); jne lab
+#define is_not_next(lab) cmpl &MACH_NEXT,%pc@(m68k_machtype); jne lab
 
 #define hasnt_leds(lab) cmpl &MACH_HP300,%pc@(m68k_machtype); \
 			jeq 42f; \
@@ -581,6 +587,7 @@ ENTRY(_stext)
 	.long	MACH_MAC, MAC_BOOTI_VERSION
 	.long	MACH_Q40, Q40_BOOTI_VERSION
 	.long	MACH_HP300, HP300_BOOTI_VERSION
+	.long	MACH_NEXT, NEXT_BOOTI_VERSION
 	.long	0
 1:	jra	__start
 
@@ -592,31 +599,194 @@ ENTRY(_start)
 	jra	__start
 __INIT
 ENTRY(__start)
+
+#ifdef CONFIG_NEXT
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#1, %a0@
+#endif
+
+	/* disable caches, interrupts, and setup some arch goo.
+		all of this sould be in our non existant boot loader */
+	/* raise the int level early until the boot
+		loader turns them off for us */
+	movew   #0x2700,%sr // according to next rom src, this turns off interrupts
+
+// netbsd:
+//	movl	#0x0808,%d0
+//	movc	%d0,%cacr	// clear and disable on-chip cache(s)
+//	movew   #0x2600,%sr // make sure we disallow interrupts
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#2, %a0@
+#endif
+
+// FIXME: find a way to detect 030 and 040. this macro is only setup later
+//	is_not_040_or_060(1f)
+
+	/* 040 caches bye bye */
+	.chip 68040
+	movel   #0,%d0
+	movec   %d0,%tc
+	movec   %d0,%cacr
+	.chip 68k
+
+//	jbra	2f
+//1:
+//	/* 030 caches bye bye */
+//	.chip 68030
+//	movel   #0,%d0
+//	pmove   %d0,%tc // FIXME: see how to handle 030 clear caches. seems like we should use pmove, but not with %d0 or #0
+//	movec   %d0,%cacr
+//	.chip 68k
+//2:
+
+
+/* all this prom info messsing with should be in a boot loader 
+	and passed into the bootinfo */
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#3, %a0@
+#endif
+
+	/* get the pointer to the info the prom left behind */
+	movec   %vbr,%a0
+	movel   %a0@(4),%a0
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a1
+	movel	%a0, %a1@
+
+	movel	#0x02004200, %a1
+	movel	#4, %a1@
+#endif
+
+	lea     %pc@(prom_info),%a1
+//	movel   #240,%d1  /* sizeof(struct prom_info) = 960 bytes. 960/sizeof(long)=240  */ were reaching 7fffffe and blowing up reading
+	movel   #235,%d1  /* sizeof(struct prom_info) = 960 bytes. 960/sizeof(long)=240  */
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a4
+	movel	#5, %a4@
+#endif
+
+1:	
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a4
+	movel	%d1, %a4@
+
+	movel	#0x02004200, %a4
+	movel	%a0, %a4@
+
+	movel	#0x02004200, %a4
+	movel	%a1, %a4@
+#endif
+
+	movel   %a0@+,%a1@+
+	dbra    %d1,1b
+
+	/* grab the first K of the eprom */ // FIXME: why? seems to be unused and #6 * sizeof(unsigned long) = 24bytes is not 1K
+
+	movel   #0x1000008,%a0
+	lea     %pc@(eprom_info),%a1
+	movel   #6,%d1
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a4
+	movel	#6, %a4@
+#endif
+
+1:
+	moveb   %a0@+,%a1@+
+	dbra    %d1,1b  
+
+//	movl    &MACH_NEXT,%d4
+//	movel   &D6F_040,%d6
+#endif
+
+
 /*
  * Setup initial stack pointer
  */
 	lea	%pc@(_stext),%sp
 
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#7, %a0@
+#endif
+
 /*
  * Record the CPU and machine type.
  */
-	get_bi_record	BI_MACHTYPE
+
+/* oh evil evil next hacks, we need a boot loader */
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0;
+	movel	#8, %a0@
+#endif
+
 	lea	%pc@(m68k_machtype),%a1
+#ifdef CONFIG_NEXT
+	movel   &MACH_NEXT,%a1@
+#else
+	get_bi_record	BI_MACHTYPE
 	movel	%a0@,%a1@
+#endif
 
-	get_bi_record	BI_FPUTYPE
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#9, %a0@
+#endif
+
 	lea	%pc@(m68k_fputype),%a1
+#ifdef CONFIG_NEXT
+	movel   &FPU_68040,%a1@
+#else
+	get_bi_record	BI_FPUTYPE
 	movel	%a0@,%a1@
+#endif
 
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#10, %a0@
+#endif
+
+ 	lea	%pc@(m68k_mmutype),%a1
+#ifdef CONFIG_NEXT
+	movel   &MMU_68040,%a1@
+#else
 	get_bi_record	BI_MMUTYPE
-	lea	%pc@(m68k_mmutype),%a1
 	movel	%a0@,%a1@
+#endif
 
-	get_bi_record	BI_CPUTYPE
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#11, %a0@
+#endif
+
 	lea	%pc@(m68k_cputype),%a1
+#ifdef CONFIG_NEXT
+	movel   &CPU_68040,%a1@
+#else
+	get_bi_record	BI_CPUTYPE
 	movel	%a0@,%a1@
+#endif
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#12, %a0@
+#endif
 
 	leds	0x1
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#13, %a0@
+#endif
 
 #ifdef CONFIG_MAC
 /*
@@ -756,7 +926,17 @@ L(save_cachetype):
 /*
  * raise interrupt level
  */
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#14, %a0@
+#endif
+
 	movew	#0x2700,%sr
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#15, %a0@
+#endif
 
 /*
    If running on an Atari, determine the I/O base of the
@@ -875,7 +1055,18 @@ L(nothp):
 /*
  * Initialize serial port
  */
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#16, %a0@
+#endif
+
 	jbsr	L(serial_init)
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#17, %a0@
+#endif
 
 /*
  * Initialize console
@@ -891,9 +1082,14 @@ L(nothp):
 L(nocon):
 #endif /* CONFIG_MAC */
 
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#18, %a0@
+#endif
 
 	putc	'\n'
 	putc	'A'
+	
 	leds	0x2
 	dputn	%pc@(L(cputype))
 	dputn	%pc@(m68k_supervisor_cachemode)
@@ -903,6 +1099,11 @@ L(nocon):
 /*
  * Save physical start address of kernel
  */
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#19, %a0@
+#endif
+
 	lea	%pc@(L(phys_kernel_start)),%a0
 	lea	%pc@(_stext),%a1
 	subl	#_stext,%a1
@@ -921,8 +1122,19 @@ L(nocon):
  *	First map the first 4, 8, or 16 MB of kernel code & data
  */
 
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a4
+	movel	#20, %a4@
+#endif
+
+// FIXME: don't use get_bi_record to get the first memory chunk. This should blow up in NeXT.
+// should get the value from prom_info
+#ifdef CONFIG_NEXT
+	movel	#16*1024*1024,%d0	// Assume first slot has 16MB of memory. should get this from prom_info
+#else
 	get_bi_record BI_MEMCHUNK
-	movel	%a0@(4),%d0
+	movel	%a0@(4),%d0 		// mem size in a0@(4)
+#endif
 	movel	#16*1024*1024,%d1
 	cmpl	%d0,%d1
 	jls	1f
@@ -937,6 +1149,11 @@ L(nocon):
 		%pc@(m68k_supervisor_cachemode)
 
 	putc	'C'
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#21, %a0@
+#endif
 
 #ifdef CONFIG_AMIGA
 
@@ -1038,8 +1255,8 @@ L(mmu_init_not_atari):
 
 	putc    'Q'
 
-	mmu_map_tt	#0,#0xfe000000,#0x01000000,#_PAGE_CACHE040W
-	mmu_map_tt	#1,#0xff000000,#0x01000000,#_PAGE_NOCACHE_S
+	mmu_map_tt	#0,#0xfe000000,#0x01000000,#_PAGE_CACHE040W // screen and ROM
+	mmu_map_tt	#1,#0xff000000,#0x01000000,#_PAGE_NOCACHE_S // bus
 
 	jbra	L(mmu_init_done)
 
@@ -1264,6 +1481,78 @@ L(notapollo):
 	jbra	L(mmu_init_done)
 #endif
 
+#ifdef CONFIG_NEXT
+	is_not_next(L(notnext))
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#22, %a0@
+#endif
+
+	putc	'X'
+	/*
+	* map i/o space starting at 0x02000000 to 0xff000000 logical address base
+	*/
+
+	is_040(1f)
+
+	/*
+	 * 030: Map the 32Meg range physical 0x02000000 to logical 0xff00.0000 (NEXT_IO_BASE)
+	 */
+	mmu_map	#0xff000000,#0x02000000,#0x02000000,#_PAGE_NOCACHE030
+
+	/*
+	* we're loaded at phys 0x04000000, so TT where we're running
+	* so we don't explode when we turn on the mmu.  this will
+	* be removed in config_arch()
+	*/
+	mmu_map #0x04000000,#0x04000000,#0x01000000,#_PAGE_NOCACHE030
+	mmu_map #0x01000000,#0x01000000,#0x01000000,#_PAGE_NOCACHE030
+	mmu_map #0x02000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE030
+
+//	mmu_map_tt	#0,#0x04000000,#0x01000000,#_PAGE_NOCACHE030 // kernel
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#23, %a0@
+#endif
+
+	jbra	L(mmu_init_done)
+
+1:
+	/*
+	 * 040: Map the 16Meg range physical 0x02000000 to logical 0xff00.0000
+	 */
+	mmu_map #0xff000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
+
+	/*
+	* we're loaded at phys 0x04000000, so TT where we're running
+	* so we don't explode when we turn on the mmu.  this will
+	* be removed in config_arch()
+	*/
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#24, %a0@
+#endif
+
+// Commented out because it seemed like generic code already does what's said above.
+//	mmu_map_tt	#0,#0x04000000,#0x01000000,#_PAGE_NOCACHE_S // kernel
+	mmu_map #0x04000000,#0x04000000,#0x01000000,#_PAGE_NOCACHE_S
+//	mmu_map #0x01000000,#0x01000000,#0x01000000,#_PAGE_NOCACHE_S
+	mmu_map #0x02000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
+//	example of write-through: mmu_map_tt	#0,#0xfe000000,#0x01000000,#_PAGE_CACHE040W // screen and ROM
+
+// TT doesn't seem to be working after PROM, tt1 has a mapping for 0x0 -> 0x0, and tt0 has a mapping for 0x02000000 -> 0x02000000.
+// Need to remove the tt1 0x0 transparent mapping, or it won't work.
+	mmu_map_tt	#1,#0x01000000,#0x01000000,#_PAGE_NOCACHE_S // set tt1 so that old 0x0 mapping goes away. transparent map 0x0100.0000-0x0200.0000 IO (so that we can use mg_putc)
+//	mmu_map_tt	#0,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S // IO (so that we can use memory debug in qemu). already setup in tt0
+
+	jbra	L(mmu_init_done)
+
+L(notnext):
+#endif /* CONFIG_NEXT */
+
 L(mmu_init_done):
 
 	putc	'G'
@@ -1293,9 +1582,14 @@ L(mmu_fixup):
 	/* first fix the page at the start of the kernel, that
 	 * contains also kernel_pg_dir.
 	 */
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#25, %a0@
+#endif
+
 	movel	%pc@(L(phys_kernel_start)),%d0
 	subl	#PAGE_OFFSET,%d0
-	lea	%pc@(_stext),%a0
+	lea		%pc@(_stext),%a0
 	subl	%d0,%a0
 	mmu_fixup_page_mmu_cache	%a0
 
@@ -1311,11 +1605,20 @@ L(mmu_fixup):
 	cmpl	%a0,%a1
 	jgt	1b
 
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#26, %a0@
+#endif
+
 L(mmu_fixup_done):
 
 #ifdef MMU_PRINT
 	mmu_print
 #endif
+
+// FIXME: remove this. test stop at mmu_print
+//1: 	nop
+//	jmp 1b
 
 /*
  * mmu_engage
@@ -1461,7 +1764,11 @@ L(mmu_fixup_done):
 1:
 #endif
 
+// We can't use PROM mg_putc after this
 	putc	'I'
+	// FIXME: test infinite loop
+1: 	nop
+	jmp 1b
 	leds	0x10
 
 /*
@@ -1518,7 +1825,8 @@ L(cache_done):
 /*
  * The new 64bit printf support requires an early exception initialization.
  */
-	jbsr	base_trap_init
+
+//	jbsr	base_trap_init // FIXME: commented out because this blowing up on trap. this is only needed for 060 CPUs
 
 /* jump to the kernel start */
 
@@ -2436,6 +2744,11 @@ func_return	mmu_temp_map
 
 func_start	mmu_engage,%d0-%d2/%a0-%a3
 
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#0, %a0@
+#endif
+
 	moveq	#ROOT_TABLE_SIZE-1,%d0
 	/* Temporarily use a different root table.  */
 	lea	%pc@(L(kernel_pgdir_ptr)),%a0
@@ -2447,6 +2760,11 @@ func_start	mmu_engage,%d0-%d2/%a0-%a3
 	movel	%a0@+,%a1@+
 	dbra	%d0,1b
 
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#1, %a0@
+#endif
+
 	lea	%pc@(L(temp_mmap_mem)),%a0
 	movel	%a1,%a0@
 
@@ -2454,6 +2772,11 @@ func_start	mmu_engage,%d0-%d2/%a0-%a3
 1:
 	clrl	%a1@+
 	dbra	%d0,1b
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#2, %a0@
+#endif
 
 	lea	%pc@(1b),%a0
 	movel	#1b,%a1
@@ -2469,12 +2792,22 @@ func_start	mmu_engage,%d0-%d2/%a0-%a3
 	mmu_temp_map	%a0,%a0
 	mmu_temp_map	%a0,%a1
 1:
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#3, %a0@
+#endif
+
 	movel	%pc@(L(memory_start)),%a3
 	movel	%pc@(L(phys_kernel_start)),%d2
 
 	is_not_040_or_060(L(mmu_engage_030))
 
 L(mmu_engage_040):
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#4, %a0@
+#endif
+
 	.chip	68040
 	nop
 	cinva	%bc
@@ -2483,8 +2816,21 @@ L(mmu_engage_040):
 	nop
 	movec	%a3,%srp
 	movel	#TC_ENABLE+TC_PAGE4K,%d0
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#5, %a0@
+#endif
+
+// FIXME: test infinite loop
+//1: 	nop
+//	jmp 1b
+
 	movec	%d0,%tc		/* enable the MMU */
+
+	// FIXME: why :l? because after MMU is enabled 0x0 based code addresses (as linked in vmlinux.lds) should be mapped to 0x04000000(physical memory start/load address). it should work, but it's not
 	jmp	1f:l
+	//jmp	1f
 1:	nop
 	movec	%a2,%srp
 	nop
@@ -2492,6 +2838,11 @@ L(mmu_engage_040):
 	nop
 	pflusha
 	.chip	68k
+
+// FIXME: test infinite loop
+//1: 	nop
+//	jmp 1b
+
 	jra	L(mmu_engage_cleanup)
 
 L(mmu_engage_030_temp):
@@ -2522,6 +2873,13 @@ L(mmu_engage_030):
 L(mmu_engage_cleanup):
 	subl	#PAGE_OFFSET,%d2
 	subl	%d2,%a2
+
+#if defined(DEBUG_QEMU)
+//	movel	#0xff004200, %a4
+//	lea		%pc@(L(kernel_pgdir_ptr)),%a0
+//	movel	%a0,%a4@
+#endif
+
 	movel	%a2,L(kernel_pgdir_ptr)
 	subl	%d2,%fp
 	subl	%d2,%sp
@@ -2547,7 +2905,11 @@ func_start	mmu_get_root_table_entry,%d0/%a1
 	 * as the bootinfo structure is located directly behind the kernel
 	 * we simply search for the last entry.
 	 */
+#ifdef CONFIG_NEXT
+	lea     %pc@(_end),%a0
+#else
 	get_bi_record	BI_LAST
+#endif
 	addw	#PAGESIZE-1,%a0
 	movel	%a0,%d0
 	andw	#-PAGESIZE,%d0
@@ -2847,6 +3209,11 @@ func_start	serial_init,%d0/%d1/%a0/%a1
 	 *		d0 = init data for serial port
 	 */
 
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a2
+	movel	#1, %a2@
+#endif
+
 #ifdef CONFIG_AMIGA
 #define SERIAL_DTR	7
 #define SERIAL_CNTRL	CIABBASE+C_PRA
@@ -2992,6 +3359,32 @@ L(serial_init_not_mvme16x):
 
 #ifdef CONFIG_HP300
 /* We count on the boot loader initialising the UART */
+#endif
+
+#ifdef CONFIG_NEXT
+#define MG_PUTC_OFFSET 734
+	lea     %pc@(prom_info+MG_PUTC_OFFSET),%a0
+	lea 	%pc@(L(mg_putc)),%a1
+	movel	%a0@,%a1@
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a4
+
+	lea		%pc@(prom_info), %a1
+	movel	%a1, %a4@
+
+	lea		%pc@(prom_info+MG_PUTC_OFFSET), %a1
+	movel	%a1, %a4@
+
+	lea		%pc@(L(mg_putc)), %a1
+	movel	%a1, %a4@
+
+	movel	%a1@, %a4@
+
+	movel	#2, %a4@
+#endif
+
+	jra	L(serial_init_done)
 #endif
 
 L(serial_init_done):
@@ -3209,6 +3602,75 @@ func_start	serial_putc,%d0/%d1/%a0/%a1
 	movel L(virt_gf_tty_base),%a1
 	movel %d0,%a1@(GF_PUT_CHAR)
 1:
+#endif
+
+#ifdef CONFIG_NEXT
+	is_not_next(3f)
+//	movl	#0xff000000,%a1
+//	addl	#0x00e000,%a1		/* NEXT_MON_BASE = (NEXT_IO_BASE+0x00e000) */
+//	addl	#734,%a1
+// wrong: 	// getc_func=724 try_getc_func=724+4 putc_func=724+4+4
+//	#define MG_getc 726
+//	#define MG_try_getc 730
+//	#define MG_putc 734
+//  	push argument (is at d0)
+//	movel	%d0,-(%sp)
+//	call function pointer MG_putc
+//	Not sure this is right:
+/* 4.2.1.1 Calling convention
+Functions are called with the JSR (jump to subroutine) instruction. If
+the function returns a value, it will be in register D0 when the
+function returns. If the function requires any parameters, they are
+pushed onto the stack with the rightmost parameter first. All 8- and
+16-bit parameters are promoted to integers before being pushed onto
+the stack; the default size for integers is 32 bits, or 16 bits if the
+-mshort option is passed on the compiler command line.
+*/
+//	jsr %a1@
+//	cleanup stack? maybe not. result should be in d0
+//	will be cleaned after return with 	addql	#4,%sp
+//	addq.l #4,%sp // remove one int (4bytes) from stack pointer (add 4 bytes to stack pointer)
+
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	#1, %a0@
+#endif
+
+// TEST
+
+#if defined(DEBUG_QEMU)
+//	movel	#0x02004200, %a0
+//	movel	%d0, %a0@
+
+//	movel	#0x02004200, %a0
+//	movel	%sp, %a0@
+
+//	movel	#0x02004200, %a0
+//	movel	#2, %a0@
+#endif
+
+	// call mg_putc function
+	movel 	%pc@(L(mg_putc)),%a1
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a0
+	movel	%a1, %a0@
+#endif
+
+ 	// copy argument from d0 to stack and decrement stack pointer, as argument for mg_putc
+	movel	%d0,%sp@-
+
+	jsr		%a1@
+	// remove the previous argument (4 bytes) from the stack (increment stack pointer)
+	addql #4,%sp
+
+#if defined(DEBUG_QEMU)
+	movel	#0x02004200, %a1
+	movel	#3, %a1@
+#endif
+
+	jbra	L(serial_putc_done)
+3:
 #endif
 
 L(serial_putc_done):
@@ -3775,6 +4237,11 @@ m68k_init_mapped_size:
     defined(CONFIG_HP300) || defined(CONFIG_APOLLO)
 L(custom):
 L(iobase):
+	.long 0
+#endif
+
+#if defined(CONFIG_NEXT)
+L(mg_putc):
 	.long 0
 #endif
 

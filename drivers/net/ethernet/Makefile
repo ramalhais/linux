@@ -68,6 +68,7 @@ obj-$(CONFIG_FEALNX) += fealnx.o
 obj-$(CONFIG_NET_VENDOR_NATSEMI) += natsemi/
 obj-$(CONFIG_NET_VENDOR_NETERION) += neterion/
 obj-$(CONFIG_NET_VENDOR_NETRONOME) += netronome/
+obj-$(CONFIG_NEXT_NET) += next/
 obj-$(CONFIG_NET_VENDOR_NI) += ni/
 obj-$(CONFIG_NET_VENDOR_NVIDIA) += nvidia/
 obj-$(CONFIG_LPC_ENET) += nxp/
