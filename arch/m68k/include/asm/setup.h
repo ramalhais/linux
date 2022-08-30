@@ -194,6 +194,19 @@ extern unsigned long m68k_machtype;
 #  define MACH_TYPE (MACH_VIRT)
 #endif
 
+#if !defined (CONFIG_NEXT)
+#  define MACH_IS_NEXT (0)
+#elif defined(CONFIG_AMIGA) || defined(CONFIG_MAC) || defined(CONFIG_ATARI) \
+	|| defined(CONFIG_APOLLO) || defined(CONFIG_MVME16x)                \
+	|| defined(CONFIG_BVME6000) || defined(CONFIG_HP300)                \
+	|| defined(CONFIG_Q40) || defined(CONFIG_MVME147) || defined(CONFIG_SUN3X)
+#  define MACH_IS_NEXT (m68k_machtype == MACH_NEXT)
+#else
+#  define CONFIG_NEXT_ONLY
+#  define MACH_IS_NEXT (1)
+#  define MACH_TYPE (MACH_NEXT)
+#endif
+
 #ifndef MACH_TYPE
 #  define MACH_TYPE (m68k_machtype)
 #endif
