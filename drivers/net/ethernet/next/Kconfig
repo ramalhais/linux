@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# NeXT ethernet device configuration
+#
+
+config NEXT_NET
+	tristate "NeXT Ethernet support"
+	default y
+	depends on NEXT
+	help
+	  Say Y here if you want to use built-in Ethernet on NeXT.
