@@ -326,6 +326,12 @@ void __init setup_arch(char **cmdline_p)
 		config_sun3x();
 		break;
 #endif
+#ifdef CONFIG_NEXT
+	case MACH_NEXT:
+		config_next();
+*(volatile unsigned char *)(0xff110000)=0x76; // Previous debug
+		break;
+#endif
 #ifdef CONFIG_COLDFIRE
 	case MACH_M54XX:
 	case MACH_M5441X:
@@ -338,9 +344,11 @@ void __init setup_arch(char **cmdline_p)
 		panic("No configuration setup");
 	}
 
+*(volatile unsigned char *)(0xff110000)=0x77; // Previous debug
 	paging_init();
 
 #ifdef CONFIG_NATFEAT
+*(volatile unsigned char *)(0xff110000)=0x78; // Previous debug
 	nf_init();
 #endif
 
@@ -385,6 +393,8 @@ void __init setup_arch(char **cmdline_p)
 	}
 #endif
 #endif
+*(volatile unsigned char *)(0xff110000)=0x79; // Previous debug
+
 }
 
 static int show_cpuinfo(struct seq_file *m, void *v)

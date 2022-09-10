@@ -398,6 +398,7 @@ void __init paging_init(void)
 	printk ("start of paging_init (%p, %lx)\n", kernel_pg_dir, availmem);
 #endif
 
+*(volatile unsigned char *)(0xff110000)=0x58; // Previous debug
 	/* Fix the cache mode in the page descriptors for the 680[46]0.  */
 	if (CPU_IS_040_OR_060) {
 		int i;
@@ -431,15 +432,19 @@ void __init paging_init(void)
 	m68k_virt_to_node_shift = fls(max_addr - min_addr - 1) - 6;
 
 	module_fixup(NULL, __start_fixup, __stop_fixup);
+*(volatile unsigned char *)(0xff110000)=0x5C; // Previous debug
 	flush_icache();
+*(volatile unsigned char *)(0xff110000)=0x5D; // Previous debug
 
 	high_memory = phys_to_virt(max_addr);
+*(volatile unsigned char *)(0xff110000)=0x5E; // Previous debug
 
 	min_low_pfn = availmem >> PAGE_SHIFT;
 	max_pfn = max_low_pfn = max_addr >> PAGE_SHIFT;
 
 	/* Reserve kernel text/data/bss and the memory allocated in head.S */
 	memblock_reserve(m68k_memory[0].addr, availmem - m68k_memory[0].addr);
+*(volatile unsigned char *)(0xff110000)=0x5F; // Previous debug
 
 	/*
 	 * Map the physical memory available into the kernel virtual
