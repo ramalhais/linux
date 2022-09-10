@@ -35,7 +35,8 @@ sudo ln -sf vmlinux.netimg_aout_$DATE /srv/tftp/boot
 
 ### Save patch
 #git diff v6.0-rc3 > ../linux-v6.0-rc3-NeXT-$(date +%F-%H.%M.%S).patch
-git diff v5.15 > ../linux-v5.15-NeXT-v5.15-$(date +%F-%H.%M.%S).patch
+#git diff v5.15 > ../linux-v5.15-NeXT-v5.15-$(date +%F-%H.%M.%S).patch
+git diff v5.13 > ../linux-v5.13-NeXT-v5.13-$(date +%F-%H.%M.%S).patch
 
 ### Show generated assembly code
 # m68k-linux-gnu-objdump -D vmlinux|less
