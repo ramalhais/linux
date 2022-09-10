@@ -710,15 +710,19 @@ noinline void __ref rest_init(void)
 	 */
 	system_state = SYSTEM_SCHEDULING;
 
+	*(volatile unsigned char *)(0xff110000)=0x8B; // Previous debug
 	complete(&kthreadd_done);
 
 	/*
 	 * The boot idle thread must execute schedule()
 	 * at least once to get things moving:
 	 */
+	*(volatile unsigned char *)(0xff110000)=0x8C; // Previous debug
 	schedule_preempt_disabled();
 	/* Call into cpu_idle with preempt disabled */
+	*(volatile unsigned char *)(0xff110000)=0x8D; // Previous debug
 	cpu_startup_entry(CPUHP_ONLINE);
+	*(volatile unsigned char *)(0xff110000)=0x8E; // Previous debug
 }
 
 /* Check for early params. */
@@ -890,16 +894,27 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	 * Interrupts are still disabled. Do necessary setups, then
 	 * enable them.
 	 */
+	*(volatile unsigned char *)(0xff110000)=0x6; // Previous debug
 	boot_cpu_init();
+	*(volatile unsigned char *)(0xff110000)=0x7; // Previous debug
 	page_address_init();
+	*(volatile unsigned char *)(0xff110000)=0x8; // Previous debug
 	pr_notice("%s", linux_banner);
+	*(volatile unsigned char *)(0xff110000)=0x9; // Previous debug
 	early_security_init();
+	*(volatile unsigned char *)(0xff110000)=0xA; // Previous debug
 	setup_arch(&command_line);
+	*(volatile unsigned char *)(0xff110000)=0xB; // Previous debug
 	setup_boot_config();
+	*(volatile unsigned char *)(0xff110000)=0xC; // Previous debug
 	setup_command_line(command_line);
+	*(volatile unsigned char *)(0xff110000)=0xD; // Previous debug
 	setup_nr_cpu_ids();
+	*(volatile unsigned char *)(0xff110000)=0xE; // Previous debug
 	setup_per_cpu_areas();
+	*(volatile unsigned char *)(0xff110000)=0xF; // Previous debug
 	smp_prepare_boot_cpu();	/* arch-specific boot-cpu hooks */
+	*(volatile unsigned char *)(0xff110000)=0x10; // Previous debug
 	boot_cpu_hotplug_init();
 
 	build_all_zonelists(NULL);
@@ -924,15 +939,22 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	 * These use large bootmem allocations and must precede
 	 * kmem_cache_init()
 	 */
+	*(volatile unsigned char *)(0xff110000)=0x11; // Previous debug
 	setup_log_buf(0);
+	*(volatile unsigned char *)(0xff110000)=0x12; // Previous debug
 	vfs_caches_init_early();
+	*(volatile unsigned char *)(0xff110000)=0x13; // Previous debug
 	sort_main_extable();
+	*(volatile unsigned char *)(0xff110000)=0x14; // Previous debug
 	trap_init();
+	*(volatile unsigned char *)(0xff110000)=0x15; // Previous debug
 	mm_init();
 
+	*(volatile unsigned char *)(0xff110000)=0x16; // Previous debug
 	ftrace_init();
 
 	/* trace_printk can be enabled here */
+	*(volatile unsigned char *)(0xff110000)=0x17; // Previous debug
 	early_trace_init();
 
 	/*
@@ -1013,11 +1035,13 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	 * we've done PCI setups etc, and console_init() must be aware of
 	 * this. But we do want output early, in case something goes wrong.
 	 */
+	*(volatile unsigned char *)(0xff110000)=0x32; // Previous debug
 	console_init();
 	if (panic_later)
 		panic("Too many boot %s vars at `%s'", panic_later,
 		      panic_param);
 
+	*(volatile unsigned char *)(0xff110000)=0x33; // Previous debug
 	lockdep_init();
 
 	/*
@@ -1025,6 +1049,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	 * to self-test [hard/soft]-irqs on/off lock inversion bugs
 	 * too:
 	 */
+	*(volatile unsigned char *)(0xff110000)=0x34; // Previous debug
 	locking_selftest();
 
 	/*
@@ -1033,6 +1058,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	 * mark the bounce buffers as decrypted so that their usage will
 	 * not cause "plain-text" data to be decrypted when accessed.
 	 */
+	*(volatile unsigned char *)(0xff110000)=0x35; // Previous debug
 	mem_encrypt_init();
 
 #ifdef CONFIG_BLK_DEV_INITRD

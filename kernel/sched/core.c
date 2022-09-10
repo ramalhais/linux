@@ -5281,9 +5281,13 @@ asmlinkage __visible void __sched schedule_user(void)
  */
 void __sched schedule_preempt_disabled(void)
 {
+	*(volatile unsigned char *)(0xff110000)=0x8F; // Previous debug
 	sched_preempt_enable_no_resched();
+	// *(volatile unsigned char *)(0xff110000)=0x90; // Previous debug
 	schedule();
+	// *(volatile unsigned char *)(0xff110000)=0x91; // Previous debug
 	preempt_disable();
+	*(volatile unsigned char *)(0xff110000)=0x92; // Previous debug
 }
 
 static void __sched notrace preempt_schedule_common(void)

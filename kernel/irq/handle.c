@@ -140,6 +140,8 @@ irqreturn_t __handle_irq_event_percpu(struct irq_desc *desc, unsigned int *flags
 	unsigned int irq = desc->irq_data.irq;
 	struct irqaction *action;
 
+	// *(volatile unsigned char *)(0xff110000)=0xD0; // Previous debug
+
 	record_irq_time(desc);
 
 	for_each_action_of_desc(desc, action) {
@@ -153,7 +155,9 @@ irqreturn_t __handle_irq_event_percpu(struct irq_desc *desc, unsigned int *flags
 			lockdep_hardirq_threaded();
 
 		trace_irq_handler_entry(irq, action);
+	// *(volatile unsigned char *)(0xff110000)=0xD1; // Previous debug
 		res = action->handler(irq, action->dev_id);
+	// *(volatile unsigned char *)(0xff110000)=0xD2; // Previous debug
 		trace_irq_handler_exit(irq, action, res);
 
 		if (WARN_ONCE(!irqs_disabled(),"irq %u handler %pS enabled interrupts\n",

@@ -1436,6 +1436,8 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 	unsigned long flags, thread_mask = 0;
 	int ret, nested, shared = 0;
 
+	*(volatile unsigned char *)(0xff110000)=0xC0; // Previous debug
+
 	if (!desc)
 		return -EINVAL;
 
@@ -1444,6 +1446,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 	if (!try_module_get(desc->owner))
 		return -ENODEV;
 
+	*(volatile unsigned char *)(0xff110000)=0xC1; // Previous debug
 	new->irq = irq;
 
 	/*
@@ -1483,6 +1486,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 	 * thread.
 	 */
 	if (new->thread_fn && !nested) {
+	*(volatile unsigned char *)(0xff110000)=0xC2; // Previous debug
 		ret = setup_irq_thread(new, irq, false);
 		if (ret)
 			goto out_mput;
@@ -1551,6 +1555,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 		 */
 		unsigned int oldtype;
 
+	*(volatile unsigned char *)(0xff110000)=0xC3; // Previous debug
 		if (desc->istate & IRQS_NMI) {
 			pr_err("Invalid attempt to share NMI for %s (irq %d) on irqchip %s.\n",
 				new->name, irq, desc->irq_data.chip->name);
@@ -1599,6 +1604,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 	 * conditional in irq_wake_thread().
 	 */
 	if (new->flags & IRQF_ONESHOT) {
+	*(volatile unsigned char *)(0xff110000)=0xC4; // Previous debug
 		/*
 		 * Unlikely to have 32 resp 64 irqs sharing one line,
 		 * but who knows.
@@ -1631,6 +1637,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 
 	} else if (new->handler == irq_default_primary_handler &&
 		   !(desc->irq_data.chip->flags & IRQCHIP_ONESHOT_SAFE)) {
+	*(volatile unsigned char *)(0xff110000)=0xC5; // Previous debug
 		/*
 		 * The interrupt was requested with handler = NULL, so
 		 * we use the default primary handler for it. But it
@@ -1684,6 +1691,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 		irqd_clear(&desc->irq_data, IRQD_IRQ_INPROGRESS);
 
 		if (new->flags & IRQF_PERCPU) {
+	*(volatile unsigned char *)(0xff110000)=0xC8; // Previous debug
 			irqd_set(&desc->irq_data, IRQD_PER_CPU);
 			irq_settings_set_per_cpu(desc);
 		}
@@ -1699,8 +1707,10 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 
 		if (!(new->flags & IRQF_NO_AUTOEN) &&
 		    irq_settings_can_autoenable(desc)) {
+	*(volatile unsigned char *)(0xff110000)=0xC9; // Previous debug
 			irq_startup(desc, IRQ_RESEND, IRQ_START_COND);
 		} else {
+	*(volatile unsigned char *)(0xff110000)=0xCA; // Previous debug
 			/*
 			 * Shared interrupts do not go well with disabling
 			 * auto enable. The sharing interrupt might request
@@ -1716,12 +1726,14 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 		unsigned int nmsk = new->flags & IRQF_TRIGGER_MASK;
 		unsigned int omsk = irqd_get_trigger_type(&desc->irq_data);
 
+	*(volatile unsigned char *)(0xff110000)=0xCB; // Previous debug
 		if (nmsk != omsk)
 			/* hope the handler works with current  trigger mode */
 			pr_warn("irq %d uses trigger mode %u; requested %u\n",
 				irq, omsk, nmsk);
 	}
 
+	/* Setup new IRQ handler function */
 	*old_ptr = new;
 
 	irq_pm_install_action(desc, new);
@@ -1735,6 +1747,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 	 * before. Reenable it and give it another chance.
 	 */
 	if (shared && (desc->istate & IRQS_SPURIOUS_DISABLED)) {
+	*(volatile unsigned char *)(0xff110000)=0xCC; // Previous debug
 		desc->istate &= ~IRQS_SPURIOUS_DISABLED;
 		__enable_irq(desc);
 	}
@@ -1757,6 +1770,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 	register_irq_proc(irq, desc);
 	new->dir = NULL;
 	register_handler_proc(irq, new);
+	*(volatile unsigned char *)(0xff110000)=0xCE; // Previous debug
 	return 0;
 
 mismatch:
