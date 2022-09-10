@@ -34,23 +34,24 @@
 
 #include <asm/nextints.h> 
 #include <asm/nexthw.h> 
+#include "rtc.h"
 
 /* supplied by the boot prom software */
 struct prom_info prom_info;
 /* yanked from the eprom chip */
 struct eprom_info eprom_info;
 
-extern void next_clock_init(void);
-extern void rtc_init(void);
 extern int next_kbd_init(void);
-extern void next_gettod(int *yearp, int *monp, int *dayp, int *hourp, int *minp, int *secp);
 extern int next_get_irq_list(char *buf);
-extern unsigned long next_gettimeoffset(void);
+// extern void next_clock_init(void);
+// extern void next_gettod(int *yearp, int *monp, int *dayp, int *hourp, int *minp, int *secp);
+// extern unsigned long next_gettimeoffset(void);
+// extern void rtc_init(void);
 
-void __init next_sched_init(void)
-{
-//       next_clock_init();
-}
+// void __init next_sched_init(void)
+// {
+//        next_clock_init();
+// }
 
 void next_get_model(char *model) {
        strcpy(model,"Generic NeXT");
@@ -95,13 +96,14 @@ extern int next_setup_serial_console(void) __init;
 
 void __init next_init_IRQ(void)
 {
+	// Disable NeXT interrupts
+	(*((volatile u_int *)NEXT_INTMASK)) = 0;
 }
 
 void __init config_next(void)
 {
+	*(volatile unsigned char *)(0xff110000)=0x7A;
 	next_meminit();
-
-	//rtc_init();
 
 	mach_init_IRQ		= next_init_IRQ;
 //	mach_request_irq	= next_request_irq;
@@ -114,8 +116,8 @@ void __init config_next(void)
 //	mach_keyb_init		= next_kbd_init;
 
 	mach_sched_init		= next_sched_init;
-//	mach_gettimeoffset	= next_gettimeoffset;
-//	mach_gettod			= next_gettod;
+	// mach_gettimeoffset	= next_gettimeoffset; // not used anymore?
+	// mach_gettod			= next_gettod; // not used anymore?
 	mach_get_model		= next_get_model;
 //	mach_get_irq_list 	= next_get_irq_list;
 
