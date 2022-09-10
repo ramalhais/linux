@@ -162,3 +162,8 @@ x509.genkey
 
 # Documentation toolchain
 sphinx_*/
+
+# NeXT tools
+arch/m68k/tools/next/aout
+arch/m68k/tools/next/simpkern
+

@@ -6564,13 +6564,20 @@ asmlinkage __visible void __sched schedule(void)
 {
 	struct task_struct *tsk = current;
 
+	*(volatile unsigned char *)(0xff110000)=0x93; // Previous debug
 	sched_submit_work(tsk);
 	do {
+	*(volatile unsigned char *)(0xff110000)=0x94; // Previous debug
 		preempt_disable();
+	*(volatile unsigned char *)(0xff110000)=0x95; // Previous debug
 		__schedule(SM_NONE);
+	*(volatile unsigned char *)(0xff110000)=0x96; // Previous debug
 		sched_preempt_enable_no_resched();
+	*(volatile unsigned char *)(0xff110000)=0x97; // Previous debug
 	} while (need_resched());
+	*(volatile unsigned char *)(0xff110000)=0x98; // Previous debug
 	sched_update_worker(tsk);
+	*(volatile unsigned char *)(0xff110000)=0x99; // Previous debug
 }
 EXPORT_SYMBOL(schedule);
 
@@ -6625,9 +6632,13 @@ asmlinkage __visible void __sched schedule_user(void)
  */
 void __sched schedule_preempt_disabled(void)
 {
+	*(volatile unsigned char *)(0xff110000)=0x8F; // Previous debug
 	sched_preempt_enable_no_resched();
+	// *(volatile unsigned char *)(0xff110000)=0x90; // Previous debug
 	schedule();
+	// *(volatile unsigned char *)(0xff110000)=0x91; // Previous debug
 	preempt_disable();
+	*(volatile unsigned char *)(0xff110000)=0x92; // Previous debug
 }
 
 #ifdef CONFIG_PREEMPT_RT

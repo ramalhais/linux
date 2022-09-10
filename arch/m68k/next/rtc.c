@@ -7,6 +7,8 @@
  *
  */
 
+#include <linux/clocksource.h>
+#include <linux/interrupt.h>
 #include <linux/types.h>
 #include <linux/kernel.h>
 #include <linux/mm.h>
@@ -50,17 +52,112 @@ static struct clocksource next_clk = {
 	.flags  = CLOCK_SOURCE_IS_CONTINUOUS,
 };
 
-void next_clock_init(void)
+static u32 clk_total;
+
+static irqreturn_t next_tick(int irq, void *dev_id)
 {
+	unsigned long flags;
+	// unsigned long tmp;
+	// unsigned long interrupt_status;
+
+	local_irq_save(flags);
+	// *(volatile unsigned char *)(0xff110000)=0x93; // Previous debug
+
+
+	if (!next_irq_pending(NEXT_IRQ_TIMER)) {
+	*(volatile unsigned char *)(0xff110000)=0x94; // Previous debug
+		printk("Interrupt not for timer\n");
+		local_irq_restore(flags);
+		return IRQ_NONE;
+	}
+	// *(volatile unsigned char *)(0xff110000)=0x95; // Previous debug
+
+	// write_timer_ticks(TIMER_HZ/HZ); // atempt to set the ticks back
+	set_timer_csr_bits(TIM_RESTART); // retrigger timer
+
+	clk_total += TIMER_HZ/HZ;
+
+	legacy_timer_tick(1);
+	// #ifdef CONFIG_HEARTBEAT
+	// timer_heartbeat();
+	// #endif
+
+	// FIXME: how to mark IRQ as handled?
+	// *(volatile unsigned char *)(0xff110000)=0x96; // Previous debug
+
+	local_irq_restore(flags);
+
+	return IRQ_HANDLED;
+}
+
+void next_sched_init(void)
+{
+	unsigned long flags;
+
+	*(volatile unsigned char *)(0xff110000)=0x97; // Previous debug
+	// local_irq_save(flags);
+
+	/* could also get this from the prom i think */
+	clocktype=(rtc_read(RTC_STATUS) & RTC_IS_NEW) ? N_C_NEW : N_C_OLD;
+	printk("RTC: %s\n",rtcs[clocktype].chipname);
+
+	*(volatile unsigned char *)(0xff110000)=0x98; // Previous debug
+	// next_set_int_mask(0);
+	// (*((volatile u_int *)NEXT_INTMASK)) = 0;
+
+	// request_irq(NEXT_IRQ_TIMER,handler,IRQ_FLG_LOCK,"timer",handler);
+	if (request_irq(IRQ_AUTO_6, next_tick, IRQF_TIMER, "timer tick", NULL)) {
+	*(volatile unsigned char *)(0xff110000)=0x99; // Previous debug
+		pr_err("Couldn't register timer interrupt\n");
+	}
+
 	set_timer_csr(0);
 	write_timer_ticks(TIMER_HZ/HZ);
-//	if (request_irq(IRQ_AUTO_6, hp300_tick, IRQF_TIMER, "timer tick", NULL))
-//		pr_err("Couldn't register timer interrupt\n");
 	set_timer_csr_bits(TIM_ENABLE|TIM_RESTART);
 
-	request_irq(NEXT_IRQ_TIMER,handler,IRQ_FLG_LOCK,"timer",handler);
+	next_intmask_enable(NEXT_IRQ_TIMER-NEXT_IRQ_BASE);
+	// (*((volatile u_int *)NEXT_INTMASK)) |= (1<<(NEXT_IRQ_TIMER-NEXT_IRQ_BASE));
 
+#define RTC_ENABLEALRM  0x10
+	// rtc_write(rtcs[clocktype].powerreg, rtc_read(rtcs[clocktype].powerreg)|(RTC_ENABLEALRM));
+
+	*(volatile unsigned char *)(0xff110000)=0x9A; // Previous debug
 	clocksource_register_hz(&next_clk, TIMER_HZ);
+
+	// local_irq_restore(flags);
+	// local_irq_enable();
+	*(volatile unsigned char *)(0xff110000)=0x9B; // Previous debug
+}
+
+/* usec timer, way cool */
+
+unsigned long next_gettimeoffset(void)
+{
+	/* oh, we have run out of ticks */
+	if(next_irq_pending(NEXT_IRQ_TIMER)) {
+		return TIMER_HZ/HZ;
+	}
+
+	return ((TIMER_HZ/HZ)-read_timer_ticks());
+}
+
+static u64 next_read_clk(struct clocksource *cs)
+{
+	// unsigned long flags;
+	// u32 ticks;
+
+	// local_irq_save(flags);
+
+	// ticks = clk_total + next_gettimeoffset();
+
+	// local_irq_restore(flags);
+	// *(volatile unsigned char *)(0xff110000)=0x9A; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=clk_total>>24&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=clk_total>>16&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=clk_total>>8&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=clk_total&0xff; // Previous debug
+
+	return clk_total + next_gettimeoffset();
 }
 
 void next_gettod(int *yearp, int *monp, int *dayp, int *hourp, int *minp, int *secp)
@@ -97,31 +194,6 @@ void next_gettod(int *yearp, int *monp, int *dayp, int *hourp, int *minp, int *s
 		else *yearp=tmp+1900;
 		printk("y: %d\n",*yearp);	
 	}
-}
-
-
-/* usec timer, way cool */
-
-unsigned long next_gettimeoffset(void)
-{
-	register int ticks;
-
-	/* oh, we have run out of ticks */
-	if(next_irq_pending(NEXT_IRQ_TIMER)) return TIMER_HZ/HZ; 
-
-	ticks=read_timer_ticks();
-
-	return (TIMER_HZ/HZ-ticks);
-}
-	
-
-void rtc_init(void)
-{
-	/* could also get this from the prom i think */
-	clocktype=(rtc_read(RTC_STATUS) & RTC_IS_NEW) ? N_C_NEW : N_C_OLD;
-	
-	printk("RTC: %s\n",rtcs[clocktype].chipname);
-
 }
 
 void next_poweroff(int vec, void *blah2, struct pt_regs *fp) 

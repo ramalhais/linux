@@ -1538,15 +1538,27 @@ L(notapollo):
 
 // Commented out because it seemed like generic code already does what's said above.
 //	mmu_map_tt	#0,#0x04000000,#0x01000000,#_PAGE_NOCACHE_S // kernel
-	mmu_map #0x04000000,#0x04000000,#0x01000000,#_PAGE_NOCACHE_S
+//	mmu_map #0x04000000,#0x04000000,#0x01000000,#_PAGE_NOCACHE_S
 //	mmu_map #0x01000000,#0x01000000,#0x01000000,#_PAGE_NOCACHE_S
-	mmu_map #0x02000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
+//FIXME bring me back	mmu_map #0x02000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
 //	example of write-through: mmu_map_tt	#0,#0xfe000000,#0x01000000,#_PAGE_CACHE040W // screen and ROM
 
 // TT doesn't seem to be working after PROM, tt1 has a mapping for 0x0 -> 0x0, and tt0 has a mapping for 0x02000000 -> 0x02000000.
 // Need to remove the tt1 0x0 transparent mapping, or it won't work.
-	mmu_map_tt	#1,#0x01000000,#0x01000000,#_PAGE_NOCACHE_S // set tt1 so that old 0x0 mapping goes away. transparent map 0x0100.0000-0x0200.0000 IO (so that we can use mg_putc)
-//	mmu_map_tt	#0,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S // IO (so that we can use memory debug in qemu). already setup in tt0
+// Set tt1 so that old 0x0 mapping goes away. transparent map region 0x0100.0000-0x0200.0000 IO (so that we can use mg_putc)
+// Actually, kernel will try to use these addresses for virt mappings. set this to something that will not be used (or disable?)
+// Disable Transparent Translation Registers // FIXME: what about 030 CPUs?
+	.chip	68040
+	move	#0,%d0
+	movec	%d0,%itt0
+	movec	%d0,%dtt0
+	movec	%d0,%itt1
+	movec	%d0,%dtt1
+	.chip	68k
+
+//	mmu_map_tt	#1,#0x01000000,#0x01000000,#_PAGE_NOCACHE_S
+// IO (so that we can use memory debug in qemu). already setup in tt0
+//	mmu_map_tt	#0,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
 
 	jbra	L(mmu_init_done)
 
@@ -1764,7 +1776,11 @@ L(mmu_fixup_done):
 1:
 #endif
 
-// We can't use PROM mg_putc after this
+// FIXME: test infinite loop
+//1: 	nop
+//	jmp 1b
+
+// We can't use PROM mg_putc after mmu_engage
 //	putc	'I'
 	leds	0x10
 
@@ -1823,7 +1839,7 @@ L(cache_done):
  * The new 64bit printf support requires an early exception initialization.
  */
 
-//	jbsr	base_trap_init // FIXME: commented out because this blowing up on trap. this is only needed for 060 CPUs
+	jbsr	base_trap_init // FIXME: commented out because this blowing up on trap
 
 /* jump to the kernel start */
 
@@ -2825,9 +2841,8 @@ L(mmu_engage_040):
 
 	movec	%d0,%tc		/* enable the MMU */
 
-	// FIXME: why :l? because after MMU is enabled 0x0 based code addresses (as linked in vmlinux.lds) should be mapped to 0x04000000(physical memory start/load address). it should work, but it's not
+	// why :l? because after MMU is enabled, we need to jump to an absolute address (0x01000 based as linked in vmlinux.lds)
 	jmp	1f:l
-	//jmp	1f
 1:	nop
 	movec	%a2,%srp
 	nop

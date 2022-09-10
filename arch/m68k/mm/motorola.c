@@ -426,6 +426,7 @@ void __init paging_init(void)
 	printk ("start of paging_init (%p, %lx)\n", kernel_pg_dir, availmem);
 #endif
 
+*(volatile unsigned char *)(0xff110000)=0x58; // Previous debug
 	/* Fix the cache mode in the page descriptors for the 680[46]0.  */
 	if (CPU_IS_040_OR_060) {
 		int i;
@@ -434,13 +435,16 @@ void __init paging_init(void)
 #endif
 		for (i = 0; i < 16; i++)
 			pgprot_val(protection_map[i]) |= _PAGE_CACHE040;
+*(volatile unsigned char *)(0xff110000)=0x59; // Previous debug
 	}
 
 	min_addr = m68k_memory[0].addr;
 	max_addr = min_addr + m68k_memory[0].size;
 	memblock_add_node(m68k_memory[0].addr, m68k_memory[0].size, 0,
 			  MEMBLOCK_NONE);
+*(volatile unsigned char *)(0xff110000)=0x5A; // Previous debug
 	for (i = 1; i < m68k_num_memory;) {
+*(volatile unsigned char *)(0xff110000)=0x5B; // Previous debug
 		if (m68k_memory[i].addr < min_addr) {
 			printk("Ignoring memory chunk at 0x%lx:0x%lx before the first chunk\n",
 				m68k_memory[i].addr, m68k_memory[i].size);
@@ -461,15 +465,19 @@ void __init paging_init(void)
 	m68k_virt_to_node_shift = fls(max_addr - min_addr - 1) - 6;
 
 	module_fixup(NULL, __start_fixup, __stop_fixup);
+*(volatile unsigned char *)(0xff110000)=0x5C; // Previous debug
 	flush_icache();
+*(volatile unsigned char *)(0xff110000)=0x5D; // Previous debug
 
 	high_memory = phys_to_virt(max_addr);
+*(volatile unsigned char *)(0xff110000)=0x5E; // Previous debug
 
 	min_low_pfn = availmem >> PAGE_SHIFT;
 	max_pfn = max_low_pfn = max_addr >> PAGE_SHIFT;
 
 	/* Reserve kernel text/data/bss and the memory allocated in head.S */
 	memblock_reserve(m68k_memory[0].addr, availmem - m68k_memory[0].addr);
+*(volatile unsigned char *)(0xff110000)=0x5F; // Previous debug
 
 	/*
 	 * Map the physical memory available into the kernel virtual
@@ -478,36 +486,57 @@ void __init paging_init(void)
 	 */
 	memblock_set_bottom_up(true);
 
+*(volatile unsigned char *)(0xff110000)=0x60; // Previous debug
 	for (i = 0; i < m68k_num_memory; i++) {
+*(volatile unsigned char *)(0xff110000)=0x61; // Previous debug
+
 		m68k_setup_node(i);
+*(volatile unsigned char *)(0xff110000)=0x62; // Previous debug
 		map_node(i);
 	}
 
+*(volatile unsigned char *)(0xff110000)=0x63; // Previous debug
 	flush_tlb_all();
 
+*(volatile unsigned char *)(0xff110000)=0x64; // Previous debug
 	early_memtest(min_addr, max_addr);
 
 	/*
 	 * initialize the bad page table and bad page to point
 	 * to a couple of allocated pages
 	 */
+*(volatile unsigned char *)(0xff110000)=0x65; // Previous debug
 	empty_zero_page = memblock_alloc(PAGE_SIZE, PAGE_SIZE);
-	if (!empty_zero_page)
+*(volatile unsigned char *)(0xff110000)=0x66; // Previous debug
+	if (!empty_zero_page) {
+*(volatile unsigned char *)(0xff110000)=0x67; // Previous debug
 		panic("%s: Failed to allocate %lu bytes align=0x%lx\n",
 		      __func__, PAGE_SIZE, PAGE_SIZE);
+*(volatile unsigned char *)(0xff110000)=0x68; // Previous debug
+	}
+*(volatile unsigned char *)(0xff110000)=0x69; // Previous debug
 
 	/*
 	 * Set up SFC/DFC registers
 	 */
 	set_fc(USER_DATA);
+*(volatile unsigned char *)(0xff110000)=0x6A; // Previous debug
 
 #ifdef DEBUG
 	printk ("before free_area_init\n");
+*(volatile unsigned char *)(0xff110000)=0x6B; // Previous debug
 #endif
-	for (i = 0; i < m68k_num_memory; i++)
-		if (node_present_pages(i))
-			node_set_state(i, N_NORMAL_MEMORY);
+	for (i = 0; i < m68k_num_memory; i++) {
+*(volatile unsigned char *)(0xff110000)=0x6C; // Previous debug
 
+		if (node_present_pages(i)) {
+*(volatile unsigned char *)(0xff110000)=0x6D; // Previous debug
+
+			node_set_state(i, N_NORMAL_MEMORY);
+		}
+	}
+*(volatile unsigned char *)(0xff110000)=0x6E; // Previous debug
 	max_zone_pfn[ZONE_DMA] = memblock_end_of_DRAM();
+*(volatile unsigned char *)(0xff110000)=0x6F; // Previous debug
 	free_area_init(max_zone_pfn);
 }

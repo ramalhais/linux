@@ -2239,7 +2239,7 @@ config FB_SM712
 
 config FB_NEXT
 	tristate "NeXT framebuffer support"
-	depends on FB && CONFIG_NEXT
+	depends on FB && NEXT
 #	select FB_FOREIGN_ENDIAN
 #	select FB_BIG_ENDIAN
 #	select FB_CFB_REV_PIXELS_IN_BYTE
@@ -2252,18 +2252,6 @@ config FB_NEXT
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called nextfb.
-
-config FB_NEXT_MONO
-	bool "NeXT Monochrome support"
-	depends on FB_NEXT
-	help
-	  This enables support for the NeXT Monochrome.
-
-config FB_NEXT_COLOR
-	bool "NeXT Color support"
-	depends on FB_NEXT
-	help
-	  This enables support for the NeXT Color.
 
 source "drivers/video/fbdev/omap/Kconfig"
 source "drivers/video/fbdev/omap2/Kconfig"
