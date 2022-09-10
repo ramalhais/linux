@@ -66,17 +66,49 @@ struct prom_info {
 	__u8	simm_something[NUMSIMMS];
 	__u8	prom_flags;
 	__u32	stuff[4];
+	// uint32_t mg_sid;
+	// uint32_t mg_pagesize;
+	// uint32_t mg_mon_stack;
+	// uint32_t mg_vbr;
 
 	struct nvram_settings {
 		__u32	flags;
+		// uint32_t ni_reset:4,
+		// 	#define	SCC_ALT_CONS	0x08000000
+		// 	ni_alt_cons : 1,
+		// 	#define	ALLOW_EJECT	0x04000000
+		// 	ni_allow_eject : 1,
+		// 	ni_vol_r : 6,
+		// 	ni_brightness : 6,
+		// 	#define	HW_PWD	0x6
+		// 	ni_hw_pwd : 4,
+		// 	ni_vol_l : 6,
+		// 	ni_spkren : 1,
+		// 	ni_lowpass : 1,
+		// 	#define	BOOT_ANY	0x00000002
+		// 	ni_boot_any : 1,
+		// 	#define	ANY_CMD		0x00000001
+		// 	ni_any_cmd : 1;
 		__u8	eaddr[6];  /* and passwd !? */
+		// #define NVRAM_HW_PASSWD 6
+		// unsigned char ni_ep[NVRAM_HW_PASSWD];
 		__u16	simm_something;  /* 4 bits / simm */
+		// uint16_t ni_simm;		/* 4 SIMMs, 4 bits per SIMM */
 		__u8	whoknows[2];
+		// char ni_adobe[2];
 		__u8	bigmystery[3];
+		// unsigned char ni_pot[3];
 		__u8	moreflags;
-	
+		// unsigned char	ni_new_clock_chip : 1,
+		// 	ni_auto_poweron : 1,
+		// 	ni_use_console_slot : 1,	/* Console slot was set by user. */
+		// 	ni_console_slot : 2,		/* Preferred console dev slot>>1 */
+		// 	: 3;	
 		__u8	bootcmdline[12];
+		// #define	NVRAM_BOOTCMD	12
+		// char ni_bootcmd[NVRAM_BOOTCMD];
 		__u16	checksum;
+		// uint16_t ni_cksum;
 	} nvram;
 
 	__u8 inetntoa[18],inputline[128];  /* ??? */
@@ -87,7 +119,7 @@ struct prom_info {
 	__u32	base_ptr,brk_ptr;
 	__u32	bootdev_ptr,bootarg_ptr,bootinfo_ptr,bootfile_ptr;
 	__u8	bootfile[64];
-/*enum*/	__u32	boot_mode;
+	__u32	boot_mode; /*enum*/
 	__u8	km_mon_stuff[4+4+2+2+2+2+2+2+4+4+4+2+4+3*2+2];
 	__u32	moninit; /* ? */
 	__u32	sio_ptr;
@@ -145,6 +177,10 @@ struct prom_info {
 		uint32_t        height;
 		uint32_t        flags;
 		uint32_t        whitebits[4];
+		// uint32_t		white;
+		// uint32_t		light_grey;
+		// uint32_t		dark_grey;
+		// uint32_t		black;
 		/* not sure what these do */
 		uint8_t         slot;
 		uint8_t         fbnum;

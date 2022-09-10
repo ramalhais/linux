@@ -168,3 +168,7 @@ sphinx_*/
 
 # Rust analyzer configuration
 /rust-project.json
+
+# NeXT tools
+arch/m68k/tools/next/aout
+arch/m68k/tools/next/simpkern

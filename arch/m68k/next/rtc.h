@@ -6,6 +6,8 @@
  *  Copyright (C) 1998 Zach Brown <zab@zabbo.net>
  */
 
+#include <asm/nexthw.h>
+
 /*
  * NeXT clock registers
  *  there are two models, the 'old' MC68HC68T1 and
@@ -82,3 +84,8 @@
 #define set_timer_csr(x) __timer_csr=(x)
 
 #define set_timer_csr_bits(x) __timer_csr|=(x)
+
+extern void next_sched_init(void);
+// extern void next_gettod(int *yearp, int *monp, int *dayp, int *hourp, int *minp, int *secp);
+// extern unsigned long next_gettimeoffset(void);
+// extern void rtc_init(void);
