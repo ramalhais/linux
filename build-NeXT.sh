@@ -10,10 +10,10 @@ export GCC_SUFFIX=-9
 # cp defconfig arch/m68k/configs/next_defconfig
 
 ### Setup NeXT config
-make next_defconfig
+#make next_defconfig
 
 ### Build kernel
-make -j$[$(nproc)*2]
+make -j$[$(nproc)*2] || exit 1
 
 DATE=$(date +%Y%m%d_%H%M%S)
 

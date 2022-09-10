@@ -188,3 +188,7 @@ sphinx_*/
 
 # bc language scripts (not LLVM bitcode)
 !kernel/time/timeconst.bc
+
+# NeXT tools
+arch/m68k/tools/next/aout
+arch/m68k/tools/next/simpkern

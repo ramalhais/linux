@@ -32,9 +32,9 @@
 	((*next_intstat_ptr)&(1<<(x-NEXT_IRQ_BASE)))
 
 #define next_intmask_disable(x) \
-	((next_intmask_ptr)&=~(1<<(x)))
+	((*next_intmask_ptr) &= ~(1<<(x)))
 #define next_intmask_enable(x) \
-	((next_intmask_ptr)|=(1<<(x)))
+	((*next_intmask_ptr) |= (1<<(x)))
 
 /* hard wired interrupts */
 #define NEXT_IRQ_NMI              (NEXT_IRQ_BASE+31)
