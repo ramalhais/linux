@@ -553,7 +553,8 @@ static int nextfb_probe(struct platform_device *dev)
 	// nextfb_var.accel_flags 	= FB_ACCEL_NONE;
 
 	fb_info(info, "Scanning other frames[]\n");
-	for(int i=0; i<6; i++) {
+	int i;
+	for(i=0; i<6; i++) {
 		if(i==1) continue;
 		if(prom_info.fbinfo.frames[i].phys || prom_info.fbinfo.frames[i].virt || prom_info.fbinfo.frames[i].len) {
 			fb_info(info, "Mystery frame: #%d phys=0x%0X virt=0x%0X len=%d\n",

@@ -134,6 +134,7 @@ extern void config_bvme6000(void);
 extern void config_hp300(void);
 extern void config_q40(void);
 extern void config_sun3x(void);
+extern void config_next(void);
 
 #define MASK_256K 0xfffc0000
 
