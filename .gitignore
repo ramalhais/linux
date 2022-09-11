@@ -164,6 +164,9 @@ x509.genkey
 sphinx_*/
 
 # NeXT tools
+*.rej
 arch/m68k/tools/next/aout
 arch/m68k/tools/next/simpkern
+vmlinux.binary*
+vmlinux.netimg*
 
