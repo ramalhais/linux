@@ -580,6 +580,7 @@ void vpanic(const char *fmt, va_list args)
 	int state = 0;
 	bool _crash_kexec_post_notifiers = crash_kexec_post_notifiers;
 
+	*(volatile unsigned char *)(0xff110000)=0xFF; // Previous debug
 	if (panic_on_warn) {
 		/*
 		 * This thread may hit another WARN() in the panic path.

@@ -57,6 +57,11 @@ static __always_inline void __preempt_count_add(int val)
 static __always_inline void __preempt_count_sub(int val)
 {
 	*preempt_count_ptr() -= val;
+	// *(volatile unsigned char *)(0xff110000)=0x8F; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=*preempt_count_ptr()>>24&0xFF; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=*preempt_count_ptr()>>16&0xFF; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=*preempt_count_ptr()>>8&0xFF; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=*preempt_count_ptr()&0xFF; // Previous debug
 }
 
 static __always_inline bool __preempt_count_dec_and_test(void)

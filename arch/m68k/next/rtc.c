@@ -65,7 +65,18 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 
 
 	if (!next_irq_pending(NEXT_IRQ_TIMER)) {
-	*(volatile unsigned char *)(0xff110000)=0x94; // Previous debug
+	// 	unsigned int intmask = next_get_intmask();
+	// 	unsigned int intstat = next_get_intstat();
+	// *(volatile unsigned char *)(0xff110000)=0x94; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=intmask>>24&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=intmask>>16&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=intmask>>8&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=intmask&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x95; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=intstat>>24&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=intstat>>16&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=intstat>>8&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=intstat&0xff; // Previous debug
 		printk("Interrupt not for timer\n");
 		local_irq_restore(flags);
 		return IRQ_NONE;
@@ -90,11 +101,38 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-void next_sched_init(void)
+static irqreturn_t irq_catchall(int irq, void *dev_id)
 {
 	unsigned long flags;
 
+	local_irq_save(flags);
+	*(volatile unsigned char *)(0xff110000)=0xfe; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=irq; // Previous debug
+
+
+	// if (!next_irq_pending(NEXT_IRQ_TIMER)) {
+	// *(volatile unsigned char *)(0xff110000)=0x94; // Previous debug
+	// 	printk("Interrupt not for timer\n");
+	// 	local_irq_restore(flags);
+	// 	return IRQ_NONE;
+	// }
+
+	local_irq_restore(flags);
+
+	return IRQ_HANDLED;
+}
+
+void next_sched_init(void)
+{
+	// unsigned long flags;
+
 	*(volatile unsigned char *)(0xff110000)=0x97; // Previous debug
+
+	// TEST
+	// request_irq(IRQ_AUTO_7, irq_catchall, 0, "int7", NULL);
+	// request_irq(IRQ_AUTO_5, irq_catchall, 0, "int5", NULL);
+	// request_irq(IRQ_AUTO_3, irq_catchall, 0, "int3", NULL);
+
 	// local_irq_save(flags);
 
 	/* could also get this from the prom i think */
