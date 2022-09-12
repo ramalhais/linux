@@ -624,8 +624,10 @@ ENTRY(__start)
 #endif
 
 // FIXME: find a way to detect 030 and 040. this macro is only setup later
+// Check https://github.com/NetBSD/src/blob/05082e19134c05f2f4b6eca73223cdc6b5ab09bf/sys/arch/x68k/stand/boot/srt0.S#L64
 //	is_not_040_or_060(1f)
 
+// https://github.com/NetBSD/src/blob/05082e19134c05f2f4b6eca73223cdc6b5ab09bf/sys/arch/m68k/include/cacheops_40.h
 	/* 040 caches bye bye */
 	.chip 68040
 	movel   #0,%d0
@@ -635,10 +637,17 @@ ENTRY(__start)
 
 //	jbra	2f
 //1:
+
+// https://github.com/NetBSD/src/blob/05082e19134c05f2f4b6eca73223cdc6b5ab09bf/sys/arch/m68k/include/cacheops_30.h
 //	/* 030 caches bye bye */
 //	.chip 68030
 //	movel   #0,%d0
 //	pmove   %d0,%tc // FIXME: see how to handle 030 clear caches. seems like we should use pmove, but not with %d0 or #0
+	// TEST not fully setting all bits to zero
+	//	movec	%cacr, %d0
+	//	move	#0x00000808, %d1
+	//	not		%d1
+	//	and		%d1,%d0
 //	movec   %d0,%cacr
 //	.chip 68k
 //2:
@@ -914,6 +923,7 @@ L(test_notvirt):
 	movew	#_PAGE_CACHE040,%d0
 
 	movel	#_PAGE_CACHE040W,%d1
+// FIXME: should we leave pgtable/MMU write-through above?	movel	#_PAGE_NOCACHE_S,%d1
 
 L(save_cachetype):
 	/* Save cache mode for supervisor mode and page tables

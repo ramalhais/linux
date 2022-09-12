@@ -5138,6 +5138,7 @@ static __always_inline struct rq *
 context_switch(struct rq *rq, struct task_struct *prev,
 	       struct task_struct *next, struct rq_flags *rf)
 {
+	*(volatile unsigned char *)(0xff110000)=0xF4; // Previous debug
 	prepare_task_switch(rq, prev, next);
 
 	/*
@@ -5155,6 +5156,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
 	 *   user ->   user   switch
 	 */
 	if (!next->mm) {                                // to kernel
+	*(volatile unsigned char *)(0xff110000)=0xF5; // Previous debug
 		enter_lazy_tlb(prev->active_mm, next);
 
 		next->active_mm = prev->active_mm;
@@ -5163,6 +5165,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
 		else
 			prev->active_mm = NULL;
 	} else {                                        // to user
+	*(volatile unsigned char *)(0xff110000)=0xF6; // Previous debug
 		membarrier_switch_mm(rq, prev->active_mm, next->mm);
 		/*
 		 * sys_membarrier() requires an smp_mb() between setting
@@ -6389,16 +6392,22 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 	struct rq *rq;
 	int cpu;
 
+	*(volatile unsigned char *)(0xff110000)=0xD0; // Previous debug
 	cpu = smp_processor_id();
+	*(volatile unsigned char *)(0xff110000)=0xD1; // Previous debug
 	rq = cpu_rq(cpu);
 	prev = rq->curr;
 
+	*(volatile unsigned char *)(0xff110000)=0xD2; // Previous debug
 	schedule_debug(prev, !!sched_mode);
 
-	if (sched_feat(HRTICK) || sched_feat(HRTICK_DL))
+	*(volatile unsigned char *)(0xff110000)=0xD3; // Previous debug
+	if (sched_feat(HRTICK) || sched_feat(HRTICK_DL)) {
+	*(volatile unsigned char *)(0xff110000)=0xD4; // Previous debug
 		hrtick_clear(rq);
-
+	}
 	local_irq_disable();
+	*(volatile unsigned char *)(0xff110000)=0xD5; // Previous debug
 	rcu_note_context_switch(!!sched_mode);
 
 	/*
@@ -6416,11 +6425,14 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 	 * Also, the membarrier system call requires a full memory barrier
 	 * after coming from user-space, before storing to rq->curr.
 	 */
+	*(volatile unsigned char *)(0xff110000)=0xD6; // Previous debug
 	rq_lock(rq, &rf);
+	*(volatile unsigned char *)(0xff110000)=0xD7; // Previous debug
 	smp_mb__after_spinlock();
 
 	/* Promote REQ to ACT */
 	rq->clock_update_flags <<= 1;
+	*(volatile unsigned char *)(0xff110000)=0xD8; // Previous debug
 	update_rq_clock(rq);
 
 	switch_count = &prev->nivcsw;
@@ -6431,17 +6443,21 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 	 */
 	prev_state = READ_ONCE(prev->__state);
 	if (!(sched_mode & SM_MASK_PREEMPT) && prev_state) {
+	*(volatile unsigned char *)(0xff110000)=0xD9; // Previous debug
 		if (signal_pending_state(prev_state, prev)) {
+	*(volatile unsigned char *)(0xff110000)=0xDA; // Previous debug
 			WRITE_ONCE(prev->__state, TASK_RUNNING);
 		} else {
+	*(volatile unsigned char *)(0xff110000)=0xDB; // Previous debug
 			prev->sched_contributes_to_load =
 				(prev_state & TASK_UNINTERRUPTIBLE) &&
 				!(prev_state & TASK_NOLOAD) &&
 				!(prev_state & TASK_FROZEN);
 
-			if (prev->sched_contributes_to_load)
+			if (prev->sched_contributes_to_load) {
+	*(volatile unsigned char *)(0xff110000)=0xDC; // Previous debug
 				rq->nr_uninterruptible++;
-
+			}
 			/*
 			 * __schedule()			ttwu()
 			 *   prev_state = prev->state;    if (p->on_rq && ...)
@@ -6455,7 +6471,9 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 			 */
 			deactivate_task(rq, prev, DEQUEUE_SLEEP | DEQUEUE_NOCLOCK);
 
+	*(volatile unsigned char *)(0xff110000)=0xDD; // Previous debug
 			if (prev->in_iowait) {
+	*(volatile unsigned char *)(0xff110000)=0xDE; // Previous debug
 				atomic_inc(&rq->nr_iowait);
 				delayacct_blkio_start();
 			}
@@ -6463,14 +6481,18 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 		switch_count = &prev->nvcsw;
 	}
 
+	*(volatile unsigned char *)(0xff110000)=0xDF; // Previous debug
 	next = pick_next_task(rq, prev, &rf);
+	*(volatile unsigned char *)(0xff110000)=0xE0; // Previous debug
 	clear_tsk_need_resched(prev);
+	*(volatile unsigned char *)(0xff110000)=0xE1; // Previous debug
 	clear_preempt_need_resched();
 #ifdef CONFIG_SCHED_DEBUG
 	rq->last_seen_need_resched_ns = 0;
 #endif
 
 	if (likely(prev != next)) {
+	*(volatile unsigned char *)(0xff110000)=0xE2; // Previous debug
 		rq->nr_switches++;
 		/*
 		 * RCU users of rcu_dereference(rq->curr) may not see
@@ -6493,19 +6515,28 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 		 */
 		++*switch_count;
 
+	*(volatile unsigned char *)(0xff110000)=0xE3; // Previous debug
 		migrate_disable_switch(rq, prev);
+	*(volatile unsigned char *)(0xff110000)=0xE4; // Previous debug
 		psi_sched_switch(prev, next, !task_on_rq_queued(prev));
 
+	*(volatile unsigned char *)(0xff110000)=0xE5; // Previous debug
 		trace_sched_switch(sched_mode & SM_MASK_PREEMPT, prev, next, prev_state);
 
 		/* Also unlocks the rq: */
+	*(volatile unsigned char *)(0xff110000)=0xE6; // Previous debug
 		rq = context_switch(rq, prev, next, &rf);
+	*(volatile unsigned char *)(0xff110000)=0xE7; // Previous debug
 	} else {
+	*(volatile unsigned char *)(0xff110000)=0xE8; // Previous debug
 		rq->clock_update_flags &= ~(RQCF_ACT_SKIP|RQCF_REQ_SKIP);
 
 		rq_unpin_lock(rq, &rf);
+	*(volatile unsigned char *)(0xff110000)=0xE9; // Previous debug
 		__balance_callbacks(rq);
+	*(volatile unsigned char *)(0xff110000)=0xEA; // Previous debug
 		raw_spin_rq_unlock_irq(rq);
+	*(volatile unsigned char *)(0xff110000)=0xEB; // Previous debug
 	}
 }
 
