@@ -5270,6 +5270,7 @@ static __always_inline struct rq *
 context_switch(struct rq *rq, struct task_struct *prev,
 	       struct task_struct *next, struct rq_flags *rf)
 {
+	*(volatile unsigned char *)(0xff110000)=0xF4; // Previous debug
 	prepare_task_switch(rq, prev, next);
 
 	/*
@@ -5290,6 +5291,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
 	 * by context_switch() are modified.
 	 */
 	if (!next->mm) {                                // to kernel
+	*(volatile unsigned char *)(0xff110000)=0xF5; // Previous debug
 		enter_lazy_tlb(prev->active_mm, next);
 
 		next->active_mm = prev->active_mm;
@@ -5298,6 +5300,7 @@ context_switch(struct rq *rq, struct task_struct *prev,
 		else
 			prev->active_mm = NULL;
 	} else {                                        // to user
+	*(volatile unsigned char *)(0xff110000)=0xF6; // Previous debug
 		membarrier_switch_mm(rq, prev->active_mm, next->mm);
 		/*
 		 * sys_membarrier() requires an smp_mb() between setting
@@ -6801,12 +6804,15 @@ static void __sched notrace __schedule(int sched_mode)
 	trace_sched_entry_tp(sched_mode == SM_PREEMPT);
 
 	cpu = smp_processor_id();
+	*(volatile unsigned char *)(0xff110000)=0xD1; // Previous debug
 	rq = cpu_rq(cpu);
 	prev = rq->curr;
 
 	schedule_debug(prev, preempt);
 
-	if (sched_feat(HRTICK) || sched_feat(HRTICK_DL))
+	*(volatile unsigned char *)(0xff110000)=0xD3; // Previous debug
+	if (sched_feat(HRTICK) || sched_feat(HRTICK_DL)) {
+	*(volatile unsigned char *)(0xff110000)=0xD4; // Previous debug
 		hrtick_clear(rq);
 
 	klp_sched_try_switch(prev);
@@ -6831,11 +6837,14 @@ static void __sched notrace __schedule(int sched_mode)
 	 * barrier matches a full barrier in the proximity of the membarrier
 	 * system call exit.
 	 */
+	*(volatile unsigned char *)(0xff110000)=0xD6; // Previous debug
 	rq_lock(rq, &rf);
+	*(volatile unsigned char *)(0xff110000)=0xD7; // Previous debug
 	smp_mb__after_spinlock();
 
 	/* Promote REQ to ACT */
 	rq->clock_update_flags <<= 1;
+	*(volatile unsigned char *)(0xff110000)=0xD8; // Previous debug
 	update_rq_clock(rq);
 	rq->clock_update_flags = RQCF_UPDATED;
 
@@ -6879,6 +6888,7 @@ pick_again:
 	}
 picked:
 	clear_tsk_need_resched(prev);
+	*(volatile unsigned char *)(0xff110000)=0xE1; // Previous debug
 	clear_preempt_need_resched();
 keep_resched:
 	rq->last_seen_need_resched_ns = 0;
@@ -6919,6 +6929,7 @@ keep_resched:
 		 */
 		++*switch_count;
 
+	*(volatile unsigned char *)(0xff110000)=0xE3; // Previous debug
 		migrate_disable_switch(rq, prev);
 		psi_account_irqtime(rq, prev, next);
 		psi_sched_switch(prev, next, !task_on_rq_queued(prev) ||
@@ -6927,15 +6938,20 @@ keep_resched:
 		trace_sched_switch(preempt, prev, next, prev_state);
 
 		/* Also unlocks the rq: */
+	*(volatile unsigned char *)(0xff110000)=0xE6; // Previous debug
 		rq = context_switch(rq, prev, next, &rf);
+	*(volatile unsigned char *)(0xff110000)=0xE7; // Previous debug
 	} else {
 		/* In case next was already curr but just got blocked_donor */
 		if (!task_current_donor(rq, next))
 			proxy_tag_curr(rq, next);
 
 		rq_unpin_lock(rq, &rf);
+	*(volatile unsigned char *)(0xff110000)=0xE9; // Previous debug
 		__balance_callbacks(rq);
+	*(volatile unsigned char *)(0xff110000)=0xEA; // Previous debug
 		raw_spin_rq_unlock_irq(rq);
+	*(volatile unsigned char *)(0xff110000)=0xEB; // Previous debug
 	}
 	trace_sched_exit_tp(is_switch);
 }
