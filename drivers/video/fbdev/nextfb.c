@@ -489,22 +489,28 @@ static int nextfb_probe(struct platform_device *dev)
 	int bpp;
 	struct nextfb_businfo frame;
 	struct fb_info *info = framebuffer_alloc(sizeof(u32) * 16, &dev->dev);
-	if (!info)
+	*(volatile unsigned char *)(0xff110000)=0xD3; // Previous debug
+	if (!info) {
+	*(volatile unsigned char *)(0xff110000)=0xD4; // Previous debug
 		return -ENOMEM;
-
+	}
 	fb_info(info, "Probing NeXT frame buffer.\n");
+	*(volatile unsigned char *)(0xff110000)=0xD5; // Previous debug
 
 	if (!MACH_IS_NEXT) {
+	*(volatile unsigned char *)(0xff110000)=0xD6; // Previous debug
 		fb_info(info, "This computer is not a NeXT. Bailing out.\n");
 		return -ENXIO;
 	}
 
 	if (prom_info.fbinfo.pixels_pword <= 0) {
+	*(volatile unsigned char *)(0xff110000)=0xD7; // Previous debug
 		fb_info(info, "Pixels Per Word can't be 0.\n");
 		return -ENXIO;
 	}
 
 	if (prom_info.fbinfo.pixels_pword != 2 && prom_info.fbinfo.pixels_pword != 16) {
+	*(volatile unsigned char *)(0xff110000)=0xD8; // Previous debug
 		fb_info(info, "Unknown value %d for Pixels Per Word.\n", prom_info.fbinfo.pixels_pword);
 	}
 
@@ -530,14 +536,17 @@ static int nextfb_probe(struct platform_device *dev)
 	// nextfb_fix.ywrapstep	= 0;
 	nextfb_fix.visual 		= bpp >= 8 ? FB_VISUAL_TRUECOLOR : FB_VISUAL_MONO01;
 	if (bpp == 16) {
+	*(volatile unsigned char *)(0xff110000)=0xD9; // Previous debug
 		strncpy (nextfb_fix.id,	"NeXT C16", 16);
 		nextfb_var.red		= (struct fb_bitfield){6, 5, 0};
 		nextfb_var.green	= (struct fb_bitfield){11, 5, 0};
 		nextfb_var.blue		= (struct fb_bitfield){0, 6, 0};
 	} else if (bpp == 2) {
+	*(volatile unsigned char *)(0xff110000)=0xDA; // Previous debug
 		strncpy (nextfb_fix.id,	"NeXT Mono", 16);
 		nextfb_var.grayscale	= 1;
 	} else {
+	*(volatile unsigned char *)(0xff110000)=0xDB; // Previous debug
 		strncpy (nextfb_fix.id,	"NeXT Unknown", 16);
 	}
 	nextfb_fix.accel		= FB_ACCEL_NONE;
@@ -554,8 +563,10 @@ static int nextfb_probe(struct platform_device *dev)
 
 	fb_info(info, "Scanning other frames[]\n");
 	for(int i=0; i<6; i++) {
+	*(volatile unsigned char *)(0xff110000)=0xDC; // Previous debug
 		if(i==1) continue;
 		if(prom_info.fbinfo.frames[i].phys || prom_info.fbinfo.frames[i].virt || prom_info.fbinfo.frames[i].len) {
+	*(volatile unsigned char *)(0xff110000)=0xDD; // Previous debug
 			fb_info(info, "Mystery frame: #%d phys=0x%0X virt=0x%0X len=%d\n",
 				i,
 				prom_info.fbinfo.frames[i].phys,
@@ -581,6 +592,7 @@ static int nextfb_probe(struct platform_device *dev)
 	// master_outb(3, DISPLAY_CONTROL_REG);
 
 	if (register_framebuffer(info) < 0) {
+	*(volatile unsigned char *)(0xff110000)=0xDE; // Previous debug
 		printk(KERN_ERR "Unable to register NeXT frame buffer.\n");
 		// fb_dealloc_cmap(&info->cmap);
 		framebuffer_release(info);
