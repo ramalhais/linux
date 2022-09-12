@@ -97,7 +97,14 @@ extern int next_setup_serial_console(void) __init;
 void __init next_init_IRQ(void)
 {
 	// Disable NeXT interrupts
-	(*((volatile u_int *)NEXT_INTMASK)) = 0;
+	// (*((volatile u_int *)NEXT_INTMASK)) = 0;
+	next_get_intmask() = 0;
+	// next_intmask_enable(NEXT_IRQ_NMI-NEXT_IRQ_BASE);
+	// next_intmask_enable(NEXT_IRQ_PFAIL-NEXT_IRQ_BASE);
+	// next_intmask_enable(NEXT_IRQ_BUS-NEXT_IRQ_BASE);
+	// next_intmask_enable(NEXT_IRQ_POWER-NEXT_IRQ_BASE);
+	// next_intmask_enable(NEXT_IRQ_SOFTINT1-NEXT_IRQ_BASE);
+	// next_intmask_enable(NEXT_IRQ_SOFTINT0-NEXT_IRQ_BASE);
 }
 
 void __init config_next(void)
