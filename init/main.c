@@ -683,39 +683,39 @@ noinline void __ref rest_init(void)
 	struct task_struct *tsk;
 	int pid;
 
-	*(volatile unsigned char *)(0xff110000)=0x80; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x80; // Previous debug
 	rcu_scheduler_starting();
 	/*
 	 * We need to spawn init first so that it obtains pid 1, however
 	 * the init task will end up wanting to create kthreads, which, if
 	 * we schedule it before we create kthreadd, will OOPS.
 	 */
-	*(volatile unsigned char *)(0xff110000)=0x81; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x81; // Previous debug
 	pid = user_mode_thread(kernel_init, NULL, CLONE_FS);
 	/*
 	 * Pin init on the boot CPU. Task migration is not properly working
 	 * until sched_init_smp() has been run. It will set the allowed
 	 * CPUs for init to the non isolated CPUs.
 	 */
-	*(volatile unsigned char *)(0xff110000)=0x82; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x82; // Previous debug
 	rcu_read_lock();
-	*(volatile unsigned char *)(0xff110000)=0x83; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x83; // Previous debug
 	tsk = find_task_by_pid_ns(pid, &init_pid_ns);
 	tsk->flags |= PF_NO_SETAFFINITY;
-	*(volatile unsigned char *)(0xff110000)=0x84; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x84; // Previous debug
 	set_cpus_allowed_ptr(tsk, cpumask_of(smp_processor_id()));
-	*(volatile unsigned char *)(0xff110000)=0x85; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x85; // Previous debug
 	rcu_read_unlock();
 
-	*(volatile unsigned char *)(0xff110000)=0x86; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x86; // Previous debug
 	numa_default_policy();
-	*(volatile unsigned char *)(0xff110000)=0x87; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x87; // Previous debug
 	pid = kernel_thread(kthreadd, NULL, CLONE_FS | CLONE_FILES);
-	*(volatile unsigned char *)(0xff110000)=0x88; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x88; // Previous debug
 	rcu_read_lock();
-	*(volatile unsigned char *)(0xff110000)=0x89; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x89; // Previous debug
 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
-	*(volatile unsigned char *)(0xff110000)=0x8A; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x8A; // Previous debug
 	rcu_read_unlock();
 
 	/*
@@ -727,7 +727,7 @@ noinline void __ref rest_init(void)
 	 */
 	system_state = SYSTEM_SCHEDULING;
 
-	*(volatile unsigned char *)(0xff110000)=0x8B; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x8B; // Previous debug
 	complete(&kthreadd_done);
 
 	/*
@@ -946,16 +946,16 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	char *command_line;
 	char *after_dashes;
 
-	*(volatile unsigned char *)(0xff110000)=0x1; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x1; // Previous debug
 	set_task_stack_end_magic(&init_task);
-	*(volatile unsigned char *)(0xff110000)=0x2; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x2; // Previous debug
 	smp_setup_processor_id();
-	*(volatile unsigned char *)(0xff110000)=0x3; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x3; // Previous debug
 	debug_objects_early_init();
-	*(volatile unsigned char *)(0xff110000)=0x4; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x4; // Previous debug
 	init_vmlinux_build_id();
 
-	*(volatile unsigned char *)(0xff110000)=0x5; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x5; // Previous debug
 	cgroup_init_early();
 
 	local_irq_disable();
@@ -965,27 +965,27 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	 * Interrupts are still disabled. Do necessary setups, then
 	 * enable them.
 	 */
-	*(volatile unsigned char *)(0xff110000)=0x6; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x6; // Previous debug
 	boot_cpu_init();
-	*(volatile unsigned char *)(0xff110000)=0x7; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x7; // Previous debug
 	page_address_init();
-	*(volatile unsigned char *)(0xff110000)=0x8; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x8; // Previous debug
 	pr_notice("%s", linux_banner);
-	*(volatile unsigned char *)(0xff110000)=0x9; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x9; // Previous debug
 	early_security_init();
-	*(volatile unsigned char *)(0xff110000)=0xA; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xA; // Previous debug
 	setup_arch(&command_line);
-	*(volatile unsigned char *)(0xff110000)=0xB; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xB; // Previous debug
 	setup_boot_config();
-	*(volatile unsigned char *)(0xff110000)=0xC; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xC; // Previous debug
 	setup_command_line(command_line);
-	*(volatile unsigned char *)(0xff110000)=0xD; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xD; // Previous debug
 	setup_nr_cpu_ids();
-	*(volatile unsigned char *)(0xff110000)=0xE; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xE; // Previous debug
 	setup_per_cpu_areas();
-	*(volatile unsigned char *)(0xff110000)=0xF; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xF; // Previous debug
 	smp_prepare_boot_cpu();	/* arch-specific boot-cpu hooks */
-	*(volatile unsigned char *)(0xff110000)=0x10; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x10; // Previous debug
 	boot_cpu_hotplug_init();
 
 	build_all_zonelists(NULL);
@@ -1011,22 +1011,22 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	 * These use large bootmem allocations and must precede
 	 * kmem_cache_init()
 	 */
-	*(volatile unsigned char *)(0xff110000)=0x11; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x11; // Previous debug
 	setup_log_buf(0);
-	*(volatile unsigned char *)(0xff110000)=0x12; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x12; // Previous debug
 	vfs_caches_init_early();
-	*(volatile unsigned char *)(0xff110000)=0x13; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x13; // Previous debug
 	sort_main_extable();
-	*(volatile unsigned char *)(0xff110000)=0x14; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x14; // Previous debug
 	trap_init();
-	*(volatile unsigned char *)(0xff110000)=0x15; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x15; // Previous debug
 	mm_init();
 
-	*(volatile unsigned char *)(0xff110000)=0x16; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x16; // Previous debug
 	ftrace_init();
 
 	/* trace_printk can be enabled here */
-	*(volatile unsigned char *)(0xff110000)=0x17; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x17; // Previous debug
 	early_trace_init();
 
 	/*
@@ -1034,20 +1034,20 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	 * timer interrupt). Full topology setup happens at smp_init()
 	 * time - but meanwhile we still have a functioning scheduler.
 	 */
-	*(volatile unsigned char *)(0xff110000)=0x18; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x18; // Previous debug
 	sched_init();
 
 	if (WARN(!irqs_disabled(),
 		 "Interrupts were enabled *very* early, fixing it\n"))
 		local_irq_disable();
-	*(volatile unsigned char *)(0xff110000)=0x19; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x19; // Previous debug
 	radix_tree_init();
 
 	/*
 	 * Set up housekeeping before setting up workqueues to allow the unbound
 	 * workqueue to take non-housekeeping into account.
 	 */
-	*(volatile unsigned char *)(0xff110000)=0x1A; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x1A; // Previous debug
 	housekeeping_init();
 
 	/*
@@ -1055,45 +1055,45 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	 * early.  Work item execution depends on kthreads and starts after
 	 * workqueue_init().
 	 */
-	*(volatile unsigned char *)(0xff110000)=0x1B; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x1B; // Previous debug
 	workqueue_init_early();
 
-	*(volatile unsigned char *)(0xff110000)=0x1C; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x1C; // Previous debug
 	rcu_init();
 
 	/* Trace events are available after this */
-	*(volatile unsigned char *)(0xff110000)=0x1D; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x1D; // Previous debug
 	trace_init();
 
 	if (initcall_debug)
 		initcall_debug_enable();
 
-	*(volatile unsigned char *)(0xff110000)=0x1E; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x1E; // Previous debug
 	context_tracking_init();
 	/* init some links before init_ISA_irqs() */
-	*(volatile unsigned char *)(0xff110000)=0x1F; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x1F; // Previous debug
 	early_irq_init();
-	*(volatile unsigned char *)(0xff110000)=0x20; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x20; // Previous debug
 	init_IRQ();
-	*(volatile unsigned char *)(0xff110000)=0x21; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x21; // Previous debug
 	tick_init();
-	*(volatile unsigned char *)(0xff110000)=0x22; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x22; // Previous debug
 	rcu_init_nohz();
-	*(volatile unsigned char *)(0xff110000)=0x23; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x23; // Previous debug
 	init_timers();
-	*(volatile unsigned char *)(0xff110000)=0x24; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x24; // Previous debug
 	srcu_init();
-	*(volatile unsigned char *)(0xff110000)=0x25; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x25; // Previous debug
 	hrtimers_init();
-	*(volatile unsigned char *)(0xff110000)=0x26; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x26; // Previous debug
 	softirq_init();
-	*(volatile unsigned char *)(0xff110000)=0x27; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x27; // Previous debug
 	timekeeping_init();
-	*(volatile unsigned char *)(0xff110000)=0x28; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x28; // Previous debug
 	kfence_init();
-	*(volatile unsigned char *)(0xff110000)=0x29; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x29; // Previous debug
 	time_init();
-	*(volatile unsigned char *)(0xff110000)=0x2A; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x2A; // Previous debug
 
 	/*
 	 * For best initial stack canary entropy, prepare it after:
@@ -1103,23 +1103,23 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	 * - random_init() to initialize the RNG from from early entropy sources
 	 */
 	random_init(command_line);
-	*(volatile unsigned char *)(0xff110000)=0x2B; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x2B; // Previous debug
 	boot_init_stack_canary();
-	*(volatile unsigned char *)(0xff110000)=0x2C; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x2C; // Previous debug
 
 	perf_event_init();
-	*(volatile unsigned char *)(0xff110000)=0x2D; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x2D; // Previous debug
 	profile_init();
-	*(volatile unsigned char *)(0xff110000)=0x2E; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x2E; // Previous debug
 	call_function_init();
-	*(volatile unsigned char *)(0xff110000)=0x2F; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x2F; // Previous debug
 	WARN(!irqs_disabled(), "Interrupts were enabled early\n");
 
 	early_boot_irqs_disabled = false;
-	*(volatile unsigned char *)(0xff110000)=0x30; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x30; // Previous debug
 	local_irq_enable();
 
-	*(volatile unsigned char *)(0xff110000)=0x31; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x31; // Previous debug
 	kmem_cache_init_late();
 
 	/*
@@ -1127,13 +1127,13 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	 * we've done PCI setups etc, and console_init() must be aware of
 	 * this. But we do want output early, in case something goes wrong.
 	 */
-	*(volatile unsigned char *)(0xff110000)=0x32; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x32; // Previous debug
 	console_init();
 	if (panic_later)
 		panic("Too many boot %s vars at `%s'", panic_later,
 		      panic_param);
 
-	*(volatile unsigned char *)(0xff110000)=0x33; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x33; // Previous debug
 	lockdep_init();
 
 	/*
@@ -1141,7 +1141,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	 * to self-test [hard/soft]-irqs on/off lock inversion bugs
 	 * too:
 	 */
-	*(volatile unsigned char *)(0xff110000)=0x34; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x34; // Previous debug
 	locking_selftest();
 
 	/*
@@ -1150,7 +1150,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	 * mark the bounce buffers as decrypted so that their usage will
 	 * not cause "plain-text" data to be decrypted when accessed.
 	 */
-	*(volatile unsigned char *)(0xff110000)=0x35; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x35; // Previous debug
 	mem_encrypt_init();
 
 #ifdef CONFIG_BLK_DEV_INITRD
@@ -1162,75 +1162,75 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 		initrd_start = 0;
 	}
 #endif
-	*(volatile unsigned char *)(0xff110000)=0x36; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x36; // Previous debug
 	setup_per_cpu_pageset();
-	*(volatile unsigned char *)(0xff110000)=0x37; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x37; // Previous debug
 	numa_policy_init();
-	*(volatile unsigned char *)(0xff110000)=0x38; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x38; // Previous debug
 	acpi_early_init();
 	if (late_time_init)
 		late_time_init();
-	*(volatile unsigned char *)(0xff110000)=0x39; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x39; // Previous debug
 	sched_clock_init();
-	*(volatile unsigned char *)(0xff110000)=0x3A; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x3A; // Previous debug
 	calibrate_delay();
-	*(volatile unsigned char *)(0xff110000)=0x3B; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x3B; // Previous debug
 	pid_idr_init();
-	*(volatile unsigned char *)(0xff110000)=0x3C; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x3C; // Previous debug
 	anon_vma_init();
 #ifdef CONFIG_X86
 	if (efi_enabled(EFI_RUNTIME_SERVICES))
 		efi_enter_virtual_mode();
 #endif
-	*(volatile unsigned char *)(0xff110000)=0x3D; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x3D; // Previous debug
 	thread_stack_cache_init();
-	*(volatile unsigned char *)(0xff110000)=0x3E; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x3E; // Previous debug
 	cred_init();
-	*(volatile unsigned char *)(0xff110000)=0x3F; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x3F; // Previous debug
 	fork_init();
-	*(volatile unsigned char *)(0xff110000)=0x40; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x40; // Previous debug
 	proc_caches_init();
-	*(volatile unsigned char *)(0xff110000)=0x41; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x41; // Previous debug
 	uts_ns_init();
-	*(volatile unsigned char *)(0xff110000)=0x42; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x42; // Previous debug
 	key_init();
-	*(volatile unsigned char *)(0xff110000)=0x43; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x43; // Previous debug
 	security_init();
-	*(volatile unsigned char *)(0xff110000)=0x44; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x44; // Previous debug
 	dbg_late_init();
-	*(volatile unsigned char *)(0xff110000)=0x45; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x45; // Previous debug
 	net_ns_init();
-	*(volatile unsigned char *)(0xff110000)=0x46; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x46; // Previous debug
 	vfs_caches_init();
-	*(volatile unsigned char *)(0xff110000)=0x47; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x47; // Previous debug
 	pagecache_init();
-	*(volatile unsigned char *)(0xff110000)=0x48; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x48; // Previous debug
 	signals_init();
-	*(volatile unsigned char *)(0xff110000)=0x49; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x49; // Previous debug
 	seq_file_init();
-	*(volatile unsigned char *)(0xff110000)=0x4A; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x4A; // Previous debug
 	proc_root_init();
-	*(volatile unsigned char *)(0xff110000)=0x4B; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x4B; // Previous debug
 	nsfs_init();
-	*(volatile unsigned char *)(0xff110000)=0x4C; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x4C; // Previous debug
 	cpuset_init();
-	*(volatile unsigned char *)(0xff110000)=0x4D; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x4D; // Previous debug
 	cgroup_init();
-	*(volatile unsigned char *)(0xff110000)=0x4E; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x4E; // Previous debug
 	taskstats_init_early();
-	*(volatile unsigned char *)(0xff110000)=0x4F; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x4F; // Previous debug
 	delayacct_init();
 
-	*(volatile unsigned char *)(0xff110000)=0x50; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x50; // Previous debug
 	poking_init();
-	*(volatile unsigned char *)(0xff110000)=0x51; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x51; // Previous debug
 	check_bugs();
 
-	*(volatile unsigned char *)(0xff110000)=0x52; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x52; // Previous debug
 	acpi_subsystem_init();
-	*(volatile unsigned char *)(0xff110000)=0x53; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x53; // Previous debug
 	arch_post_acpi_subsys_init();
-	*(volatile unsigned char *)(0xff110000)=0x54; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x54; // Previous debug
 	kcsan_init();
 
 	/* Do the rest non-__init'ed, we're now alive */
@@ -1667,12 +1667,16 @@ static int __ref kernel_init(void *unused)
 			return 0;
 	}
 
+	*(volatile unsigned char *)(0xff110000)=0xF0; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=0xF0; // Previous debug
+
 	if (!try_to_run_init_process("/sbin/init") ||
 	    !try_to_run_init_process("/etc/init") ||
 	    !try_to_run_init_process("/bin/init") ||
-	    !try_to_run_init_process("/bin/sh"))
+	    !try_to_run_init_process("/bin/sh")) {
+	*(volatile unsigned char *)(0xff110000)=0xF1; // Previous debug
 		return 0;
-
+	}
 	panic("No working init found.  Try passing init= option to kernel. "
 	      "See Linux Documentation/admin-guide/init.rst for guidance.");
 }
@@ -1683,6 +1687,7 @@ void __init console_on_rootfs(void)
 	struct file *file = filp_open("/dev/console", O_RDWR, 0);
 
 	if (IS_ERR(file)) {
+	*(volatile unsigned char *)(0xff110000)=0xF2; // Previous debug
 		pr_err("Warning: unable to open an initial console.\n");
 		return;
 	}
