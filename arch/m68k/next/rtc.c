@@ -106,8 +106,8 @@ static irqreturn_t irq_catchall(int irq, void *dev_id)
 	unsigned long flags;
 
 	local_irq_save(flags);
-	*(volatile unsigned char *)(0xff110000)=0xfe; // Previous debug
-	*(volatile unsigned char *)(0xff110000)=irq; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xfe; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=irq; // Previous debug
 
 
 	// if (!next_irq_pending(NEXT_IRQ_TIMER)) {
@@ -126,7 +126,7 @@ void next_sched_init(void)
 {
 	// unsigned long flags;
 
-	*(volatile unsigned char *)(0xff110000)=0x97; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x97; // Previous debug
 
 	// TEST
 	// request_irq(IRQ_AUTO_7, irq_catchall, 0, "int7", NULL);
@@ -139,13 +139,13 @@ void next_sched_init(void)
 	clocktype=(rtc_read(RTC_STATUS) & RTC_IS_NEW) ? N_C_NEW : N_C_OLD;
 	printk("RTC: %s\n",rtcs[clocktype].chipname);
 
-	*(volatile unsigned char *)(0xff110000)=0x98; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x98; // Previous debug
 	// next_set_int_mask(0);
 	// (*((volatile u_int *)NEXT_INTMASK)) = 0;
 
 	// request_irq(NEXT_IRQ_TIMER,handler,IRQ_FLG_LOCK,"timer",handler);
 	if (request_irq(IRQ_AUTO_6, next_tick, IRQF_TIMER, "timer tick", NULL)) {
-	*(volatile unsigned char *)(0xff110000)=0x99; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x99; // Previous debug
 		pr_err("Couldn't register timer interrupt\n");
 	}
 
@@ -159,12 +159,12 @@ void next_sched_init(void)
 #define RTC_ENABLEALRM  0x10
 	// rtc_write(rtcs[clocktype].powerreg, rtc_read(rtcs[clocktype].powerreg)|(RTC_ENABLEALRM));
 
-	*(volatile unsigned char *)(0xff110000)=0x9A; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x9A; // Previous debug
 	clocksource_register_hz(&next_clk, TIMER_HZ);
 
 	// local_irq_restore(flags);
 	// local_irq_enable();
-	*(volatile unsigned char *)(0xff110000)=0x9B; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0x9B; // Previous debug
 }
 
 /* usec timer, way cool */
