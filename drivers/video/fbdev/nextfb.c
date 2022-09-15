@@ -596,8 +596,9 @@ static int nextfb_probe(struct platform_device *dev)
 
 	// master_outb(3, DISPLAY_CONTROL_REG);
 
-	if (register_framebuffer(info) < 0) {
 	*(volatile unsigned char *)(0xff110000)=0xDE; // Previous debug
+	if (register_framebuffer(info) < 0) {
+	*(volatile unsigned char *)(0xff110000)=0xDF; // Previous debug
 		printk(KERN_ERR "Unable to register NeXT frame buffer.\n");
 		// fb_dealloc_cmap(&info->cmap);
 		framebuffer_release(info);
@@ -605,6 +606,7 @@ static int nextfb_probe(struct platform_device *dev)
 	}
 
 	fb_info(info, "Finished probing NeXT frame buffer.\n");
+	*(volatile unsigned char *)(0xff110000)=0xDF; // Previous debug
 	return 0;
 }
 
