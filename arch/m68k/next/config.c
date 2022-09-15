@@ -109,10 +109,13 @@ void __init next_init_IRQ(void)
 
 void __init config_next(void)
 {
-	*(volatile unsigned char *)(0xff110000)=0x7A;
+	// *(volatile unsigned char *)(0xff110000)=0x7A;
 	next_meminit();
+	// next_kbd_init();
 
+	mach_sched_init		= next_sched_init;
 	mach_init_IRQ		= next_init_IRQ;
+	mach_get_model		= next_get_model;
 //	mach_request_irq	= next_request_irq;
 //	mach_free_irq		= next_free_irq;
 //	enable_irq			= next_enable_irq;
@@ -120,12 +123,9 @@ void __init config_next(void)
 //	mach_process_int	= next_process_int;
 //	mach_default_handler	= &next_default_handlers;
 
-//	mach_keyb_init		= next_kbd_init;
 
-	mach_sched_init		= next_sched_init;
 	// mach_gettimeoffset	= next_gettimeoffset; // not used anymore?
 	// mach_gettod			= next_gettod; // not used anymore?
-	mach_get_model		= next_get_model;
 //	mach_get_irq_list 	= next_get_irq_list;
 
 

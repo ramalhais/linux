@@ -21,6 +21,11 @@
 
 #include <asm/nexthw.h>
 
+MODULE_DESCRIPTION("NeXT Frambuffer driver");
+MODULE_ALIAS("platform:nextfb");
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Pedro Ramalhais <ramalhais@gmail.com>");
+
 static struct fb_fix_screeninfo	nextfb_fix;
 static struct fb_var_screeninfo	nextfb_var;
 
@@ -509,10 +514,10 @@ static int nextfb_probe(struct platform_device *dev)
 		return -ENXIO;
 	}
 
-	if (prom_info.fbinfo.pixels_pword != 2 && prom_info.fbinfo.pixels_pword != 16) {
-	*(volatile unsigned char *)(0xff110000)=0xD8; // Previous debug
-		fb_info(info, "Unknown value %d for Pixels Per Word.\n", prom_info.fbinfo.pixels_pword);
-	}
+	// if (prom_info.fbinfo.pixels_pword != 2 && prom_info.fbinfo.pixels_pword != 16) {
+	// *(volatile unsigned char *)(0xff110000)=0xD8; // Previous debug
+	// 	fb_info(info, "Unknown value %d for Pixels Per Word.\n", prom_info.fbinfo.pixels_pword);
+	// }
 
 	bpp = 32/prom_info.fbinfo.pixels_pword;
 
@@ -610,29 +615,28 @@ static struct platform_driver nextfb_driver = {
 	},
 };
 
-// static struct platform_device nextfb_device = {
-// 	.name	= "nextfb",
-// };
+// module_platform_driver(nextfb_driver);
+// module_platform_driver_probe(nextfb_driver, nextfb_probe);
 
-// static int __init nextfb_init(void)
-// {
-// 	int ret = 0;
+static struct platform_device nextfb_device = {
+	.name	= "nextfb",
+};
 
-// 	if (fb_get_options("nextfb", NULL))
-// 		return -ENODEV;
+static int nextfb_init(void)
+{
+	int ret = 0;
 
-// 	ret = platform_driver_register(&nextfb_driver);
+	if (fb_get_options("nextfb", NULL))
+		return -ENODEV;
 
-// 	if (!ret) {
-// 		ret = platform_device_register(&nextfb_device);
-// 		if (ret)
-// 			platform_driver_unregister(&nextfb_driver);
-// 	}
-// 	return ret;
-// }
+	ret = platform_driver_register(&nextfb_driver);
 
-// module_init(nextfb_init);
-MODULE_LICENSE("GPL");
-module_platform_driver(nextfb_driver);
-// #define DRIVER_DESC "LCD controller driver for AU1200 processors"
-// MODULE_DESCRIPTION(DRIVER_DESC);
+	if (!ret) {
+		ret = platform_device_register(&nextfb_device);
+		if (ret)
+			platform_driver_unregister(&nextfb_driver);
+	}
+	return ret;
+}
+
+module_init(nextfb_init);
