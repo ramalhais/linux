@@ -21,6 +21,7 @@
 
 int soft_cursor(struct fb_info *info, struct fb_cursor *cursor)
 {
+	// *(volatile unsigned char *)(0xff110000)=0x90; // Previous debug
 	struct fbcon_ops *ops = info->fbcon_par;
 	unsigned int scan_align = info->pixmap.scan_align - 1;
 	unsigned int buf_align = info->pixmap.buf_align - 1;
@@ -35,9 +36,11 @@ int soft_cursor(struct fb_info *info, struct fb_cursor *cursor)
 	dsize = s_pitch * cursor->image.height;
 
 	if (dsize + sizeof(struct fb_image) != ops->cursor_size) {
+	// *(volatile unsigned char *)(0xff110000)=0x91; // Previous debug
 		kfree(ops->cursor_src);
 		ops->cursor_size = dsize + sizeof(struct fb_image);
 
+	// *(volatile unsigned char *)(0xff110000)=0x92; // Previous debug
 		ops->cursor_src = kmalloc(ops->cursor_size, GFP_ATOMIC);
 		if (!ops->cursor_src) {
 			ops->cursor_size = 0;
@@ -52,6 +55,7 @@ int soft_cursor(struct fb_info *info, struct fb_cursor *cursor)
 
 	size = d_pitch * image->height + buf_align;
 	size &= ~buf_align;
+	// *(volatile unsigned char *)(0xff110000)=0x93; // Previous debug
 	dst = fb_get_buffer_offset(info, &info->pixmap, size);
 
 	if (cursor->enable) {
@@ -66,11 +70,16 @@ int soft_cursor(struct fb_info *info, struct fb_cursor *cursor)
 				src[i] = image->data[i] & cursor->mask[i];
 			break;
 		}
-	} else
+	} else {
+	// *(volatile unsigned char *)(0xff110000)=0x94; // Previous debug
 		memcpy(src, image->data, dsize);
+	}
 
+	// *(volatile unsigned char *)(0xff110000)=0x95; // Previous debug
 	fb_pad_aligned_buffer(dst, d_pitch, src, s_pitch, image->height);
 	image->data = dst;
+	// *(volatile unsigned char *)(0xff110000)=0x96; // Previous debug
 	info->fbops->fb_imageblit(info, image);
+	// *(volatile unsigned char *)(0xff110000)=0x97; // Previous debug
 	return 0;
 }

@@ -484,9 +484,9 @@ static struct fb_var_screeninfo	nextfb_var;
 static const struct fb_ops nextfb_ops = {
 	.owner		= THIS_MODULE,
 	// .fb_setcolreg	= q40fb_setcolreg,
-	// .fb_fillrect	= cfb_fillrect,
-	// .fb_copyarea	= cfb_copyarea,
-	// .fb_imageblit	= cfb_imageblit,
+	.fb_fillrect	= cfb_fillrect,
+	.fb_copyarea	= cfb_copyarea,
+	.fb_imageblit	= cfb_imageblit,
 };
 
 static int nextfb_probe(struct platform_device *dev)
@@ -494,32 +494,52 @@ static int nextfb_probe(struct platform_device *dev)
 	int bpp;
 	struct nextfb_businfo frame;
 	struct fb_info *info = framebuffer_alloc(sizeof(u32) * 16, &dev->dev);
-	*(volatile unsigned char *)(0xff110000)=0xD3; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xD3; // Previous debug
 	if (!info) {
-	*(volatile unsigned char *)(0xff110000)=0xD4; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xD4; // Previous debug
 		return -ENOMEM;
 	}
 	fb_info(info, "Probing NeXT frame buffer.\n");
-	*(volatile unsigned char *)(0xff110000)=0xD5; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xD5; // Previous debug
 
 	if (!MACH_IS_NEXT) {
-	*(volatile unsigned char *)(0xff110000)=0xD6; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xD6; // Previous debug
 		fb_info(info, "This computer is not a NeXT. Bailing out.\n");
 		return -ENXIO;
 	}
 
 	if (prom_info.fbinfo.pixels_pword <= 0) {
-	*(volatile unsigned char *)(0xff110000)=0xD7; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xD7; // Previous debug
 		fb_info(info, "Pixels Per Word can't be 0.\n");
 		return -ENXIO;
 	}
 
-	// if (prom_info.fbinfo.pixels_pword != 2 && prom_info.fbinfo.pixels_pword != 16) {
+	if (prom_info.fbinfo.pixels_pword != 2 && prom_info.fbinfo.pixels_pword != 16) {
 	// *(volatile unsigned char *)(0xff110000)=0xD8; // Previous debug
-	// 	fb_info(info, "Unknown value %d for Pixels Per Word.\n", prom_info.fbinfo.pixels_pword);
-	// }
+		fb_info(info, "Unknown value %d for Pixels Per Word.\n", prom_info.fbinfo.pixels_pword);
+	}
 
+	// *(volatile unsigned char *)(0xff110000)=0xD7; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.pixels_pword>>24&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.pixels_pword>>16&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.pixels_pword>>8&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.pixels_pword&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.line_length>>24&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.line_length>>16&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.line_length>>8&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.line_length&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.vispixx>>24&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.vispixx>>16&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.vispixx>>8&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.vispixx&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.height>>24&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.height>>16&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.height>>8&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.height&0xff; // Previous debug
+	
 	bpp = 32/prom_info.fbinfo.pixels_pword;
+	// *(volatile unsigned char *)(0xff110000)=0xD7; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=bpp; // Previous debug
 
 	frame = prom_info.fbinfo.frames[1];
 
@@ -541,7 +561,7 @@ static int nextfb_probe(struct platform_device *dev)
 	// nextfb_fix.ywrapstep	= 0;
 	nextfb_fix.visual 		= bpp >= 8 ? FB_VISUAL_TRUECOLOR : FB_VISUAL_MONO01;
 	if (bpp == 16) {
-	*(volatile unsigned char *)(0xff110000)=0xD9; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xD9; // Previous debug
 		strncpy (nextfb_fix.id,	"NeXT C16", 16);
 		nextfb_var.red		= (struct fb_bitfield){6, 5, 0};
 		nextfb_var.green	= (struct fb_bitfield){11, 5, 0};
@@ -551,7 +571,7 @@ static int nextfb_probe(struct platform_device *dev)
 		strncpy (nextfb_fix.id,	"NeXT Mono", 16);
 		nextfb_var.grayscale	= 1;
 	} else {
-	*(volatile unsigned char *)(0xff110000)=0xDB; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xDB; // Previous debug
 		strncpy (nextfb_fix.id,	"NeXT Unknown", 16);
 	}
 	nextfb_fix.accel		= FB_ACCEL_NONE;
@@ -596,9 +616,9 @@ static int nextfb_probe(struct platform_device *dev)
 
 	// master_outb(3, DISPLAY_CONTROL_REG);
 
-	*(volatile unsigned char *)(0xff110000)=0xDE; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xDE; // Previous debug
 	if (register_framebuffer(info) < 0) {
-	*(volatile unsigned char *)(0xff110000)=0xDF; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xDF; // Previous debug
 		printk(KERN_ERR "Unable to register NeXT frame buffer.\n");
 		// fb_dealloc_cmap(&info->cmap);
 		framebuffer_release(info);
@@ -606,7 +626,7 @@ static int nextfb_probe(struct platform_device *dev)
 	}
 
 	fb_info(info, "Finished probing NeXT frame buffer.\n");
-	*(volatile unsigned char *)(0xff110000)=0xDF; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=0xDF; // Previous debug
 	return 0;
 }
 
@@ -628,8 +648,8 @@ static int nextfb_init(void)
 {
 	int ret = 0;
 
-	if (fb_get_options("nextfb", NULL))
-		return -ENODEV;
+	// if (fb_get_options("nextfb", NULL))
+	// 	return -ENODEV;
 
 	ret = platform_driver_register(&nextfb_driver);
 

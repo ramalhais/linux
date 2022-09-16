@@ -140,6 +140,7 @@ static inline void slow_imageblit(const struct fb_image *image, struct fb_info *
 				  u32 start_index,
 				  u32 pitch_index)
 {
+	// *(volatile unsigned char *)(0xff110000)=0xA1; // Previous debug
 	u32 shift, color = 0, bpp = p->var.bits_per_pixel;
 	u32 __iomem *dst, *dst2;
 	u32 val, pitch = p->fix.line_length;
@@ -148,12 +149,18 @@ static inline void slow_imageblit(const struct fb_image *image, struct fb_info *
 	const u8 *src = image->data, *s;
 	u32 i, j, l;
 	u32 bswapmask = fb_compute_bswapmask(p);
+	// *(volatile unsigned char *)(0xff110000)=0xA2; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=bswapmask>>24&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=bswapmask>>16&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=bswapmask>>8&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=bswapmask&0xff; // Previous debug
 
 	dst2 = (u32 __iomem *) dst1;
 	fgcolor <<= FB_LEFT_POS(p, bpp);
 	bgcolor <<= FB_LEFT_POS(p, bpp);
 
 	for (i = image->height; i--; ) {
+	// *(volatile unsigned char *)(0xff110000)=0xA2; // Previous debug
 		shift = val = 0;
 		l = 8;
 		j = image->width;
@@ -162,6 +169,7 @@ static inline void slow_imageblit(const struct fb_image *image, struct fb_info *
 
 		/* write leading bits */
 		if (start_index) {
+	// *(volatile unsigned char *)(0xff110000)=0xA3; // Previous debug
 			u32 start_mask = ~fb_shifted_pixels_mask_u32(p,
 						start_index, bswapmask);
 			val = FB_READL(dst) & start_mask;
@@ -169,12 +177,14 @@ static inline void slow_imageblit(const struct fb_image *image, struct fb_info *
 		}
 
 		while (j--) {
+	// *(volatile unsigned char *)(0xff110000)=0xA4; // Previous debug
 			l--;
 			color = (*s & (1 << l)) ? fgcolor : bgcolor;
 			val |= FB_SHIFT_HIGH(p, color, shift ^ bswapmask);
 
 			/* Did the bitshift spill bits to the next long? */
 			if (shift >= null_bits) {
+	// *(volatile unsigned char *)(0xff110000)=0xA5; // Previous debug
 				FB_WRITEL(val, dst++);
 				val = (shift == null_bits) ? 0 :
 					FB_SHIFT_LOW(p, color, 32 - shift);
@@ -186,15 +196,27 @@ static inline void slow_imageblit(const struct fb_image *image, struct fb_info *
 
 		/* write trailing bits */
  		if (shift) {
+	// *(volatile unsigned char *)(0xff110000)=0xA6; // Previous debug
 			u32 end_mask = fb_shifted_pixels_mask_u32(p, shift,
 						bswapmask);
 
-			FB_WRITEL((FB_READL(dst) & end_mask) | val, dst);
+	// *(volatile unsigned char *)(0xff110000)=0xA7; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=(unsigned int)dst>>24&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=(unsigned int)dst>>16&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=(unsigned int)dst>>8&0xff; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=(unsigned int)dst&0xff; // Previous debug
+			// FB_WRITEL((FB_READL(dst) & end_mask) | val, dst);
+			uint32_t r = (*(volatile u32 *) (dst));
+	// *(volatile unsigned char *)(0xff110000)=0xA8; // Previous debug
+			(*(volatile u32 *) (dst) = ((r & end_mask) | val));
+	// *(volatile unsigned char *)(0xff110000)=0xA9; // Previous debug
+
 		}
 
 		dst1 += pitch;
 		src += spitch;
 		if (pitch_index) {
+	// *(volatile unsigned char *)(0xff110000)=0xAA; // Previous debug
 			dst2 += pitch;
 			dst1 = (u8 __iomem *)((long __force)dst2 & ~(sizeof(u32) - 1));
 			start_index += pitch_index;
@@ -317,6 +339,7 @@ static inline void fast_imageblit(const struct fb_image *image, struct fb_info *
 
 void cfb_imageblit(struct fb_info *p, const struct fb_image *image)
 {
+	// *(volatile unsigned char *)(0xff110000)=0x98; // Previous debug
 	u32 fgcolor, bgcolor, start_index, bitstart, pitch_index = 0;
 	u32 bpl = sizeof(u32), bpp = p->var.bits_per_pixel;
 	u32 width = image->width;
@@ -334,28 +357,39 @@ void cfb_imageblit(struct fb_info *p, const struct fb_image *image)
 	bitstart &= ~(bpl - 1);
 	dst1 = p->screen_base + bitstart;
 
-	if (p->fbops->fb_sync)
+	if (p->fbops->fb_sync) {
+	// *(volatile unsigned char *)(0xff110000)=0x99; // Previous debug
 		p->fbops->fb_sync(p);
+	// *(volatile unsigned char *)(0xff110000)=0x9A; // Previous debug
+	}
 
 	if (image->depth == 1) {
+	// *(volatile unsigned char *)(0xff110000)=0x9B; // Previous debug
 		if (p->fix.visual == FB_VISUAL_TRUECOLOR ||
 		    p->fix.visual == FB_VISUAL_DIRECTCOLOR) {
+	// *(volatile unsigned char *)(0xff110000)=0x9C; // Previous debug
 			fgcolor = ((u32*)(p->pseudo_palette))[image->fg_color];
 			bgcolor = ((u32*)(p->pseudo_palette))[image->bg_color];
 		} else {
+	// *(volatile unsigned char *)(0xff110000)=0x9D; // Previous debug
 			fgcolor = image->fg_color;
 			bgcolor = image->bg_color;
 		}
 
 		if (32 % bpp == 0 && !start_index && !pitch_index &&
 		    ((width & (32/bpp-1)) == 0) &&
-		    bpp >= 8 && bpp <= 32)
+		    bpp >= 8 && bpp <= 32) {
+	// *(volatile unsigned char *)(0xff110000)=0x9E; // Previous debug
 			fast_imageblit(image, p, dst1, fgcolor, bgcolor);
-		else
+		} else {
+	// *(volatile unsigned char *)(0xff110000)=0x9F; // Previous debug
 			slow_imageblit(image, p, dst1, fgcolor, bgcolor,
 					start_index, pitch_index);
-	} else
+		}
+	} else {
+	// *(volatile unsigned char *)(0xff110000)=0xA0; // Previous debug
 		color_imageblit(image, p, dst1, start_index, pitch_index);
+	}
 }
 
 EXPORT_SYMBOL(cfb_imageblit);
