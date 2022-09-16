@@ -674,7 +674,7 @@ ENTRY(__start)
 #endif
 
 	lea     %pc@(prom_info),%a1
-//	movel   #240,%d1  /* sizeof(struct prom_info) = 960 bytes. 960/sizeof(long)=240  */ were reaching 7fffffe and blowing up reading
+//	movel   #240,%d1  /* sizeof(struct prom_info) = 960 bytes. 960/sizeof(long)=240  */ FIXME: were reaching 7fffffe and blowing up reading
 	movel   #235,%d1  /* sizeof(struct prom_info) = 960 bytes. 960/sizeof(long)=240  */
 
 #if defined(DEBUG_QEMU)
@@ -1550,7 +1550,7 @@ L(notapollo):
 //	mmu_map_tt	#0,#0x04000000,#0x01000000,#_PAGE_NOCACHE_S // kernel
 //	mmu_map #0x04000000,#0x04000000,#0x01000000,#_PAGE_NOCACHE_S
 //	mmu_map #0x01000000,#0x01000000,#0x01000000,#_PAGE_NOCACHE_S
-//FIXME bring me back	mmu_map #0x02000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
+//FIXME bring me back?	mmu_map #0x02000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
 //	example of write-through: mmu_map_tt	#0,#0xfe000000,#0x01000000,#_PAGE_CACHE040W // screen and ROM
 
 // TT doesn't seem to be working after PROM, tt1 has a mapping for 0x0 -> 0x0, and tt0 has a mapping for 0x02000000 -> 0x02000000.
@@ -1569,6 +1569,10 @@ L(notapollo):
 //	mmu_map_tt	#1,#0x01000000,#0x01000000,#_PAGE_NOCACHE_S
 // IO (so that we can use memory debug in qemu). already setup in tt0
 //	mmu_map_tt	#0,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
+	// We need to TT map the framebuffer at 0x0b000000
+	// FIXME: maybe map to 0x0fb000000 and fixup the address in the nextfb driver?
+//	mmu_map_tt	#0,#0x0b000000,#0x01000000,#_PAGE_NOCACHE_S
+	mmu_map_tt	#0,#0x0b000000,#0x01000000,#_PAGE_CACHE040W
 
 	jbra	L(mmu_init_done)
 
