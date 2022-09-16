@@ -145,12 +145,12 @@ struct prom_info {
 	
 	/* the port is not complete until we have a boot loader
 		that uses this to have a dancing penguin! */
-	struct anim {
-		__u16	x,y;
-		__u32	icon_ptr;
-		__u8	next;
-		__u8	time;
-	} anim;
+	// struct anim {
+	// 	__u16	x,y;
+	// 	__u32	icon_ptr;
+	// 	__u8	next;
+	// 	__u8	time;
+	// };
 	__u32	anim_ptr;
 	__u32	anim_time;
 
