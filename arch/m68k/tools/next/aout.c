@@ -1,3 +1,13 @@
+/*
+ *  linux/arch/m68k/tools/next/aout.c
+ *
+ *  Copyright (C) 2022 Pedro Ramalhais <ramalhais@gmail.com>
+ *
+ *  Add aout (COFF?) header to kernel binary to boot on the NeXT.
+ *  We can instead add a mach-o header. See simpkern.c .
+ *
+ */
+
 #include <sys/stat.h>	// fstat()
 #include <fcntl.h>	// open()
 #include <unistd.h>	// close()
@@ -47,6 +57,9 @@ int main(int argc, char**argv) {
 
 	unsigned short machine_type = 0x8700;
 	unsigned int data_size = 0;
+	// FIXME: should be 0x4000000 (first DIMM slot address) + the kernel image offset in the ld linker script.
+	// Get it from the objdump? or from the linker script?
+	// m68k-linux-gnu-objdump -D vmlinux|grep "<_stext>:"|cut -f1 -d' '
 	unsigned int entrypoint = 0x4001000;
 	struct exec aout_header = {
 		.a_machtype = machine_type,
@@ -69,6 +82,7 @@ int main(int argc, char**argv) {
 		}
 		printf("Info: Wrote header: %d bytes\n", whbytes);
 		int bytes_written = 0;
+		// FIXME: write all bytes at once. This is slow as hell.
 		while (bytes_written < text_size) {
 			char buf[512];
 			int rbytes = read(fd_binary, &buf, 512);
@@ -88,6 +102,7 @@ int main(int argc, char**argv) {
 		#define MIN_SIZE 512
 		if (total_size<MIN_SIZE) {
 			printf("Info: Minimum size is %d bytes. Adding padding.\n", MIN_SIZE);
+			// FIXME: write all bytes at once
 			while (total_size < MIN_SIZE) {
 				int pbytes = write(fd_aout, "\0", 1);
 				total_size += pbytes;

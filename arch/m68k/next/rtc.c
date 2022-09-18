@@ -2,6 +2,7 @@
  *  linux/arch/m68k/next/rtc.c
  *
  *  Copyright (C) 1998 Zach Brown <zab@zabbo.net>
+ *  Copyright (C) 2022 Pedro Ramalhais <ramalhais@gmail.com>
  *
  *  drive the NeXT clock chips.
  *
@@ -57,13 +58,9 @@ static u32 clk_total;
 static irqreturn_t next_tick(int irq, void *dev_id)
 {
 	unsigned long flags;
-	// unsigned long tmp;
-	// unsigned long interrupt_status;
-
 	local_irq_save(flags);
+
 	// *(volatile unsigned char *)(0xff110000)=0x93; // Previous debug
-
-
 	if (!next_irq_pending(NEXT_IRQ_TIMER)) {
 	// 	unsigned int intmask = next_get_intmask();
 	// 	unsigned int intstat = next_get_intstat();
@@ -77,7 +74,8 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 	// *(volatile unsigned char *)(0xff110000)=intstat>>16&0xff; // Previous debug
 	// *(volatile unsigned char *)(0xff110000)=intstat>>8&0xff; // Previous debug
 	// *(volatile unsigned char *)(0xff110000)=intstat&0xff; // Previous debug
-		printk("Interrupt not for timer\n");
+		printk("Ignoring IRQ %d. Not for NeXT timer\n", irq);
+
 		local_irq_restore(flags);
 		return IRQ_NONE;
 	}
@@ -85,85 +83,57 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 
 	// write_timer_ticks(TIMER_HZ/HZ); // atempt to set the ticks back
 	set_timer_csr_bits(TIM_RESTART); // retrigger timer
-
 	clk_total += TIMER_HZ/HZ;
-
 	legacy_timer_tick(1);
-	// #ifdef CONFIG_HEARTBEAT
-	// timer_heartbeat();
-	// #endif
-
-	// FIXME: how to mark IRQ as handled?
 	// *(volatile unsigned char *)(0xff110000)=0x96; // Previous debug
 
-	local_irq_restore(flags);
+	// FIXME: how to mark IRQ as handled on the NeXT interrupt controller?
 
+	local_irq_restore(flags);
 	return IRQ_HANDLED;
 }
 
-static irqreturn_t irq_catchall(int irq, void *dev_id)
-{
-	unsigned long flags;
+// static irqreturn_t irq_catchall(int irq, void *dev_id)
+// {
+// 	unsigned long flags;
 
-	local_irq_save(flags);
-	// *(volatile unsigned char *)(0xff110000)=0xfe; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=irq; // Previous debug
+// 	local_irq_save(flags);
 
+// 	printk("Interrupt %d ignored\n", irq);
 
-	// if (!next_irq_pending(NEXT_IRQ_TIMER)) {
-	// *(volatile unsigned char *)(0xff110000)=0x94; // Previous debug
-	// 	printk("Interrupt not for timer\n");
-	// 	local_irq_restore(flags);
-	// 	return IRQ_NONE;
-	// }
+// 	local_irq_restore(flags);
 
-	local_irq_restore(flags);
-
-	return IRQ_HANDLED;
-}
+// 	return IRQ_HANDLED;
+// }
 
 void next_sched_init(void)
 {
-	// unsigned long flags;
-
 	// *(volatile unsigned char *)(0xff110000)=0x97; // Previous debug
 
 	// TEST
 	// request_irq(IRQ_AUTO_7, irq_catchall, 0, "int7", NULL);
+	// request_irq(IRQ_AUTO_6, irq_catchall, 0, "int6", NULL);
 	// request_irq(IRQ_AUTO_5, irq_catchall, 0, "int5", NULL);
 	// request_irq(IRQ_AUTO_3, irq_catchall, 0, "int3", NULL);
-
-	// local_irq_save(flags);
 
 	/* could also get this from the prom i think */
 	clocktype=(rtc_read(RTC_STATUS) & RTC_IS_NEW) ? N_C_NEW : N_C_OLD;
 	printk("RTC: %s\n",rtcs[clocktype].chipname);
 
 	// *(volatile unsigned char *)(0xff110000)=0x98; // Previous debug
-	// next_set_int_mask(0);
-	// (*((volatile u_int *)NEXT_INTMASK)) = 0;
-
-	// request_irq(NEXT_IRQ_TIMER,handler,IRQ_FLG_LOCK,"timer",handler);
-	if (request_irq(IRQ_AUTO_6, next_tick, IRQF_TIMER, "timer tick", NULL)) {
+	if (request_irq(IRQ_AUTO_6, next_tick, IRQF_TIMER, "NeXT timer tick", NULL)) {
 	// *(volatile unsigned char *)(0xff110000)=0x99; // Previous debug
 		pr_err("Couldn't register timer interrupt\n");
 	}
+
+	next_intmask_enable(NEXT_IRQ_TIMER-NEXT_IRQ_BASE);
 
 	set_timer_csr(0);
 	write_timer_ticks(TIMER_HZ/HZ);
 	set_timer_csr_bits(TIM_ENABLE|TIM_RESTART);
 
-	next_intmask_enable(NEXT_IRQ_TIMER-NEXT_IRQ_BASE);
-	// (*((volatile u_int *)NEXT_INTMASK)) |= (1<<(NEXT_IRQ_TIMER-NEXT_IRQ_BASE));
-
-#define RTC_ENABLEALRM  0x10
-	// rtc_write(rtcs[clocktype].powerreg, rtc_read(rtcs[clocktype].powerreg)|(RTC_ENABLEALRM));
-
 	// *(volatile unsigned char *)(0xff110000)=0x9A; // Previous debug
 	clocksource_register_hz(&next_clk, TIMER_HZ);
-
-	// local_irq_restore(flags);
-	// local_irq_enable();
 	// *(volatile unsigned char *)(0xff110000)=0x9B; // Previous debug
 }
 
@@ -181,20 +151,6 @@ unsigned long next_gettimeoffset(void)
 
 static u64 next_read_clk(struct clocksource *cs)
 {
-	// unsigned long flags;
-	// u32 ticks;
-
-	// local_irq_save(flags);
-
-	// ticks = clk_total + next_gettimeoffset();
-
-	// local_irq_restore(flags);
-	// *(volatile unsigned char *)(0xff110000)=0x9A; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=clk_total>>24&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=clk_total>>16&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=clk_total>>8&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=clk_total&0xff; // Previous debug
-
 	return clk_total + next_gettimeoffset();
 }
 
