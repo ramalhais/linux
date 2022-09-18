@@ -481,14 +481,41 @@ static struct fb_var_screeninfo	nextfb_var;
 // {
 // }
 
+static int nextfb_setcolreg(unsigned regno, unsigned red, unsigned green,
+			   unsigned blue, unsigned transp,
+			   struct fb_info *info)
+{
+    if (regno > 255){
+	    printk("nextfb_setcolreg called with regno=%d", regno);
+	}
+
+    // red>>=sizeof(red)*8-info->var.red.length;
+    // green>>=sizeof(green)*8-info->var.green;
+    // blue>>=sizeof(blue)*8-info->var.blue;
+
+	// __u32 offset;			/* beginning of bitfield	*/
+	// __u32 length;			/* length of bitfield		*/
+
+    if (regno < 16) {
+		if (info->var.bits_per_pixel == 16) {
+			((u32 *)info->pseudo_palette)[regno] =
+				((red   & 0xf000) ) |
+				((green & 0xf000) >>  4) |
+				((blue  & 0xf000) >> 8);
+		}
+    }
+    return 0;
+}
+
 static const struct fb_ops nextfb_ops = {
 	.owner		= THIS_MODULE,
-	// .fb_setcolreg	= q40fb_setcolreg,
+	.fb_setcolreg	= nextfb_setcolreg,
 	.fb_fillrect	= cfb_fillrect,
 	.fb_copyarea	= cfb_copyarea,
 	.fb_imageblit	= cfb_imageblit,
 };
 
+#define NEXTFB_FRAME 1	// frame 1 is the one displayed
 static int nextfb_probe(struct platform_device *dev)
 {
 	int bpp;
@@ -515,33 +542,33 @@ static int nextfb_probe(struct platform_device *dev)
 	}
 
 	if (prom_info.fbinfo.pixels_pword != 2 && prom_info.fbinfo.pixels_pword != 16) {
-	// *(volatile unsigned char *)(0xff110000)=0xD8; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=0xD8; // Previous debug
 		fb_info(info, "Unknown value %d for Pixels Per Word.\n", prom_info.fbinfo.pixels_pword);
 	}
 
-	// *(volatile unsigned char *)(0xff110000)=0xD7; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.pixels_pword>>24&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.pixels_pword>>16&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.pixels_pword>>8&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.pixels_pword&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.line_length>>24&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.line_length>>16&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.line_length>>8&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.line_length&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.vispixx>>24&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.vispixx>>16&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.vispixx>>8&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.vispixx&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.height>>24&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.height>>16&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.height>>8&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.height&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=0xD7; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.pixels_pword>>24&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.pixels_pword>>16&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.pixels_pword>>8&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.pixels_pword&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.line_length>>24&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.line_length>>16&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.line_length>>8&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.line_length&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.vispixx>>24&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.vispixx>>16&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.vispixx>>8&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.vispixx&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.height>>24&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.height>>16&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.height>>8&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.height&0xff; // Previous debug
 	
 	bpp = 32/prom_info.fbinfo.pixels_pword;
-	// *(volatile unsigned char *)(0xff110000)=0xD7; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=bpp; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=0xD7; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=bpp; // Previous debug
 
-	frame = prom_info.fbinfo.frames[1];
+	frame = prom_info.fbinfo.frames[NEXTFB_FRAME];
 
 	fb_info(info, "NeXT fbinfo: %dx%dx%dbpp (%dppw) frames[1]=0x%x+0x%x\n",
 		prom_info.fbinfo.vispixx,
@@ -554,27 +581,43 @@ static int nextfb_probe(struct platform_device *dev)
 
 	nextfb_fix.smem_start 	= frame.phys;
 	nextfb_fix.smem_len		= frame.len;
+
+	*(volatile unsigned char *)(0xff110000)=nextfb_fix.smem_start>>24&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=nextfb_fix.smem_start>>16&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=nextfb_fix.smem_start>>8&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=nextfb_fix.smem_start&0xff; // Previous debug
+	
+	// Before we go any further and blow up somewhere because of missing MMU mappings,
+	// let's see if we can write to framebuffer memory and blow up here
+	*(volatile unsigned char *)(nextfb_fix.smem_start) = 0x00;
+
 	nextfb_fix.line_length 	= prom_info.fbinfo.line_length;
 	nextfb_fix.type 		= FB_TYPE_PACKED_PIXELS;
 	// nextfb_fix.xpanstep		= 0;
 	// nextfb_fix.ypanstep		= 0;
 	// nextfb_fix.ywrapstep	= 0;
-	nextfb_fix.visual 		= bpp >= 8 ? FB_VISUAL_TRUECOLOR : FB_VISUAL_MONO01;
+	// nextfb_fix.visual 		= FB_VISUAL_STATIC_PSEUDOCOLOR;
+	nextfb_fix.visual 		= bpp <= 8 ? FB_VISUAL_PSEUDOCOLOR: FB_VISUAL_TRUECOLOR;
+//	// nextfb_fix.visual 		= bpp >= 8 ? FB_VISUAL_TRUECOLOR : FB_VISUAL_MONO10;
+	nextfb_fix.accel		= FB_ACCEL_NONE;
+
 	if (bpp == 16) {
-	// *(volatile unsigned char *)(0xff110000)=0xD9; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=0xD9; // Previous debug
 		strncpy (nextfb_fix.id,	"NeXT C16", 16);
-		nextfb_var.red		= (struct fb_bitfield){6, 5, 0};
-		nextfb_var.green	= (struct fb_bitfield){11, 5, 0};
-		nextfb_var.blue		= (struct fb_bitfield){0, 6, 0};
+		// nextfb_var.red		= (struct fb_bitfield){6, 5, 0};
+		// nextfb_var.green	= (struct fb_bitfield){11, 5, 0};
+		// nextfb_var.blue		= (struct fb_bitfield){0, 6, 0};
+		nextfb_var.red		= (struct fb_bitfield){12, 4, 0};
+		nextfb_var.green	= (struct fb_bitfield){8, 4, 0};
+		nextfb_var.blue		= (struct fb_bitfield){4, 4, 0};
 	} else if (bpp == 2) {
 	*(volatile unsigned char *)(0xff110000)=0xDA; // Previous debug
 		strncpy (nextfb_fix.id,	"NeXT Mono", 16);
 		nextfb_var.grayscale	= 1;
 	} else {
-	// *(volatile unsigned char *)(0xff110000)=0xDB; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=0xDB; // Previous debug
 		strncpy (nextfb_fix.id,	"NeXT Unknown", 16);
 	}
-	nextfb_fix.accel		= FB_ACCEL_NONE;
 	nextfb_var.xres 		= prom_info.fbinfo.vispixx;
 	nextfb_var.yres 		= prom_info.fbinfo.height;
 	nextfb_var.xres_virtual = prom_info.fbinfo.realpixx; // try nextfb_var.xres ?
@@ -586,12 +629,20 @@ static int nextfb_probe(struct platform_device *dev)
 	nextfb_var.vmode		= FB_VMODE_NONINTERLACED;
 	// nextfb_var.accel_flags 	= FB_ACCEL_NONE;
 
-	fb_info(info, "Scanning other frames[]\n");
+	// fb_info(info, "Scanning other frames[]\n");
 	for(int i=0; i<6; i++) {
 	*(volatile unsigned char *)(0xff110000)=0xDC; // Previous debug
-		if(i==1) continue;
+		if(i==NEXTFB_FRAME) continue;
 		if(prom_info.fbinfo.frames[i].phys || prom_info.fbinfo.frames[i].virt || prom_info.fbinfo.frames[i].len) {
 	*(volatile unsigned char *)(0xff110000)=0xDD; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.frames[i].phys>>24&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.frames[i].phys>>16&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.frames[i].phys>>8&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=prom_info.fbinfo.frames[i].phys&0xff; // Previous debug
+
+			// This seems to be the rest of the memory chip on the framebuffer
+			// Mono: 239616(fb)+22464(mistery) = 262080 bytes. 256KB is 262144 bytes, so fb+mistery+64=256KB
+			// Color: 1916928(fb)+179712(mistery) = 2096640 bytes. 2MB=2*1024*1024=2097152, so fb+mistery+512=2MB
 			fb_info(info, "Mystery frame: #%d phys=0x%0X virt=0x%0X len=%d\n",
 				i,
 				prom_info.fbinfo.frames[i].phys,
@@ -605,8 +656,8 @@ static int nextfb_probe(struct platform_device *dev)
 	info->fix = nextfb_fix;
 	info->fbops = &nextfb_ops;
 	info->flags = FBINFO_DEFAULT;
-	// info->pseudo_palette = info->par;
-	// info->par = NULL;
+	info->pseudo_palette = info->par;
+	info->par = NULL;
 	info->screen_base = (char *)nextfb_fix.smem_start;
 
 	// if (fb_alloc_cmap(&info->cmap, 256, 0) < 0) {
@@ -616,17 +667,19 @@ static int nextfb_probe(struct platform_device *dev)
 
 	// master_outb(3, DISPLAY_CONTROL_REG);
 
-	// *(volatile unsigned char *)(0xff110000)=0xDE; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=0xDE; // Previous debug
 	if (register_framebuffer(info) < 0) {
-	// *(volatile unsigned char *)(0xff110000)=0xDF; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=0xDF; // Previous debug
 		printk(KERN_ERR "Unable to register NeXT frame buffer.\n");
 		// fb_dealloc_cmap(&info->cmap);
 		framebuffer_release(info);
 		return -EINVAL;
 	}
 
+	// fb_invert_cmaps();
+
 	fb_info(info, "Finished probing NeXT frame buffer.\n");
-	// *(volatile unsigned char *)(0xff110000)=0xDF; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=0xDF; // Previous debug
 	return 0;
 }
 
