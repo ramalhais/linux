@@ -1573,6 +1573,8 @@ L(notapollo):
 	// FIXME: maybe map to 0x0fb000000 and fixup the address in the nextfb driver?
 //	mmu_map_tt	#0,#0x0b000000,#0x01000000,#_PAGE_NOCACHE_S
 	mmu_map_tt	#0,#0x0b000000,#0x01000000,#_PAGE_CACHE040W
+	// FIXME: Color machines have framebuffer at 0x2b000000 and 0x2c000000. We should detect the machine type and map_tt accordingly
+	mmu_map_tt	#1,#0x2c000000,#0x01000000,#_PAGE_CACHE040W
 
 	jbra	L(mmu_init_done)
 
