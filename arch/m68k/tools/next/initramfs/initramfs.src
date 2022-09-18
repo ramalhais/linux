@@ -1,11 +1,28 @@
+# File Format: usr/gen_init_cpio -h
+
 dir /dev 755 0 0
 nod /dev/console 644 0 0 c 5 1
 nod /dev/loop0 644 0 0 b 7 0
+
 dir /bin 755 1000 1000
 slink /bin/sh busybox 777 0 0
 file /bin/busybox arch/m68k/tools/next/initramfs/busybox 755 0 0
+
 dir /proc 755 0 0
 dir /sys 755 0 0
 dir /mnt 755 0 0
-#file /init initramfs/init.sh 755 0 0
+dir /tmp 755 0 0
+
+file /init arch/m68k/tools/next/initramfs/init.sh 755 0 0
+
+file /bin/print256colours.sh arch/m68k/tools/next/initramfs/print256colours.sh 755 0 0
+file /bin/neofetch arch/m68k/tools/next/initramfs/neofetch 755 0 0
+
+## ls  *.deb -1|xargs -i echo file /tmp/{} arch/m68k/tools/next/initramfs/{} 755 0 0
+#file /tmp/base-files_12.2_m68k.deb arch/m68k/tools/next/initramfs/base-files_12.2_m68k.deb 755 0 0
+#file /tmp/bash_5.2~rc2-2_m68k.deb arch/m68k/tools/next/initramfs/bash_5.2~rc2-2_m68k.deb 755 0 0
+#file /tmp/bash-completion_2.11-6_all.deb arch/m68k/tools/next/initramfs/bash-completion_2.11-6_all.deb 755 0 0
+#file /tmp/debianutils_5.7-0.3_m68k.deb arch/m68k/tools/next/initramfs/debianutils_5.7-0.3_m68k.deb 755 0 0
+#file /tmp/libc6_2.34-4_m68k.deb arch/m68k/tools/next/initramfs/libc6_2.34-4_m68k.deb 755 0 0
+#file /tmp/libtinfo6_6.3+20220423-2_m68k.deb arch/m68k/tools/next/initramfs/libtinfo6_6.3+20220423-2_m68k.deb 755 0 0
 

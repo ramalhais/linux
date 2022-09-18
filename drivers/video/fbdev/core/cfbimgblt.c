@@ -265,6 +265,17 @@ static inline void fast_imageblit(const struct fb_image *image, struct fb_info *
 		return;
 	}
 
+	*(volatile unsigned char *)(0xff110000)=0x98; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=fgcolor>>24&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=fgcolor>>16&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=fgcolor>>8&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=fgcolor>>0&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=0x99; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=bgcolor>>24&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=bgcolor>>16&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=bgcolor>>8&0xff; // Previous debug
+	*(volatile unsigned char *)(0xff110000)=bgcolor>>0&0xff; // Previous debug
+
 	for (i = ppw-1; i--; ) {
 		fgx <<= bpp;
 		bgx <<= bpp;
@@ -298,6 +309,10 @@ static inline void fast_imageblit(const struct fb_image *image, struct fb_info *
 			break;
 		case 2: /* 16 bpp */
 			for (j = k; j >= 4; j -= 4, ++src) {
+				// FB_WRITEL((((*src>>7)&1)*0x6f600000)|(((*src>>6)&1)*0x6f60), dst++);
+				// FB_WRITEL((((*src>>5)&1)*0x6f600000)|(((*src>>4)&1)*0x6f60), dst++);
+				// FB_WRITEL((((*src>>3)&1)*0x6f600000)|(((*src>>2)&1)*0x6f60), dst++);
+				// FB_WRITEL((((*src>>1)&1)*0x6f600000)|(((*src>>0)&1)*0x6f60), dst++);
 				FB_WRITEL(colortab[(*src >> 6) & bit_mask], dst++);
 				FB_WRITEL(colortab[(*src >> 4) & bit_mask], dst++);
 				FB_WRITEL(colortab[(*src >> 2) & bit_mask], dst++);

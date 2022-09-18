@@ -2,6 +2,7 @@
  *  linux/arch/m68k/next/kbd.c
  *
  *  Copyright (C) 1998 Zach Brown <zab@zabbo.net>
+ *  Copyright (C) 2022 Pedro Ramalhais <ramalhais@gmail.com>
  *
  *  deal with the keyboard/mouse interface
  *
@@ -10,23 +11,13 @@
 #include <linux/input.h>
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
-// #include <linux/types.h>
-// #include <linux/kernel.h>
-// #include <linux/kernel.h>
-// #include <linux/mm.h>
 
 #include <asm/nextints.h>
-// #include <asm/nexthw.h>
-// #include <asm/irq.h>
 
-// #include <linux/kbd_ll.h>
-
-// #include "nextmap.c"
-
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Pedro Ramalhais <ramalhais@gmail.com>");
 MODULE_DESCRIPTION("Keyboard driver for NeXT Computer/Cube/Station");
 MODULE_ALIAS("platform:next-keyboard");
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Pedro Ramalhais <ramalhais@gmail.com>");
 
 /* shouldn't be global i'll wager :) */
 struct mon {
@@ -74,32 +65,33 @@ typedef union {
 #define DEFAULT_KEYB_REP_RATE   (HZ/25)
 
 #define NR_CTRL_KEYS 7
-// #define CTRL_BASE_CODE 81
-#define CTRL_BASE_CODE 100	// We may be missing some keys. Let's give it some room.
+#define CTRL_BASE_CODE 81
 
 static unsigned int oldflagmap=0;
 
 struct next_kbd {
 	struct input_dev *input;
-	// void __iomem *addr;
-	// int irq;
-	// https://web.archive.org/web/20220131154708if_/http://xahlee.info/kbd/i/NeXT_keyboard_kTcqz.jpg
-	// https://web.archive.org/web/20220203021711if_/http://xahlee.info/kbd/i/NeXT_Computer_keyboard_66682.jpg
 	unsigned short keycodes[CTRL_BASE_CODE+6+1];
 };
 
+// Keyboard pics
+// https://web.archive.org/web/20220131154708if_/http://xahlee.info/kbd/i/NeXT_keyboard_kTcqz.jpg
+// https://web.archive.org/web/20220203021711if_/http://xahlee.info/kbd/i/NeXT_Computer_keyboard_66682.jpg
 struct next_kbd tpl_next_kbd = {
 	.keycodes = {
+		[1] = KEY_PAGEDOWN,
+		[2] = KEY_END,
 		[3] = KEY_BACKSLASH,
-		[4] = KEY_LEFTBRACE,
-		[5] = KEY_RIGHTBRACE,
+		[4] = KEY_RIGHTBRACE,
+		[5] = KEY_LEFTBRACE,
 		[6] = KEY_I,
 		[7] = KEY_O,
 		[8] = KEY_P,
 		[9] = KEY_LEFT,
 		[11] = KEY_KP0,
-		[13] = KEY_KPDOT,
+		[12] = KEY_KPDOT,
 		[13] = KEY_KPENTER,
+		[15] = KEY_DOWN,
 		[16] = KEY_RIGHT,
 		[17] = KEY_KP1,
 		[18] = KEY_KP4,
@@ -109,7 +101,9 @@ struct next_kbd tpl_next_kbd = {
 		[22] = KEY_UP,
 		[23] = KEY_KP2,
 		[24] = KEY_KP5,
-		[27] = KEY_DELETE,
+		[25] = KEY_PAGEUP,
+		[26] = KEY_HOME,
+		[27] = KEY_BACKSPACE,
 		[28] = KEY_EQUAL,
 		[29] = KEY_MINUS,
 		[30] = KEY_8,
@@ -120,7 +114,7 @@ struct next_kbd tpl_next_kbd = {
 		[35] = KEY_KP9,
 		[36] = KEY_KPMINUS,
 		[37] = KEY_KPASTERISK,
-		[38] = KEY_GRAVE,
+		[38] = KEY_NUMLOCK,
 		[39] = KEY_EQUAL,
 		[40] = KEY_KPSLASH,
 		[42] = KEY_ENTER,
@@ -172,52 +166,6 @@ struct next_kbd tpl_next_kbd = {
 	}
 };
 
-// void next_kbd_int(int irq, void *dev_id, struct pt_regs *regs)
-// {
-// 	__u32 csr=mon->csr;
-// 	__u32 data;
-
-// 	unsigned int mask,index,changed,scan;
-	
-// 	/* ack the int */
-// 	mon->csr=(csr & ~KM_INT);
-
-// 	if(!(csr & KM_HAVEDATA)) return;
-
-// 	data=mon->km_data;
-
-// 	if((data & KD_ADDRMASK) == KD_KADDR) {
-// 		/* keyboard reporting */
-
-
-// 		/* the next only has a bitmap of which ctl keys
-// 		are currently down, so we just triggers ups and downs
-// 		to match how we last thought the world was. We do this
-// 		first so real keys pressed after we get out of sync
-// 		don't suffer. */
-
-// 		changed=oldflagmap;
-// 		oldflagmap=data & KD_FLAGKEYS;
-
-// 		if((changed^=oldflagmap)) {
-// 			/* use cool bitmap instructions */
-// 			for(mask=KD_CNTL,index=0;index<7;mask<<=1,index++) {
-	
-// 				if(!(changed&mask)) continue;
-// 				if(!(scan=flagscans[index])) continue;
-// 				handle_scancode(scan | (data&mask ? 0: 0x80));
-
-// 			}
-// 		}
-// 		if(data & KD_VALID) {  
-// 			/* a 'real' key has changed */
-// 			/* luckly the next and kernel use the same 'up/down' flag :) */
-// 			handle_scancode(data&(KD_KEYMASK|KD_DIRECTION));
-// 		}
-				
-// 	} 
-// }
-
 static irqreturn_t next_kbd_int(int irq, void *dev_id)
 {
 	unsigned long flags;
@@ -225,21 +173,21 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	struct input_dev *input = kbd->input;
 	__u32 csr;
 	__u32 data;
-	unsigned int mask,index,changed,scan;
 
 	// *(volatile unsigned char *)(0xff110000)=0xF6; // Previous debug
 	local_irq_save(flags);
 
 	if (!next_irq_pending(NEXT_IRQ_KYBD_MOUSE)) {
 	// *(volatile unsigned char *)(0xff110000)=0xF7; // Previous debug
-		printk("IRQ3 not for NeXT keyboard/mouse\n");
+		printk("Ignoring IRQ%d. Not for NeXT keyboard/mouse\n", irq);
 		local_irq_restore(flags);
 		return IRQ_NONE;
 	}
 
-	
 	/* ack the int */
+	// This is not right, at leat in Previous emulator
 	// mon->csr=(csr & ~KM_INT);
+
 	csr = mon->csr;
 	// *(volatile unsigned char *)(0xff110000)=0xFB; // Previous debug
 
@@ -253,8 +201,8 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	// *(volatile unsigned char *)(0xff110000)=0xFC; // Previous debug
 
 	if((data & KD_ADDRMASK) == KD_KADDR) {
+		unsigned int changed;
 		/* keyboard reporting */
-
 
 		/* the next only has a bitmap of which ctl keys
 		are currently down, so we just triggers ups and downs
@@ -266,31 +214,39 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 		oldflagmap=data & KD_FLAGKEYS;
 
 		if((changed^=oldflagmap)) {
+			unsigned int mask,index;
 			/* use cool bitmap instructions */
 			for(mask=KD_CNTL,index=0; index<NR_CTRL_KEYS; mask<<=1,index++) {	
+				unsigned int scan,is_pressed;
+
 				if (!(changed&mask))
 					continue;
-	*(volatile unsigned char *)(0xff110000)=0xF9; // Previous debug
+
+	// *(volatile unsigned char *)(0xff110000)=0xF9; // Previous debug
 				scan = CTRL_BASE_CODE+index;
-				input_report_key(input, scan, !(data&KD_DIRECTION));
+				is_pressed = !(data&KD_DIRECTION); // FIXME: could try sending data&KD_FLAGKEYS&mask instead
+				input_report_key(input, kbd->keycodes[scan], is_pressed);
 				input_sync(input);
-	*(volatile unsigned char *)(0xff110000)=scan; // Previous debug
-	*(volatile unsigned char *)(0xff110000)=data&KD_DIRECTION; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=scan; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=is_pressed; // Previous debug
 			}
 		}
 		if(data&KD_VALID && data&KD_KEYMASK) {
-	*(volatile unsigned char *)(0xff110000)=0xFA; // Previous debug
+				unsigned int scan,is_pressed;
+
+	// *(volatile unsigned char *)(0xff110000)=0xFA; // Previous debug
 			/* a 'real' key has changed */
-			input_report_key(input, data&KD_KEYMASK, !(data&KD_DIRECTION));
+			scan = data&KD_KEYMASK;
+			is_pressed = !(data&KD_DIRECTION);
+			input_report_key(input, kbd->keycodes[scan], is_pressed);
 			input_sync(input);
-	*(volatile unsigned char *)(0xff110000)=data&KD_KEYMASK; // Previous debug
-	*(volatile unsigned char *)(0xff110000)=data&KD_DIRECTION; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=scan; // Previous debug
+	// *(volatile unsigned char *)(0xff110000)=is_pressed; // Previous debug
 		}
 	} 
-
 	// *(volatile unsigned char *)(0xff110000)=0xFD; // Previous debug
-	local_irq_restore(flags);
 
+	local_irq_restore(flags);
 	return IRQ_HANDLED;
 }
 
@@ -338,7 +294,7 @@ static int next_kbd_probe(struct platform_device *pdev) {
 
 	ret = input_register_device(input);
 	if (ret) {
-		dev_err(&pdev->dev, "unable to register input device\n");
+		dev_err(&pdev->dev, "Failed to register input device\n");
 		return ret;
 	}
 
@@ -363,7 +319,6 @@ static struct platform_driver next_kbd_driver = {
 
 // module_platform_driver(next_kbd_pd);
 // module_platform_driver_probe(next_kbd_pd, next_kbd_probe);
-
 
 static struct platform_device next_kbd_device = {
 	.name	= "next-kbd",

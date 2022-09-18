@@ -149,9 +149,9 @@ const struct font_desc *get_default_font(int xres, int yres, u32 font_w,
 		}
 	}
 	// if (!g) {// FIXME: there's something wrong with NeXT where g is null (maybe xres/yres is completely wrong)
+	// *(volatile unsigned char *)(0xff110000)=0xE4; // Previous debug
 	// 	g = fonts[0];
 	// }
-	// *(volatile unsigned char *)(0xff110000)=0xE4; // Previous debug
 	return g;
 }
 EXPORT_SYMBOL(get_default_font);
