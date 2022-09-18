@@ -86,6 +86,3 @@
 #define set_timer_csr_bits(x) __timer_csr|=(x)
 
 extern void next_sched_init(void);
-// extern void next_gettod(int *yearp, int *monp, int *dayp, int *hourp, int *minp, int *secp);
-// extern unsigned long next_gettimeoffset(void);
-// extern void rtc_init(void);
