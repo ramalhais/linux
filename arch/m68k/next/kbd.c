@@ -174,11 +174,11 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	__u32 csr;
 	__u32 data;
 
-	// *(volatile unsigned char *)(0xff110000)=0xF6; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0xF6; // Previous debug
 	local_irq_save(flags);
 
 	if (!next_irq_pending(NEXT_IRQ_KYBD_MOUSE)) {
-	// *(volatile unsigned char *)(0xff110000)=0xF7; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0xF7; // Previous debug
 		printk("Ignoring IRQ%d. Not for NeXT keyboard/mouse\n", irq);
 		local_irq_restore(flags);
 		return IRQ_NONE;
@@ -189,16 +189,16 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	// mon->csr=(csr & ~KM_INT);
 
 	csr = mon->csr;
-	// *(volatile unsigned char *)(0xff110000)=0xFB; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0xFB; // Previous debug
 
 	if(!(csr & KM_HAVEDATA)) {
-	// *(volatile unsigned char *)(0xff110000)=0xF8; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0xF8; // Previous debug
 		printk("NeXT keyboard/mouse interrupt, but no data to handle\n");
 		return IRQ_HANDLED;
 	}
 
 	data=mon->km_data;
-	// *(volatile unsigned char *)(0xff110000)=0xFC; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0xFC; // Previous debug
 
 	if((data & KD_ADDRMASK) == KD_KADDR) {
 		unsigned int changed;
@@ -222,29 +222,29 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 				if (!(changed&mask))
 					continue;
 
-	// *(volatile unsigned char *)(0xff110000)=0xF9; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0xF9; // Previous debug
 				scan = CTRL_BASE_CODE+index;
 				is_pressed = !(data&KD_DIRECTION); // FIXME: could try sending data&KD_FLAGKEYS&mask instead
 				input_report_key(input, kbd->keycodes[scan], is_pressed);
 				input_sync(input);
-	// *(volatile unsigned char *)(0xff110000)=scan; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=is_pressed; // Previous debug
+	*(volatile unsigned long *)(0xff00f004)=scan; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=is_pressed; // Previous debug
 			}
 		}
 		if(data&KD_VALID && data&KD_KEYMASK) {
 				unsigned int scan,is_pressed;
 
-	// *(volatile unsigned char *)(0xff110000)=0xFA; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0xFA; // Previous debug
 			/* a 'real' key has changed */
 			scan = data&KD_KEYMASK;
 			is_pressed = !(data&KD_DIRECTION);
 			input_report_key(input, kbd->keycodes[scan], is_pressed);
 			input_sync(input);
-	// *(volatile unsigned char *)(0xff110000)=scan; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=is_pressed; // Previous debug
+	*(volatile unsigned long *)(0xff00f004)=scan; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=is_pressed; // Previous debug
 		}
 	} 
-	// *(volatile unsigned char *)(0xff110000)=0xFD; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0xFD; // Previous debug
 
 	local_irq_restore(flags);
 	return IRQ_HANDLED;
@@ -255,7 +255,7 @@ static int next_kbd_probe(struct platform_device *pdev) {
 	struct next_kbd *next_kbd;
 	int ret;
 
-	// *(volatile unsigned char *)(0xff110000)=0xF4; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0xF4; // Previous debug
 	input = input_allocate_device();
 	if (!input) {
 		dev_err(&pdev->dev, "Unable to allocate input device for NeXT Keyboard\n");
@@ -305,7 +305,7 @@ static int next_kbd_probe(struct platform_device *pdev) {
 	}
 
 	next_intmask_enable(NEXT_IRQ_KYBD_MOUSE-NEXT_IRQ_BASE);
-	// *(volatile unsigned char *)(0xff110000)=0xF5; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0xF5; // Previous debug
 
 	return 0;
 }

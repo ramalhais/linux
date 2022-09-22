@@ -15,25 +15,24 @@
 
 #include <linux/types.h>
 
-/* this needs to deal with the bmap on 
-	non turbo 040s.. */
+/* this needs to deal with the bmap on non turbo 040s.. */
 
 /* this is set up by head.S */
-#define NEXT_IO_BASE (0xff000000)
+#define NEXT_IO_BASE (0xff000000)	// MMU mapped to 0x2000.0000
 
-#define NEXT_BMAP 0x100000
+#define NEXT_SLOT 0x0
+#define NEXT_SLOT_BMAP 0x0	// FIXME NeXT: 030
+//#define NEXT_SLOT_BMAP 0x100000	// 040
 
-#define NEXT_SCR2_BASE (NEXT_IO_BASE+0x00d000)
+#define NEXT_ETHER_RXDMA_BASE 	(NEXT_IO_BASE+NEXT_SLOT+0x000150)
+#define NEXT_ETHER_TXDMA_BASE 	(NEXT_IO_BASE+NEXT_SLOT+0x000110)
+#define NEXT_SCR1_BASE			(NEXT_IO_BASE+NEXT_SLOT+0x00c000)
+#define NEXT_SCR2_BASE 			(NEXT_IO_BASE+NEXT_SLOT+0x00d000)
+#define NEXT_MON_BASE 			(NEXT_IO_BASE+NEXT_SLOT+0x00e000)
 
-#define NEXT_TIMER_BASE (NEXT_IO_BASE+NEXT_BMAP+0x016000)
-
-#define NEXT_SCSI_BASE (NEXT_IO_BASE+NEXT_BMAP+0x014000)
-
-#define NEXT_ETHER_BASE (NEXT_IO_BASE+NEXT_BMAP+0x006000)
-#define NEXT_ETHER_RXDMA_BASE (NEXT_IO_BASE+0x000150)
-#define NEXT_ETHER_TXDMA_BASE (NEXT_IO_BASE+0x000110)
-
-#define NEXT_MON_BASE (NEXT_IO_BASE+0x00e000)
+#define NEXT_ETHER_BASE 		(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x006000)
+#define NEXT_SCSI_BASE 			(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x014000)
+#define NEXT_TIMER_BASE 		(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x016000)
 
 	/* magical scsi register */
 
@@ -51,10 +50,10 @@
 #define DMA_ENABLED	0x01000000
 
 /* control bits for writing */
-#define DMA_INITDMA	0x00200000
-#define DMA_RESET	0x00100000
+#define DMA_INITDMA		0x00200000
+#define DMA_RESET		0x00100000
 #define DMA_CLEARCHAINI	0x00080000
-#define DMA_SETTMEM	0x00040000
+#define DMA_SETTMEM		0x00040000
 #define DMA_SETCHAIN	0x00020000
 #define DMA_SETENABLE	0x00010000
 
@@ -120,7 +119,7 @@ struct prom_info {
 	__u32	bootdev_ptr,bootarg_ptr,bootinfo_ptr,bootfile_ptr;
 	__u8	bootfile[64];
 	__u32	boot_mode; /*enum*/
-	__u8	km_mon_stuff[4+4+2+2+2+2+2+2+4+4+4+2+4+3*2+2];
+	__u8	km_mon_stuff[4+4+2+2+2+2+2+2+4+4+4+2+4+3*2+2]; // 46
 	__u32	moninit; /* ? */
 	__u32	sio_ptr;
 	__u32	time;
@@ -150,7 +149,7 @@ struct prom_info {
 	// 	__u32	icon_ptr;
 	// 	__u8	next;
 	// 	__u8	time;
-	// };
+	// } *anim_ptr;
 	__u32	anim_ptr;
 	__u32	anim_time;
 
