@@ -1627,16 +1627,16 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 	int i;
 	struct fb_videomode mode;
 
-//	*(volatile unsigned char *)(0xff110000)=0xA0; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xA0; // Previous debug
 	if (fb_check_foreignness(fb_info))
 		return -ENOSYS;
 
-//	*(volatile unsigned char *)(0xff110000)=0xA1; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xA1; // Previous debug
 	do_remove_conflicting_framebuffers(fb_info->apertures,
 					   fb_info->fix.id,
 					   fb_is_primary_device(fb_info));
 
-//	*(volatile unsigned char *)(0xff110000)=0xA2; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xA2; // Previous debug
 	if (num_registered_fb == FB_MAX)
 		return -ENXIO;
 
@@ -1645,26 +1645,26 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 		if (!registered_fb[i])
 			break;
 	fb_info->node = i;
-//	*(volatile unsigned char *)(0xff110000)=0xA3; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xA3; // Previous debug
 	refcount_set(&fb_info->count, 1);
 	mutex_init(&fb_info->lock);
 	mutex_init(&fb_info->mm_lock);
 
 	fb_info->dev = device_create(fb_class, fb_info->device,
 				     MKDEV(FB_MAJOR, i), NULL, "fb%d", i);
-//	*(volatile unsigned char *)(0xff110000)=0xA4; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xA4; // Previous debug
 	if (IS_ERR(fb_info->dev)) {
-//	*(volatile unsigned char *)(0xff110000)=0xA5; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xA5; // Previous debug
 		/* Not fatal */
 		printk(KERN_WARNING "Unable to create device for framebuffer %d; errno = %ld\n", i, PTR_ERR(fb_info->dev));
 		fb_info->dev = NULL;
 	} else {
-//	*(volatile unsigned char *)(0xff110000)=0xA6; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xA6; // Previous debug
 		fb_init_device(fb_info);
 	}
 
 	if (fb_info->pixmap.addr == NULL) {
-//	*(volatile unsigned char *)(0xff110000)=0xA7; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xA7; // Previous debug
 		fb_info->pixmap.addr = kmalloc(FBPIXMAPSIZE, GFP_KERNEL);
 		if (fb_info->pixmap.addr) {
 			fb_info->pixmap.size = FBPIXMAPSIZE;
@@ -1690,12 +1690,12 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 	else
 		pm_vt_switch_required(fb_info->dev, true);
 
-//	*(volatile unsigned char *)(0xff110000)=0xA8; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xA8; // Previous debug
 	fb_var_to_videomode(&mode, &fb_info->var);
-//	*(volatile unsigned char *)(0xff110000)=0xA9; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xA9; // Previous debug
 	fb_add_videomode(&mode, &fb_info->modelist);
 	registered_fb[i] = fb_info;
-//	*(volatile unsigned char *)(0xff110000)=0xAA; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xAA; // Previous debug
 
 #ifdef CONFIG_GUMSTIX_AM200EPD
 	{
@@ -1705,7 +1705,7 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 	}
 #endif
 
-//	*(volatile unsigned char *)(0xff110000)=0xAB; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xAB; // Previous debug
 	return fbcon_fb_registered(fb_info);;
 }
 

@@ -527,10 +527,10 @@ static int do_fbcon_takeover(int show_logo)
 	for (i = first_fb_vc; i <= last_fb_vc; i++)
 		con2fb_map[i] = info_idx;
 
-//	// *(volatile unsigned char *)(0xff110000)=0xB7; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xB7; // Previous debug
 	err = do_take_over_console(&fb_con, first_fb_vc, last_fb_vc,
 				fbcon_is_default);
-//	// *(volatile unsigned char *)(0xff110000)=0xB8; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xB8; // Previous debug
 
 	if (err) {
 		for (i = first_fb_vc; i <= last_fb_vc; i++)
@@ -568,25 +568,25 @@ static void fbcon_prepare_logo(struct vc_data *vc, struct fb_info *info,
 	 * remove underline attribute from erase character
 	 * if black and white framebuffer.
 	 */
-//	*(volatile unsigned char *)(0xff110000)=0x46; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x46; // Previous debug
 	if (fb_get_color_depth(&info->var, &info->fix) == 1)
 		erase &= ~0x400;
-//	*(volatile unsigned char *)(0xff110000)=0x47; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x47; // Previous debug
 	logo_height = fb_prepare_logo(info, ops->rotate);
 	logo_lines = DIV_ROUND_UP(logo_height, vc->vc_font.height);
 	q = (unsigned short *) (vc->vc_origin +
 				vc->vc_size_row * rows);
 	step = logo_lines * cols;
-//	*(volatile unsigned char *)(0xff110000)=0x48; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x48; // Previous debug
 	for (r = q - logo_lines * cols; r < q; r++)
 		if (scr_readw(r) != vc->vc_video_erase_char)
 			break;
 	if (r != q && new_rows >= rows + logo_lines) {
-//	*(volatile unsigned char *)(0xff110000)=0x49; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x49; // Previous debug
 		save = kmalloc(array3_size(logo_lines, new_cols, 2),
 			       GFP_KERNEL);
 		if (save) {
-//	*(volatile unsigned char *)(0xff110000)=0x4A; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x4A; // Previous debug
 			int i = min(cols, new_cols);
 			scr_memsetw(save, erase, array3_size(logo_lines, new_cols, 2));
 			r = q - step;
@@ -596,7 +596,7 @@ static void fbcon_prepare_logo(struct vc_data *vc, struct fb_info *info,
 		}
 	}
 	if (r == q) {
-//	*(volatile unsigned char *)(0xff110000)=0x4B; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x4B; // Previous debug
 		/* We can scroll screen down */
 		r = q - step - cols;
 		for (cnt = rows - logo_lines; cnt > 0; cnt--) {
@@ -604,7 +604,7 @@ static void fbcon_prepare_logo(struct vc_data *vc, struct fb_info *info,
 			r -= cols;
 		}
 		if (!save) {
-//	*(volatile unsigned char *)(0xff110000)=0x4C; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x4C; // Previous debug
 			int lines;
 			if (vc->state.y + logo_lines >= rows)
 				lines = rows - vc->state.y - 1;
@@ -619,15 +619,15 @@ static void fbcon_prepare_logo(struct vc_data *vc, struct fb_info *info,
 		    vc->vc_size_row * logo_lines);
 
 	if (con_is_visible(vc) && vc->vc_mode == KD_TEXT) {
-//	*(volatile unsigned char *)(0xff110000)=0x4D; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x4D; // Previous debug
 		fbcon_clear_margins(vc, 0);
-//	*(volatile unsigned char *)(0xff110000)=0x4E; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x4E; // Previous debug
 		update_screen(vc);
-//	*(volatile unsigned char *)(0xff110000)=0x4F; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x4F; // Previous debug
 	}
 
 	if (save) {
-//	*(volatile unsigned char *)(0xff110000)=0x50; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x50; // Previous debug
 		q = (unsigned short *) (vc->vc_origin +
 					vc->vc_size_row *
 					rows);
@@ -641,12 +641,12 @@ static void fbcon_prepare_logo(struct vc_data *vc, struct fb_info *info,
 		return;
 
 	if (logo_lines > vc->vc_bottom) {
-//	*(volatile unsigned char *)(0xff110000)=0x51; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x51; // Previous debug
 		logo_shown = FBCON_LOGO_CANSHOW;
 		printk(KERN_INFO
 		       "fbcon_init: disable boot-logo (boot-logo bigger than screen).\n");
 	} else {
-//	*(volatile unsigned char *)(0xff110000)=0x52; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x52; // Previous debug
 		logo_shown = FBCON_LOGO_DRAW;
 		vc->vc_top = logo_lines;
 	}
@@ -956,7 +956,7 @@ static const char *fbcon_startup(void)
 	if (!info)
 		return NULL;
 	
-//	// *(volatile unsigned char *)(0xff110000)=0xBE; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xBE; // Previous debug
 	if (fbcon_open(info))
 		return NULL;
 
@@ -971,24 +971,24 @@ static const char *fbcon_startup(void)
 	if (p->con_rotate == -1)
 		p->con_rotate = FB_ROTATE_UR;
 
-//	// *(volatile unsigned char *)(0xff110000)=0xBF; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xBF; // Previous debug
 	set_blitting_type(vc, info);
-//	// *(volatile unsigned char *)(0xff110000)=0xC0; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xC0; // Previous debug
 
 	/* Setup default font */
 	if (!p->fontdata && !vc->vc_font.data) {
-//	// *(volatile unsigned char *)(0xff110000)=0xC1; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xC1; // Previous debug
 		// if (!fontname[0] || !(font = find_font(fontname))) {
 		if (fontname[0]) {
 			font = find_font(fontname);
 		}
 		if (!font) {
-//	// *(volatile unsigned char *)(0xff110000)=0xC2; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xC2; // Previous debug
 			font = get_default_font(info->var.xres,
 					info->var.yres,
 					info->pixmap.blit_x,
 					info->pixmap.blit_y);
-//	// *(volatile unsigned char *)(0xff110000)=0xC3; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xC3; // Previous debug
 		}
 // 		struct font_desc {
 //     int idx;
@@ -998,32 +998,29 @@ static const char *fbcon_startup(void)
 //     const void *data;
 //     int pref;
 // };
-//	// *(volatile unsigned char *)(0xff110000)=(int)font>>24&0xff; // Previous debug
-//	// *(volatile unsigned char *)(0xff110000)=(int)font>>16&0xff; // Previous debug
-//	// *(volatile unsigned char *)(0xff110000)=(int)font>>8&0xff; // Previous debug
-//	// *(volatile unsigned char *)(0xff110000)=(int)font&0xff; // Previous debug
-//	// *(volatile unsigned char *)(0xff110000)=0xC4; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=(int)font; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xC4; // Previous debug
 		vc->vc_font.width = font->width;
-//	// *(volatile unsigned char *)(0xff110000)=0xC4; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xC4; // Previous debug
 		vc->vc_font.height = font->height;
-//	// *(volatile unsigned char *)(0xff110000)=0xC5; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xC5; // Previous debug
 		vc->vc_font.data = (void *)(p->fontdata = font->data);
-//	// *(volatile unsigned char *)(0xff110000)=0xC6; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xC6; // Previous debug
 		vc->vc_font.charcount = font->charcount;
-//	// *(volatile unsigned char *)(0xff110000)=0xC7; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xC7; // Previous debug
 	} else {
-//	// *(volatile unsigned char *)(0xff110000)=0xC8; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xC8; // Previous debug
 		p->fontdata = vc->vc_font.data;
 	}
 
-//	// *(volatile unsigned char *)(0xff110000)=0xC9; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xC9; // Previous debug
 	cols = FBCON_SWAP(ops->rotate, info->var.xres, info->var.yres);
 	rows = FBCON_SWAP(ops->rotate, info->var.yres, info->var.xres);
 	cols /= vc->vc_font.width;
 	rows /= vc->vc_font.height;
 	vc_resize(vc, cols, rows);
 
-//	// *(volatile unsigned char *)(0xff110000)=0xCA; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xCA; // Previous debug
 	pr_debug("mode:   %s\n", info->fix.id);
 	pr_debug("visual: %d\n", info->fix.visual);
 	pr_debug("res:    %dx%d-%d\n", info->var.xres,
@@ -1031,7 +1028,7 @@ static const char *fbcon_startup(void)
 		 info->var.bits_per_pixel);
 
 	fbcon_add_cursor_work(info);
-//	// *(volatile unsigned char *)(0xff110000)=0xCB; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0xCB; // Previous debug
 	return display_desc;
 }
 
@@ -1045,14 +1042,14 @@ static void fbcon_init(struct vc_data *vc, int init)
 	int logo = 1, new_rows, new_cols, rows, cols;
 	int ret;
 
-//	*(volatile unsigned char *)(0xff110000)=0x30; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x30; // Previous debug
 	if (WARN_ON(info_idx == -1))
 	    return;
 
 	if (con2fb_map[vc->vc_num] == -1)
 		con2fb_map[vc->vc_num] = info_idx;
 
-//	*(volatile unsigned char *)(0xff110000)=0x31; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x31; // Previous debug
 	info = fbcon_info_from_console(vc->vc_num);
 
 	if (logo_shown < 0 && console_loglevel <= CONSOLE_LOGLEVEL_QUIET)
@@ -1062,21 +1059,21 @@ static void fbcon_init(struct vc_data *vc, int init)
 	    (info->fix.type == FB_TYPE_TEXT))
 		logo = 0;
 
-//	*(volatile unsigned char *)(0xff110000)=0x31; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x31; // Previous debug
 	if (var_to_display(p, &info->var, info))
 		return;
 
 	if (!info->fbcon_par)
 		con2fb_acquire_newinfo(vc, info, vc->vc_num);
-//	*(volatile unsigned char *)(0xff110000)=0x32; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x32; // Previous debug
 
 	/* If we are not the first console on this
 	   fb, copy the font from that console */
 	t = &fb_display[fg_console];
 	if (!p->fontdata) {
-//	*(volatile unsigned char *)(0xff110000)=0x33; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x33; // Previous debug
 		if (t->fontdata) {
-//	*(volatile unsigned char *)(0xff110000)=0x34; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x34; // Previous debug
 			struct vc_data *fvc = vc_cons[fg_console].d;
 
 			vc->vc_font.data = (void *)(p->fontdata =
@@ -1089,7 +1086,7 @@ static void fbcon_init(struct vc_data *vc, int init)
 			if (p->userfont)
 				REFCOUNT(p->fontdata)++;
 		} else {
-//	*(volatile unsigned char *)(0xff110000)=0x35; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x35; // Previous debug
 			const struct font_desc *font = NULL;
 
 			if (!fontname[0] || !(font = find_font(fontname)))
@@ -1104,15 +1101,15 @@ static void fbcon_init(struct vc_data *vc, int init)
 		}
 	}
 
-//	*(volatile unsigned char *)(0xff110000)=0x36; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x36; // Previous debug
 	vc->vc_can_do_color = (fb_get_color_depth(&info->var, &info->fix)!=1);
-//	*(volatile unsigned char *)(0xff110000)=0x37; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x37; // Previous debug
 	vc->vc_complement_mask = vc->vc_can_do_color ? 0x7700 : 0x0800;
 	if (vc->vc_font.charcount == 256) {
-//	*(volatile unsigned char *)(0xff110000)=0x38; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x38; // Previous debug
 		vc->vc_hi_font_mask = 0;
 	} else {
-//	*(volatile unsigned char *)(0xff110000)=0x39; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x39; // Previous debug
 		vc->vc_hi_font_mask = 0x100;
 		if (vc->vc_can_do_color)
 			vc->vc_complement_mask <<= 1;
@@ -1123,7 +1120,7 @@ static void fbcon_init(struct vc_data *vc, int init)
 	if (!*vc->uni_pagedict_loc)
 		con_copy_unimap(vc, svc);
 
-//	*(volatile unsigned char *)(0xff110000)=0x3A; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x3A; // Previous debug
 	ops = info->fbcon_par;
 	ops->cur_blink_jiffies = msecs_to_jiffies(vc->vc_cur_blink_ms);
 
@@ -1133,7 +1130,7 @@ static void fbcon_init(struct vc_data *vc, int init)
 	if (p->con_rotate == -1)
 		p->con_rotate = FB_ROTATE_UR;
 
-//	*(volatile unsigned char *)(0xff110000)=0x3B; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x3B; // Previous debug
 	set_blitting_type(vc, info);
 
 	cols = vc->vc_cols;
@@ -1144,19 +1141,19 @@ static void fbcon_init(struct vc_data *vc, int init)
 	new_rows /= vc->vc_font.height;
 
 	/*
-//	 * We must always set the mode. The mode of the previous console
+	 * We must always set the mode. The mode of the previous console
 	 * driver could be in the same resolution but we are using different
 	 * hardware so we have to initialize the hardware.
 	 *
 	 * We need to do it in fbcon_init() to prevent screen corruption.
 	 */
-//	*(volatile unsigned char *)(0xff110000)=0x3C; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x3C; // Previous debug
 	if (con_is_visible(vc) && vc->vc_mode == KD_TEXT) {
-//	*(volatile unsigned char *)(0xff110000)=0x3D; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x3D; // Previous debug
 		if (info->fbops->fb_set_par && !ops->initialized) {
-//	*(volatile unsigned char *)(0xff110000)=0x3E; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x3E; // Previous debug
 			ret = info->fbops->fb_set_par(info);
-//	*(volatile unsigned char *)(0xff110000)=0x3F; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x3F; // Previous debug
 
 			if (ret)
 				printk(KERN_ERR "fbcon_init: detected "
@@ -1188,20 +1185,20 @@ static void fbcon_init(struct vc_data *vc, int init)
 	} else
 		vc_resize(vc, new_cols, new_rows);
 
-//	*(volatile unsigned char *)(0xff110000)=0x40; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x40; // Previous debug
 	if (logo) {
-//	*(volatile unsigned char *)(0xff110000)=0x41; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x41; // Previous debug
 		fbcon_prepare_logo(vc, info, cols, rows, new_cols, new_rows);
-//	*(volatile unsigned char *)(0xff110000)=0x42; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x42; // Previous debug
 	}
 
 	if (ops->rotate_font && ops->rotate_font(info, vc)) {
-//	*(volatile unsigned char *)(0xff110000)=0x43; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x43; // Previous debug
 		ops->rotate = FB_ROTATE_UR;
-//	*(volatile unsigned char *)(0xff110000)=0x44; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x44; // Previous debug
 		set_blitting_type(vc, info);
 	}
-//	*(volatile unsigned char *)(0xff110000)=0x45; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x45; // Previous debug
 
 	ops->p = &fb_display[fg_console];
 }
@@ -1373,34 +1370,34 @@ static void fbcon_clear_margins(struct vc_data *vc, int bottom_only)
 	struct fb_info *info = fbcon_info_from_console(vc->vc_num);
 	struct fbcon_ops *ops = info->fbcon_par;
 
-//	// *(volatile unsigned char *)(0xff110000)=0x53; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0x53; // Previous debug
 	if (!fbcon_is_inactive(vc, info)) {
-//	// *(volatile unsigned char *)(0xff110000)=0x54; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0x54; // Previous debug
 		ops->clear_margins(vc, info, margin_color, bottom_only);
-//	// *(volatile unsigned char *)(0xff110000)=0x55; // Previous debug
+//	// *(volatile unsigned long *)(0xff00f004)=0x55; // Previous debug
 	}
 }
 
 static void fbcon_cursor(struct vc_data *vc, int mode)
 {
-//	*(volatile unsigned char *)(0xff110000)=0x71; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x71; // Previous debug
 	struct fb_info *info = fbcon_info_from_console(vc->vc_num);
-//	*(volatile unsigned char *)(0xff110000)=0x72; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x72; // Previous debug
 	struct fbcon_ops *ops = info->fbcon_par;
  	int c = scr_readw((u16 *) vc->vc_pos);
-//	*(volatile unsigned char *)(0xff110000)=0x73; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x73; // Previous debug
 
 	ops->cur_blink_jiffies = msecs_to_jiffies(vc->vc_cur_blink_ms);
-//	*(volatile unsigned char *)(0xff110000)=0x74; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x74; // Previous debug
 
 	if (fbcon_is_inactive(vc, info) || vc->vc_deccm != 1)
 		return;
 
 	if (vc->vc_cursor_type & CUR_SW) {
-//	*(volatile unsigned char *)(0xff110000)=0x75; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x75; // Previous debug
 		fbcon_del_cursor_work(info);
 	} else {
-//	*(volatile unsigned char *)(0xff110000)=0x76; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x76; // Previous debug
 		fbcon_add_cursor_work(info);
 	}
 
@@ -1409,10 +1406,10 @@ static void fbcon_cursor(struct vc_data *vc, int mode)
 	if (!ops->cursor)
 		return;
 
-//	*(volatile unsigned char *)(0xff110000)=0x77; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x77; // Previous debug
 	ops->cursor(vc, info, mode, get_color(vc, info, c, 1),
 		    get_color(vc, info, c, 0));
-//	*(volatile unsigned char *)(0xff110000)=0x78; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x78; // Previous debug
 }
 
 static int scrollback_phys_max = 0;
@@ -3067,7 +3064,7 @@ static int do_fb_registered(struct fb_info *info)
 {
 	int ret = 0, i, idx;
 
-//	*(volatile unsigned char *)(0xff110000)=0xB0; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xB0; // Previous debug
 
 	WARN_CONSOLE_UNLOCKED();
 
@@ -3076,7 +3073,7 @@ static int do_fb_registered(struct fb_info *info)
 
 	idx = info->node;
 	fbcon_select_primary(info);
-//	*(volatile unsigned char *)(0xff110000)=0xB1; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xB1; // Previous debug
 
 	if (deferred_takeover) {
 		pr_info("fbcon: Deferring console take-over\n");
@@ -3084,24 +3081,24 @@ static int do_fb_registered(struct fb_info *info)
 	}
 
 	if (info_idx == -1) {
-//	*(volatile unsigned char *)(0xff110000)=0xB2; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xB2; // Previous debug
 		for (i = first_fb_vc; i <= last_fb_vc; i++) {
 			if (con2fb_map_boot[i] == idx) {
-//	*(volatile unsigned char *)(0xff110000)=0xB3; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xB3; // Previous debug
 				info_idx = idx;
 				break;
 			}
 		}
 
 		if (info_idx != -1) {
-//	*(volatile unsigned char *)(0xff110000)=0xB4; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xB4; // Previous debug
 			ret = do_fbcon_takeover(1);
 		}
 	} else {
-//	*(volatile unsigned char *)(0xff110000)=0xB5; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xB5; // Previous debug
 		for (i = first_fb_vc; i <= last_fb_vc; i++) {
 			if (con2fb_map_boot[i] == idx) {
-//	*(volatile unsigned char *)(0xff110000)=0xB6; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xB6; // Previous debug
 				set_con2fb_map(i, idx, 0);
 			}
 		}

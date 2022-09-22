@@ -221,9 +221,9 @@ static void bit_clear_margins(struct vc_data *vc, struct fb_info *info,
 		region.dy = 0;
 		region.width = rw;
 		region.height = info->var.yres_virtual;
-	// *(volatile unsigned char *)(0xff110000)=0x56; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x56; // Previous debug
 		info->fbops->fb_fillrect(info, &region);
-	// *(volatile unsigned char *)(0xff110000)=0x57; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x57; // Previous debug
 	}
 
 	if ((int) bh > 0) {
@@ -231,16 +231,16 @@ static void bit_clear_margins(struct vc_data *vc, struct fb_info *info,
 		region.dy = info->var.yoffset + bs;
 		region.width = rs;
 		region.height = bh;
-	// *(volatile unsigned char *)(0xff110000)=0x58; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x58; // Previous debug
 		info->fbops->fb_fillrect(info, &region);
-	// *(volatile unsigned char *)(0xff110000)=0x59; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x59; // Previous debug
 	}
 }
 
 static void bit_cursor(struct vc_data *vc, struct fb_info *info, int mode,
 		       int fg, int bg)
 {
-	// *(volatile unsigned char *)(0xff110000)=0x80; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x80; // Previous debug
 	struct fb_cursor cursor;
 	struct fbcon_ops *ops = info->fbcon_par;
 	unsigned short charmask = vc->vc_hi_font_mask ? 0x1ff : 0xff;
@@ -252,11 +252,11 @@ static void bit_cursor(struct vc_data *vc, struct fb_info *info, int mode,
 
 	cursor.set = 0;
 
-	// *(volatile unsigned char *)(0xff110000)=0x81; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x81; // Previous debug
  	c = scr_readw((u16 *) vc->vc_pos);
-	// *(volatile unsigned char *)(0xff110000)=0x82; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x82; // Previous debug
 	attribute = get_attribute(info, c);
-	// *(volatile unsigned char *)(0xff110000)=0x83; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x83; // Previous debug
 	src = vc->vc_font.data + ((c & charmask) * (w * vc->vc_font.height));
 
 	if (ops->cursor_state.image.data != src ||
@@ -266,7 +266,7 @@ static void bit_cursor(struct vc_data *vc, struct fb_info *info, int mode,
 	}
 
 	if (attribute) {
-	// *(volatile unsigned char *)(0xff110000)=0x84; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x84; // Previous debug
 		u8 *dst;
 
 		dst = kmalloc_array(w, vc->vc_font.height, GFP_ATOMIC);
@@ -312,7 +312,7 @@ static void bit_cursor(struct vc_data *vc, struct fb_info *info, int mode,
 	    vc->vc_cursor_type != ops->p->cursor_shape ||
 	    ops->cursor_state.mask == NULL ||
 	    ops->cursor_reset) {
-	// *(volatile unsigned char *)(0xff110000)=0x85; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x85; // Previous debug
 		char *mask = kmalloc_array(w, vc->vc_font.height, GFP_ATOMIC);
 		int cur_height, size, i = 0;
 		u8 msk = 0xff;
@@ -381,15 +381,15 @@ static void bit_cursor(struct vc_data *vc, struct fb_info *info, int mode,
 	cursor.rop = ROP_XOR;
 
 	if (info->fbops->fb_cursor) {
-	// *(volatile unsigned char *)(0xff110000)=0x86; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x86; // Previous debug
 		err = info->fbops->fb_cursor(info, &cursor);
-	// *(volatile unsigned char *)(0xff110000)=0x87; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x87; // Previous debug
 	}
 
 	if (err) {
-	// *(volatile unsigned char *)(0xff110000)=0x88; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x88; // Previous debug
 		soft_cursor(info, &cursor);
-	// *(volatile unsigned char *)(0xff110000)=0x89; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x89; // Previous debug
 	}
 	ops->cursor_reset = 0;
 }

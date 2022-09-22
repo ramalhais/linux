@@ -171,8 +171,29 @@ config NEXT
 	bool "NeXT support"
 	depends on MMU
 	select MMU_MOTOROLA if MMU
+	select M68030
+	select M68040
 	select LEGACY_TIMER_TICK
-#	select HAVE_ARCH_NVRAM_OPS
+	select FB_NEXT
+	select FRAMEBUFFER_CONSOLE
+	select CONFIG_DUMMY_CONSOLE
+#	select CONFIG_DUMMY_CONSOLE_COLUMNS=140
+#	select CONFIG_DUMMY_CONSOLE_ROWS=52
+#	select VT
+	select EARLY_PRINTK
+	select CONFIG_PRINTK
+	select CONFIG_PRINTK_TIME
+	select BLK_DEV_INITRD
+	select RD_XZ
+	select INITRAMFS_COMPRESSION_XZ
+	select BINFMT_SCRIPT
+	select PROC_FS
+#	select CONFIG_SYSCTL
+	select SYSFS
+#	select CONFIGFS_FS
+	#INITRAMFS_SOURCE="arch/m68k/tools/next/initramfs/initramfs.src"
+	select CC_OPTIMIZE_FOR_SIZE
+
 	help
 	  This option enables support for the NeXT series of
 	  computers. If you plan to use this kernel on a NeXT, say Y here
