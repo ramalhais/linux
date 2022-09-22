@@ -12,8 +12,6 @@
 #include <linux/kernel.h>
 #include <linux/console.h>
 #include <linux/init.h>
-#include <asm/bootinfo.h>
-#include <asm/bootinfo-next.h>
 #include <asm/machdep.h>
 
 #include <asm/nextints.h> 
@@ -33,9 +31,12 @@ void __init next_meminit(void) {
 	int i;
 	unsigned int len;
 
+	*(volatile unsigned long *)(0xff00f004)=0x10;
 	m68k_num_memory=0;
 	for(i=0;i<4;i++){
+	*(volatile unsigned long *)(0xff00f004)=i;
 		if(prom_info.simm_info[i].start==0) {
+	*(volatile unsigned long *)(0xff00f004)=0x0;
 			printk("SIMM bank %d: Empty", i);
 			continue;
 		}
@@ -46,12 +47,16 @@ void __init next_meminit(void) {
 		* the end addr sometimes doesn't include the
 		* last page 
 		*/
-		// (PR) The NeXT PROM sets up data at the end of the last used memory bank and reserves that. It's OK, we can reuse it.
+		// (PR) The NeXT PROM sets up data at the end of the last filled memory bank and reserves that.
+		// It's OK, we can reuse it, as long as we don't expect vbr and monitor global to be there.
+		// The amount of memory lost would be very low, 1024+960 page aligned, sooooo, 8KB page as setup by PROM.
 
 		len=prom_info.simm_info[i].end-prom_info.simm_info[i].start;
 		if(len&0xfffff) len+=0x100000-(len&0xfffff); /* silly */
 		m68k_memory[m68k_num_memory].size=len;
-		
+
+	*(volatile unsigned int *)(0xff00f004)=m68k_memory[m68k_num_memory].addr;
+	*(volatile unsigned int *)(0xff00f004)=prom_info.simm_info[i].end;
 		printk("SIMM bank %d: %d MB at 0x%0lx\n",
 			i,
 			(int)m68k_memory[m68k_num_memory].size>>20,
@@ -69,7 +74,7 @@ void __init next_init_IRQ(void)
 
 void __init config_next(void)
 {
-	// *(volatile unsigned char *)(0xff110000)=0x7A;
+	// *(volatile unsigned long *)(0xff00f004)=0x7A;
 	next_meminit();
 
 	mach_sched_init		= next_sched_init;

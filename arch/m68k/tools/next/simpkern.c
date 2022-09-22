@@ -53,7 +53,10 @@ void s16put(char *n)
         char name[16];
         int i;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
         strncpy(name, n, sizeof(name));
+#pragma GCC diagnostic pop
         for(i=0; i<sizeof(name); i++)
                 fputc(name[i],macho);
 }
@@ -179,7 +182,10 @@ int main(int argc, char *argv[]){
 	write_mach_segcmd(&texseg);
 	write_mach_section(&texsec);
 	/* and copy the binary code */
-	fread(codebuf,real_code_size,1,machi);
+	if (!fread(codebuf,real_code_size,1,machi)) {
+		printf("ERROR: Unable to read input file");
+		exit(1);
+	}
 	fwrite(codebuf,real_code_size,1,macho);
 	/* Fill in the final 8K page with NULLs */
 	for(i=0;i<(8192-(real_code_size%8192));i++)
