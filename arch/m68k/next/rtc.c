@@ -36,6 +36,7 @@ struct clockst {
 	int powerreg;
 } rtcs[]={
 	{"MC68HC68T1",RTC_COUNTER0,RTC_INTERRUPTCTL},
+	// https://www.nextcomputers.org/NeXTfiles/Docs/Hardware/Datasheets/MCCS1850%20(2).pdf
 	{"MCS1850",RTC_COUNTER3,RTC_CTL}
 };
 
@@ -60,34 +61,28 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 	unsigned long flags;
 	local_irq_save(flags);
 
-	// *(volatile unsigned char *)(0xff110000)=0x93; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x93; // Previous debug
 	if (!next_irq_pending(NEXT_IRQ_TIMER)) {
-	// 	unsigned int intmask = next_get_intmask();
-	// 	unsigned int intstat = next_get_intstat();
-	// *(volatile unsigned char *)(0xff110000)=0x94; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=intmask>>24&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=intmask>>16&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=intmask>>8&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=intmask&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=0x95; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=intstat>>24&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=intstat>>16&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=intstat>>8&0xff; // Previous debug
-	// *(volatile unsigned char *)(0xff110000)=intstat&0xff; // Previous debug
+		unsigned int intmask = next_get_intmask();
+		unsigned int intstat = next_get_intstat();
+	// *(volatile unsigned long *)(0xff00f004)=0x94; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=intmask; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x95; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=intstat; // Previous debug
 		printk("Ignoring IRQ %d. Not for NeXT timer\n", irq);
 
 		local_irq_restore(flags);
 		return IRQ_NONE;
 	}
-	// *(volatile unsigned char *)(0xff110000)=0x95; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x95; // Previous debug
 
 	// write_timer_ticks(TIMER_HZ/HZ); // atempt to set the ticks back
 	set_timer_csr_bits(TIM_RESTART); // retrigger timer
 	clk_total += TIMER_HZ/HZ;
 	legacy_timer_tick(1);
-	// *(volatile unsigned char *)(0xff110000)=0x96; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x96; // Previous debug
 
-	// FIXME: how to mark IRQ as handled on the NeXT interrupt controller?
+	// FIXME: how to mark IRQ as handled on the NeXT interrupt controller or RTC?
 
 	local_irq_restore(flags);
 	return IRQ_HANDLED;
@@ -108,7 +103,7 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 
 void next_sched_init(void)
 {
-	// *(volatile unsigned char *)(0xff110000)=0x97; // Previous debug
+	*(volatile unsigned long *)(0xff00f004)=0x97; // Previous debug
 
 	// TEST
 	// request_irq(IRQ_AUTO_7, irq_catchall, 0, "int7", NULL);
@@ -120,21 +115,28 @@ void next_sched_init(void)
 	clocktype=(rtc_read(RTC_STATUS) & RTC_IS_NEW) ? N_C_NEW : N_C_OLD;
 	printk("RTC: %s\n",rtcs[clocktype].chipname);
 
-	// *(volatile unsigned char *)(0xff110000)=0x98; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x98; // Previous debug
 	if (request_irq(IRQ_AUTO_6, next_tick, IRQF_TIMER, "NeXT timer tick", NULL)) {
-	// *(volatile unsigned char *)(0xff110000)=0x99; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x99; // Previous debug
 		pr_err("Couldn't register timer interrupt\n");
 	}
 
+	// *(volatile unsigned long *)(0xff00f004)=0x9A; // Previous debug
 	next_intmask_enable(NEXT_IRQ_TIMER-NEXT_IRQ_BASE);
+	// *(volatile unsigned long *)(0xff00f004)=0x9B; // Previous debug
 
-	set_timer_csr(0);
+	if (__timer_csr) {	// Reading CSR clears the interrupt
+		set_timer_csr(0);
+	}
+
+	// *(volatile unsigned long *)(0xff00f004)=0x9C; // Previous debug
 	write_timer_ticks(TIMER_HZ/HZ);
+	// *(volatile unsigned long *)(0xff00f004)=0x9D; // Previous debug
 	set_timer_csr_bits(TIM_ENABLE|TIM_RESTART);
 
-	// *(volatile unsigned char *)(0xff110000)=0x9A; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0x9E; // Previous debug
 	clocksource_register_hz(&next_clk, TIMER_HZ);
-	// *(volatile unsigned char *)(0xff110000)=0x9B; // Previous debug
+	*(volatile unsigned long *)(0xff00f004)=0x9F; // Previous debug
 }
 
 /* usec timer, way cool */
