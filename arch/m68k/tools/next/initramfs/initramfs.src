@@ -15,8 +15,8 @@ dir /tmp 755 0 0
 
 file /init arch/m68k/tools/next/initramfs/init.sh 755 0 0
 
-file /bin/print256colours.sh arch/m68k/tools/next/initramfs/print256colours.sh 755 0 0
-file /bin/neofetch arch/m68k/tools/next/initramfs/neofetch 755 0 0
+#file /bin/print256colours.sh arch/m68k/tools/next/initramfs/print256colours.sh 755 0 0
+#file /bin/neofetch arch/m68k/tools/next/initramfs/neofetch 755 0 0
 
 ## ls  *.deb -1|xargs -i echo file /tmp/{} arch/m68k/tools/next/initramfs/{} 755 0 0
 #file /tmp/base-files_12.2_m68k.deb arch/m68k/tools/next/initramfs/base-files_12.2_m68k.deb 755 0 0
