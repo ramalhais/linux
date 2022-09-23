@@ -63,8 +63,8 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 
 	// *(volatile unsigned long *)(0xff00f004)=0x93; // Previous debug
 	if (!next_irq_pending(NEXT_IRQ_TIMER)) {
-		unsigned int intmask = next_get_intmask();
-		unsigned int intstat = next_get_intstat();
+		// unsigned int intmask = next_get_intmask();
+		// unsigned int intstat = next_get_intstat();
 	// *(volatile unsigned long *)(0xff00f004)=0x94; // Previous debug
 	// *(volatile unsigned long *)(0xff00f004)=intmask; // Previous debug
 	// *(volatile unsigned long *)(0xff00f004)=0x95; // Previous debug
