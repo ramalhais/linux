@@ -4,6 +4,10 @@ export ARCH=m68k
 export CROSS_COMPILE=m68k-linux-gnu-
 export GCC_SUFFIX=-9
 
+# sync tags with upstream linux repo
+# git fetch --tags upstream
+# git push --tags
+
 ### Generate NeXT defconfig
 # make tinyconfig
 # make savedefconfig
