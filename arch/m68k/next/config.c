@@ -31,12 +31,12 @@ void __init next_meminit(void) {
 	int i;
 	unsigned int len;
 
-	*(volatile unsigned long *)(0xff00f004)=0x10;
+//	*(volatile unsigned long *)(0xff00f004)=0x10;
 	m68k_num_memory=0;
 	for(i=0;i<4;i++){
-	*(volatile unsigned long *)(0xff00f004)=i;
+//	*(volatile unsigned long *)(0xff00f004)=i;
 		if(prom_info.simm_info[i].start==0) {
-	*(volatile unsigned long *)(0xff00f004)=0x0;
+//	*(volatile unsigned long *)(0xff00f004)=0x0;
 			printk("SIMM bank %d: Empty", i);
 			continue;
 		}
@@ -55,8 +55,8 @@ void __init next_meminit(void) {
 		if(len&0xfffff) len+=0x100000-(len&0xfffff); /* silly */
 		m68k_memory[m68k_num_memory].size=len;
 
-	*(volatile unsigned int *)(0xff00f004)=m68k_memory[m68k_num_memory].addr;
-	*(volatile unsigned int *)(0xff00f004)=prom_info.simm_info[i].end;
+//	*(volatile unsigned int *)(0xff00f004)=m68k_memory[m68k_num_memory].addr;
+//	*(volatile unsigned int *)(0xff00f004)=prom_info.simm_info[i].end;
 		printk("SIMM bank %d: %d MB at 0x%0lx\n",
 			i,
 			(int)m68k_memory[m68k_num_memory].size>>20,

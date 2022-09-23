@@ -227,7 +227,7 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 				is_pressed = !(data&KD_DIRECTION); // FIXME: could try sending data&KD_FLAGKEYS&mask instead
 				input_report_key(input, kbd->keycodes[scan], is_pressed);
 				input_sync(input);
-	*(volatile unsigned long *)(0xff00f004)=scan; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=scan; // Previous debug
 	// *(volatile unsigned long *)(0xff00f004)=is_pressed; // Previous debug
 			}
 		}
@@ -240,7 +240,7 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 			is_pressed = !(data&KD_DIRECTION);
 			input_report_key(input, kbd->keycodes[scan], is_pressed);
 			input_sync(input);
-	*(volatile unsigned long *)(0xff00f004)=scan; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=scan; // Previous debug
 	// *(volatile unsigned long *)(0xff00f004)=is_pressed; // Previous debug
 		}
 	} 
