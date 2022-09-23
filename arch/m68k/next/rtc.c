@@ -103,7 +103,7 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 
 void next_sched_init(void)
 {
-	*(volatile unsigned long *)(0xff00f004)=0x97; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x97; // Previous debug
 
 	// TEST
 	// request_irq(IRQ_AUTO_7, irq_catchall, 0, "int7", NULL);
@@ -136,7 +136,7 @@ void next_sched_init(void)
 
 	// *(volatile unsigned long *)(0xff00f004)=0x9E; // Previous debug
 	clocksource_register_hz(&next_clk, TIMER_HZ);
-	*(volatile unsigned long *)(0xff00f004)=0x9F; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x9F; // Previous debug
 }
 
 /* usec timer, way cool */
