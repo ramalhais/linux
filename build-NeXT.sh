@@ -2,7 +2,7 @@
 
 export ARCH=m68k
 export CROSS_COMPILE=m68k-linux-gnu-
-export GCC_SUFFIX=-9
+export GCC_SUFFIX=-12
 
 # sync tags with upstream linux repo
 # initial: git remote add --fetch --tags upstream https://github.com/torvalds/linux.git
@@ -17,6 +17,7 @@ export GCC_SUFFIX=-9
 
 ### Setup NeXT config
 #make next_defconfig
+#make next_defconfig_fb
 
 ### Build kernel
 make -j$[$(nproc)*2] || exit 1
