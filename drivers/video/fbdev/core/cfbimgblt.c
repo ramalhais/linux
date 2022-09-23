@@ -259,10 +259,10 @@ static inline void fast_imageblit(const struct fb_image *image, struct fb_info *
 		return;
 	}
 
-	*(volatile unsigned long *)(0xff00f004)=0x98; // Previous debug
-	*(volatile unsigned long *)(0xff00f004)=fgcolor; // Previous debug
-	*(volatile unsigned long *)(0xff00f004)=0x99; // Previous debug
-	*(volatile unsigned long *)(0xff00f004)=bgcolor; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x98; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=fgcolor; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x99; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=bgcolor; // Previous debug
 
 	for (i = ppw-1; i--; ) {
 		fgx <<= bpp;

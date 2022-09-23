@@ -292,7 +292,7 @@
 //#define DEBUG_QEMU_ADDR #0x02004200
 #define  DEBUG_QEMU_ADDR_FF #0xff00f004 // Previous debug mmu_map'ed
 
-#endif
+#endif // CONFIG_NEXT
 
 /*
  * For the head.S console, there are three supported fonts, 6x11, 8x16 and 8x8.
@@ -614,137 +614,119 @@ ENTRY(__start)
 
 	/* disable caches, interrupts, and setup some arch goo.
 		all of this sould be in our non existant boot loader */
-	/* raise the int level early until the boot
-		loader turns them off for us */
-	movew   #0x2700,%sr // according to next rom src, this turns off interrupts
 
-// netbsd:
-//	movl	#0x0808,%d0
-//	movc	%d0,%cacr	// clear and disable on-chip cache(s)
-//	movew   #0x2600,%sr // make sure we disallow interrupts
+	/* raise the int level early (disable interrupts) */
+	// FIXME NeXT: this is done below. maybe remove this?
+	//movew   #0x2700,%sr
 
 #if defined(DEBUG_QEMU)
 	movel	DEBUG_QEMU_ADDR, %a0
 	movel	#2, %a0@
 #endif
 
-// FIXME NeXT: find a way to detect 030 and 040. this macro is only setup later. Check https://github.com/NetBSD/src/blob/05082e19134c05f2f4b6eca73223cdc6b5ab09bf/sys/arch/x68k/stand/boot/srt0.S#L64
-//	is_not_040_or_060(1f)
+	// Detect 030 and 040
 
-// https://github.com/NetBSD/src/blob/05082e19134c05f2f4b6eca73223cdc6b5ab09bf/sys/arch/m68k/include/cacheops_40.h
-	/* 040 caches bye bye */
-// FIXME NeXT: Temporary disabled to test 030
-//	.chip 68040
-//	movel   #0,%d0
-//	movec   %d0,%tc
-// FIXME NeXT: netbsd uses 0x0808
-//	movec   %d0,%cacr
-//	.chip 68k
+	// Try to set 030 data freeze bit.
+	movl	#0x200,%d0
+	movc	%d0,%cacr
+	movc	%cacr,%d0
+	tstl	%d0
+	// If read back 0, this is not an 030
+	jeq		L(detected_not_030)
 
-//	jbra	2f
-//1:
+	// Else, this is an 030
+	lea	%pc@(m68k_cputype),%a1
+	movel   &CPU_68030,%a1@
 
-// https://github.com/NetBSD/src/blob/05082e19134c05f2f4b6eca73223cdc6b5ab09bf/sys/arch/m68k/include/cacheops_30.h
-//	/* 030 caches bye bye */
+	// Assume an external FPU_68882. Is there a way to detect an FPU?
+	lea	%pc@(m68k_fputype),%a1
+	movel   &FPU_68882,%a1@
+
+	lea	%pc@(m68k_mmutype),%a1
+	movel   &MMU_68030,%a1@
+
+	// caches bye bye
 	.chip 68030
-//	movel   #0,%d0
-// FIXME NeXT: see how to handle 030 clear caches. seems like we should use pmove, but not with %d0 or #0
-//	pmove   %d0,%tc
-	// TEST not fully setting all bits to zero
-	//	movec	%cacr, %d0
-	//	move	#0x00000808, %d1
-	//	not		%d1
-	//	and		%d1,%d0
-// https://github.com/NetBSD/src/blob/05082e19134c05f2f4b6eca73223cdc6b5ab09bf/sys/arch/m68k/include/cpu.h
 	movel   #0x808,%d0
 	movec   %d0,%cacr
-
-//#ifdef	MC68030 //PROM code
-////	pmove	zero,tc			// disable MMU
-//	.long	0xf0394000
-//	.long	zero
-//#endif	MC68030
-
 	.chip 68k
-//2:
 
+	jra	L(detect_done)
 
-/* all this prom info messsing with should be in a boot loader 
-	and passed into the bootinfo */
+L(detected_not_030):
+	// Try to set 040/060 data cache enable bit
+	bset	#31,%d0
+	movc	%d0,%cacr
+	movc	%cacr,%d0
+	tstl	%d0
+	// If read back 0, this is not an 040/060 and by exclusion, it's an 020
+	jeq		L(detected_020)
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a0
-	movel	#3, %a0@
-#endif
+	// Else, this is an 040 or 060
 
-	/* get the pointer to the info the prom left behind */
-	movec   %vbr,%a0
-	movel   %a0@(4),%a1
+	// Unset 040/060 data cache enable bit
+	moveq	#0,%d0
+	movec	%d0,%cacr
+	// Invalidate caches
+	.chip 68040
+	cinva %bc
+	.chip 68k
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	%a0, %a4@ /* print vbr address in vbr register */
+	// Try to set 060 data cache no allocate mode bit
+	bset	#30,%d0
+	movc	%d0,%cacr
+	movc	%cacr,%d0
+	tstl	%d0
+	// If read back 0, this is not an 060 and by exclusion, it's an 040
+	jeq		L(detected_040)
 
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	%a1, %a4@ /* print prom_info address at vbr address+4. this should be vbr address+0x400 (256*4bytes=1k=0x400)*/
+	// Else, it's an 060
+	// There's no 060 NeXT, but i'll leave it here so that other machines can use it.
+	lea	%pc@(m68k_cputype),%a1
+	movel   &CPU_68060,%a1@
 
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	#4, %a4@
-#endif
+	lea	%pc@(m68k_fputype),%a1
+	movel   &FPU_68060,%a1@
 
-	lea     %pc@(prom_info),%a2
-// FIXME NeXT: we are reaching 7fffffe and blowing up reading
-//	movel   #240,%d1  /* sizeof(struct prom_info) = 960 bytes. 960/sizeof(long)=240  */
-// FIXME NeXT: why lower size on 040?
-//	movel   #235,%d1  /* sizeof(struct prom_info) = 960 bytes. 960/sizeof(long)=240  */
-// FIXME NeXT: why lower size on 030?
-	movel   #200,%d1  /* sizeof(struct prom_info) = 960 bytes. 960/sizeof(long)=240  */
+	lea	%pc@(m68k_mmutype),%a1
+	movel   &MMU_68060,%a1@
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	%d1, %a4@
+	jra		L(detect_done)
 
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	#5, %a4@
-#endif
+L(detected_040):
+	lea	%pc@(m68k_cputype),%a1
+	movel   &CPU_68040,%a1@
 
-1:
-#if defined(DEBUG_QEMU)
-	movel	%a1@, %a4@ /* print 4bytes*/
-#endif
-	movel   %a1@+,%a2@+
-	dbra    %d1,1b
+	lea	%pc@(m68k_fputype),%a1
+	movel   &FPU_68040,%a1@
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	%a1, %a4@
+	lea	%pc@(m68k_mmutype),%a1
+	movel   &MMU_68040,%a1@
 
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	%a2, %a4@
-#endif
+	// caches bye bye
+	.chip 68040
+	movel   #0,%d0
+	movec   %d0,%tc
+	movec   %d0,%cacr
+	.chip 68k
 
-// FIXME NeXT: why? seems to be unused and #6 * sizeof(unsigned long) = 24bytes is not 1K
-// 6 bytes have the mac address
-	/* grab the first K of the eprom */
+	jra		L(detect_done)
 
-	movel   #0x1000008,%a0
-	lea     %pc@(eprom_info),%a1
-	movel   #6,%d1
+L(detected_020):
+ 	// There's no 020 NeXT, but i'll leave it here so that other machines can use it.
+	lea	%pc@(m68k_cputype),%a1
+	movel   &CPU_68020,%a1@
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	#6, %a4@
-#endif
+	// Assume an external FPU_68881. Is there a way to detect an FPU?
+	lea	%pc@(m68k_fputype),%a1
+	movel   &FPU_68881,%a1@
 
-1:
-// FIXME NeXT: temp test 030 put me back for 040. 030 was blowing up here. maybe TT 0x1000000?
-//	moveb   %a0@+,%a1@+
-//	dbra    %d1,1b  
+	lea	%pc@(m68k_mmutype),%a1
+	movel   &MMU_68851,%a1@
 
-//	movl    &MACH_NEXT,%d4
-//	movel   &D6F_040,%d6
-#endif
+L(detect_done):
 
+#endif // CONFIG_NEXT
 
 /*
  * Setup initial stack pointer
@@ -760,8 +742,6 @@ ENTRY(__start)
  * Record the CPU and machine type.
  */
 
-/* oh evil evil next hacks, we need a boot loader */
-
 #if defined(DEBUG_QEMU)
 	movel	DEBUG_QEMU_ADDR, %a0;
 	movel	#8, %a0@
@@ -769,68 +749,28 @@ ENTRY(__start)
 
 	lea	%pc@(m68k_machtype),%a1
 #ifdef CONFIG_NEXT
+	// FIXME NeXT: is there a way to detect a NeXT machine?
 	movel   &MACH_NEXT,%a1@
 #else
 	get_bi_record	BI_MACHTYPE
 	movel	%a0@,%a1@
 #endif
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	#9, %a4@
-#endif
-
+#ifndef CONFIG_NEXT
 	lea	%pc@(m68k_fputype),%a1
-#ifdef CONFIG_NEXT
-// FIXME NeXT: bring me back for 040
-//	movel   &FPU_68040,%a1@
-	movel   &FPU_68882,%a1@
-#else
 	get_bi_record	BI_FPUTYPE
 	movel	%a0@,%a1@
-#endif
-
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	#0xA, %a4@
-#endif
 
  	lea	%pc@(m68k_mmutype),%a1
-#ifdef CONFIG_NEXT
-// FIXME NeXT: bring me back for 040
-//	movel   &MMU_68040,%a1@
-	movel   &MMU_68030,%a1@
-#else
 	get_bi_record	BI_MMUTYPE
 	movel	%a0@,%a1@
-#endif
-
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	#0xB, %a4@
-#endif
 
 	lea	%pc@(m68k_cputype),%a1
-#ifdef CONFIG_NEXT
-// FIXME NeXT: bring me back for 040
-//	movel   &CPU_68040,%a1@
-	movel   &CPU_68030,%a1@
-#else
 	get_bi_record	BI_CPUTYPE
 	movel	%a0@,%a1@
 #endif
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	#0xC, %a4@
-#endif
-
 	leds	0x1
-
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	#0xD, %a4@
-#endif
 
 #ifdef CONFIG_MAC
 /*
@@ -956,8 +896,6 @@ L(test_notvirt):
 #endif /* CONFIG_060_WRITETHROUGH */
 1:
 	movew	#_PAGE_CACHE040,%d0
-
-// FIXME NeXT: should we leave pgtable/MMU write-through for m68k_pgtable_cachemode? seems to be working.
 	movel	#_PAGE_CACHE040W,%d1
 
 L(save_cachetype):
@@ -969,7 +907,7 @@ L(save_cachetype):
 	movel	%d1,%a0@
 
 /*
- * raise interrupt level
+ * raise interrupt level (disable interrupts)
  */
 #if defined(DEBUG_QEMU)
 	movel	DEBUG_QEMU_ADDR, %a4
@@ -1097,6 +1035,95 @@ L(gvtdone):
 L(nothp):
 #endif
 
+
+#ifdef CONFIG_NEXT
+	is_not_next(L(not_next_prom))
+
+#if defined(DEBUG_QEMU)
+	movel	DEBUG_QEMU_ADDR, %a0
+	movel	#3, %a0@
+#endif
+
+	/* get the pointer to the info the prom left behind */
+	movec   %vbr,%a0
+	movel   %a0@(4),%a1
+
+#if defined(DEBUG_QEMU)
+	movel	DEBUG_QEMU_ADDR, %a4
+	movel	%a0, %a4@ /* print vbr address in vbr register */
+
+	movel	DEBUG_QEMU_ADDR, %a4
+	movel	%a1, %a4@ /* print prom_info address at vbr address+4. this should be vbr address+0x400 (256*4bytes=1k=0x400)*/
+
+	movel	DEBUG_QEMU_ADDR, %a4
+	movel	#4, %a4@
+#endif
+
+	lea     %pc@(prom_info),%a2
+
+	is_040(L(prom_040))
+
+	// 030
+	// FIXME NeXT: why lower size on 030?
+	movel   #200,%d1
+	jbra	L(detect_prom_done)
+
+L(prom_040):
+	// FIXME NeXT: why lower size on 040?
+	movel   #235,%d1  /* sizeof(struct prom_info) = 960 bytes. 960/sizeof(long)=240  */
+
+#if defined(DEBUG_QEMU)
+	movel	DEBUG_QEMU_ADDR, %a4
+	movel	%d1, %a4@
+
+	movel	DEBUG_QEMU_ADDR, %a4
+	movel	#5, %a4@
+#endif
+
+L(detect_prom_done):
+
+	// Copy prom_info
+1:
+#if defined(DEBUG_QEMU)
+	movel	%a1@, %a4@ /* print 4bytes*/
+#endif
+	movel   %a1@+,%a2@+
+	dbra    %d1,1b
+
+#if defined(DEBUG_QEMU)
+	movel	DEBUG_QEMU_ADDR, %a4
+	movel	%a1, %a4@
+
+	movel	DEBUG_QEMU_ADDR, %a4
+	movel	%a2, %a4@
+#endif
+
+	/* grab the first 6 bytes of the eprom which has the mac address */
+	movel   #0x1000008,%a0
+	lea     %pc@(eprom_info),%a1
+	movel   #6,%d1
+
+	is_040(L(eprom_040))
+
+	jbra	L(eprom_done)
+
+L(eprom_040):
+#if defined(DEBUG_QEMU)
+	movel	DEBUG_QEMU_ADDR, %a4
+	movel	#6, %a4@
+#endif
+
+1:
+	// FIXME NeXT: 030 was blowing up here. maybe TT 0x1000000?
+	moveb   %a0@+,%a1@+
+	dbra    %d1,1b  
+
+L(eprom_done):
+
+L(not_next_prom):
+
+#endif // CONFIG_NEXT
+
 /*
  * Initialize serial port
  */
@@ -1132,16 +1159,14 @@ L(nocon):
 	movel	#0x12, %a4@
 #endif
 
-	putc	'\n'
-//	putc	'A'
-	dputs	"Head start"
+	puts	"\nStarting Linux...\n"
 	
 	leds	0x2
-	// Why are all these empty? 030 has 0 cputype, and 020/030 don't have cachemode (0)
+	// Why are all these empty on 030? 030 has cputype=0, and 020/030 don't have cachemode (0)
 	dputn	%pc@(L(cputype))
 	dputn	%pc@(m68k_supervisor_cachemode)
 	dputn	%pc@(m68k_pgtable_cachemode)
-//	dputc	'\n'
+	dputc	'\n'
 
 /*
  * Save physical start address of kernel
@@ -1151,15 +1176,13 @@ L(nocon):
 	movel	#0x13, %a4@
 #endif
 
-	dputs	", kernel start address"
-
 	lea	%pc@(L(phys_kernel_start)),%a0
 	lea	%pc@(_stext),%a1
 	subl	#_stext,%a1
 	addl	#PAGE_OFFSET,%a1
 	movel	%a1,%a0@
 
-//	putc	'B'
+	putc	'B'
 
 	leds	0x4
 
@@ -1176,15 +1199,21 @@ L(nocon):
 	movel	#0x14, %a4@
 #endif
 
-	dputs	", mmu map kernel start address"
-
-// FIXME NeXT: get the first DIMM slot memory chunk. should get the value from prom_info.
 #ifdef CONFIG_NEXT
+
+	is_not_next(L(not_next_mem))
+
+	// FIXME NeXT: get the first DIMM slot memory chunk. should get the value from prom_info.
 	movel	#16*1024*1024,%d0	// Assume first slot has 16MB of memory. should get this from prom_info
-#else
-	get_bi_record BI_MEMCHUNK
-	movel	%a0@(4),%d0 		// mem size in a0@(4)
+	jbra	L(detect_mem_done)
+
+L(not_next_mem):
+
 #endif
+
+	get_bi_record BI_MEMCHUNK
+L(detect_mem_done):
+	movel	%a0@(4),%d0 		// mem size in a0@(4)
 	movel	#16*1024*1024,%d1
 	cmpl	%d0,%d1
 	jls	1f
@@ -1198,14 +1227,12 @@ L(nocon):
 	mmu_map	#PAGE_OFFSET,%pc@(L(phys_kernel_start)),%d1,\
 		%pc@(m68k_supervisor_cachemode)
 
-//	putc	'C'
+	putc	'C'
 
 #if defined(DEBUG_QEMU)
 	movel	DEBUG_QEMU_ADDR, %a4
 	movel	#0x15, %a4@
 #endif
-
-	dputs	", mmu mappings"
 
 #ifdef CONFIG_AMIGA
 
@@ -1534,6 +1561,7 @@ L(notapollo):
 #endif
 
 #ifdef CONFIG_NEXT
+
 	is_not_next(L(notnext))
 
 #if defined(DEBUG_QEMU)
@@ -1541,11 +1569,12 @@ L(notapollo):
 	movel	#0x16, %a4@
 #endif
 
-//	putc	'X'
-	dputs	", NeXT mmu mappings"
+	putc	'X'
 
 	is_040(1f)
 
+	// 030
+	putc	'3'
 	// Map 030 NeXT IO space: Map 16MB logical 0xff00.0000 to physical 0x0200.0000
 	mmu_map	#0xff000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE030
 
@@ -1554,12 +1583,16 @@ L(notapollo):
 	movel	#0x17, %a4@
 #endif
 
-	// Transparent Map 030 framebuffer
-	mmu_map_tt	#0,#0x0b000000,#0x01000000,#_PAGE_NOCACHE030
+	// Transparent Map 030 framebuffer.
+	// FIXME NeXT: Remove this. Not needed anymore since we map it on the driver using ioremap_wt(),
+	// although the TT map on the CPU is probably faster.
+//	mmu_map_tt	#0,#0x0b000000,#0x01000000,#_PAGE_NOCACHE030
 
 	jbra	L(mmu_init_done)
 
-1:
+1:	// 040
+	putc	'4'
+
 	// Map 040 NeXT IO space: Map 16MB logical 0xff00.0000 to physical 0x0200.0000
 	mmu_map #0xff000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
 
@@ -1585,17 +1618,19 @@ L(notapollo):
 	// We need to map the framebuffer at 0x0b00.0000
 	// FIXME NeXT: maybe map to 0x0fb00.0000 and fixup the address in the nextfb driver?
 	// FIXME NeXT: We should detect the machine type and map_tt accordingly
+	// FIXME NeXT: not needed anymore since we map it on the driver using ioremap_wt(),
+	// although the TT map on the CPU is probably faster.
 
-	// Mono machines have the framebuffer at 0x0b00.0000
+	// Non-Turbo Mono machines have the framebuffer at 0x0b00.0000
 //	mmu_map_tt	#0,#0x0b000000,#0x01000000,#_PAGE_CACHE040W
 
 	// Non-Turbo Color machines have the framebuffer at 0x2c00.0000.
-	mmu_map_tt	#1,#0x2c000000,#0x01000000,#_PAGE_CACHE040W
+//	mmu_map_tt	#0,#0x2c000000,#0x01000000,#_PAGE_CACHE040W
 
 	// Turbo (Mono/Color) machines have the framebuffer at 0x0c00.0000
 	// and physical memory goes up to 0x0bff.ffff which conflicts with Mono machines' framebuffer mapping.
 	// FIXME NeXT: Let's just map normally (no TT) or conditionally set these mappings.
-	mmu_map_tt	#1,#0x0c000000,#0x01000000,#_PAGE_CACHE040W
+//	mmu_map_tt	#1,#0x0c000000,#0x01000000,#_PAGE_CACHE040W
 
 	jbra	L(mmu_init_done)
 
@@ -1604,7 +1639,7 @@ L(notnext):
 
 L(mmu_init_done):
 
-//	putc	'G'
+	putc	'G'
 	leds	0x8
 
 /*
@@ -1621,8 +1656,6 @@ L(mmu_init_done):
  * are now fixed.
  */
 L(mmu_fixup):
-
-	dputs	", mmu fixup"
 
 	is_not_040_or_060(L(mmu_fixup_done))
 
@@ -1666,10 +1699,6 @@ L(mmu_fixup_done):
 #ifdef MMU_PRINT
 	mmu_print
 #endif
-
-// FIXME NeXT: remove this. test to stop at mmu_print
-//1: 	nop
-//	jmp 1b
 
 /*
  * mmu_engage
@@ -1733,8 +1762,7 @@ L(mmu_fixup_done):
  *
  */
 
-//	putc	'H'
-	dputs	"mmu engage"
+	putc	'H'
 
 	mmu_engage
 
@@ -1816,10 +1844,6 @@ L(mmu_fixup_done):
 1:
 #endif
 
-// FIXME NeXT: test infinite loop
-//1: 	nop
-//	jmp 1b
-
 #ifdef CONFIG_NEXT
 	is_not_next(1f)
 
@@ -1832,8 +1856,9 @@ L(mmu_fixup_done):
 	movel	#0xFF, %a4@
 #endif
 
-	lea 	%pc@(L(mg_putc)),%a1
-	orl	#0xff000000,%a1@
+	// FIXME NeXT: not working
+//	lea 	%pc@(L(mg_putc)),%a1
+//	orl	#0xff000000,%a1@
 
 #if defined(DEBUG_QEMU)
 	movel	DEBUG_QEMU_ADDR_FF, %a4
@@ -1845,15 +1870,16 @@ L(mmu_fixup_done):
 1:
 #endif
 
+#ifndef CONFIG_NEXT
 // FIXME NeXT: We can't use PROM mg_putc after mmu_engage. Fix this so putc continues to work. All putc are commented out after this.
-//	putc	'I'
+	putc	'I'
+#endif
+
 	leds	0x10
 
 /*
  * Enable caches
  */
-
-//	dputs	", enable caches"
 
 	is_not_040_or_060(L(cache_not_680460))
 
@@ -1890,7 +1916,9 @@ L(cache68030):
 	.chip	68k
 L(cache_done):
 
-//	putc	'J'
+#ifndef CONFIG_NEXT
+	putc	'J'
+#endif
 
 #if defined(DEBUG_QEMU)
 	movel	DEBUG_QEMU_ADDR_FF, %a4
@@ -1900,7 +1928,6 @@ L(cache_done):
 /*
  * Setup initial stack pointer
  */
-// 	dputs	", setup stack pointer"
 
 	lea	init_task,%curptr
 	lea	init_thread_union+THREAD_SIZE,%sp
@@ -1910,7 +1937,9 @@ L(cache_done):
 	movel	#0x1E, %a4@
 #endif
 
-//	putc	'K'
+#ifndef CONFIG_NEXT
+	putc	'K'
+#endif
 
 	subl	%a6,%a6		/* clear a6 for gdb */
 
@@ -1922,22 +1951,20 @@ L(cache_done):
 	movel	#0x1F, %a4@
 #endif
 
-//	dputs	", base trap init"
-
 	// If you remove this, you will regret it. It will blow up on setting up traps later.
 	jbsr	base_trap_init
 
 /* jump to the kernel start */
 
-//	putc	'\n'
+#ifndef CONFIG_NEXT
+	putc	'\n'
+#endif
 	leds	0x55
 
 #if defined(DEBUG_QEMU)
 	movel	DEBUG_QEMU_ADDR_FF, %a4
 	movel	#0x20, %a4@
 #endif
-
-//	dputs	", start kernel\n"
 
 	// All done here. No more ASM! Moving on to init/main.c .
 	jbsr	start_kernel
@@ -2932,10 +2959,6 @@ L(mmu_engage_040):
 	movel	#0x26, %a4@
 #endif
 
-// FIXME NeXT: test infinite loop
-//1: 	nop
-//	jmp 1b
-
 	movec	%d0,%tc		/* enable the MMU */
 
 	// why :l? because after MMU is enabled, we need to jump to an absolute address (0x01000 based as linked in vmlinux.lds)
@@ -2947,10 +2970,6 @@ L(mmu_engage_040):
 	nop
 	pflusha
 	.chip	68k
-
-// FIXME NeXT: test infinite loop
-//1: 	nop
-//	jmp 1b
 
 	jra	L(mmu_engage_cleanup)
 
@@ -3715,56 +3734,9 @@ func_start	serial_putc,%d0/%d1/%a0/%a1
 
 #ifdef CONFIG_NEXT
 	is_not_next(3f)
-//	movl	#0xff000000,%a1
-//	addl	#0x00e000,%a1		/* NEXT_MON_BASE = (NEXT_IO_BASE+0x00e000) */
-//	addl	#734,%a1
-// wrong: 	// getc_func=724 try_getc_func=724+4 putc_func=724+4+4
-//	#define MG_getc 726
-//	#define MG_try_getc 730
-//	#define MG_putc 734
-//  	push argument (is at d0)
-//	movel	%d0,-(%sp)
-//	call function pointer MG_putc
-//	Not sure this is right:
-/* 4.2.1.1 Calling convention
-Functions are called with the JSR (jump to subroutine) instruction. If
-the function returns a value, it will be in register D0 when the
-function returns. If the function requires any parameters, they are
-pushed onto the stack with the rightmost parameter first. All 8- and
-16-bit parameters are promoted to integers before being pushed onto
-the stack; the default size for integers is 32 bits, or 16 bits if the
--mshort option is passed on the compiler command line.
-*/
-//	jsr %a1@
-//	cleanup stack? maybe not. result should be in d0
-//	will be cleaned after return with 	addql	#4,%sp
-//	addq.l #4,%sp // remove one int (4bytes) from stack pointer (add 4 bytes to stack pointer)
-
-
-#if defined(DEBUG_QEMU)
-//	movel	DEBUG_QEMU_ADDR, %a4
-//	movel	#0x29, %a4@
-#endif
-
-// TEST
-
-#if defined(DEBUG_QEMU)
-//	movel	DEBUG_QEMU_ADDR, %a4
-//	movel	%d0, %a4@
-
-//	movel	DEBUG_QEMU_ADDR, %a4
-//	movel	%sp, %a4@
-
-//	movel	DEBUG_QEMU_ADDR, %a4
-//	movel	#0x2A, %a4@
-#endif
 
 	// call mg_putc function
 	movel 	%pc@(L(mg_putc)),%a1
-#if defined(DEBUG_QEMU)
-//	movel	DEBUG_QEMU_ADDR, %a4
-//	movel	%a1, %a4@
-#endif
 
  	// copy argument from d0 to stack and decrement stack pointer, as argument for mg_putc
 	movel	%d0,%sp@-
@@ -3772,11 +3744,6 @@ the stack; the default size for integers is 32 bits, or 16 bits if the
 	jsr		%a1@
 	// remove the previous argument (4 bytes) from the stack (increment stack pointer)
 	addql #4,%sp
-
-#if defined(DEBUG_QEMU)
-//	movel	DEBUG_QEMU_ADDR, %a4
-//	movel	#0x2B, %a4@
-#endif
 
 	jbra	L(serial_putc_done)
 3:

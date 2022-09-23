@@ -734,12 +734,12 @@ noinline void __ref rest_init(void)
 	 * The boot idle thread must execute schedule()
 	 * at least once to get things moving:
 	 */
-	*(volatile unsigned long *)(0xff00f004)=0x8C; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x8C; // Previous debug
 	schedule_preempt_disabled();
 	/* Call into cpu_idle with preempt disabled */
-	*(volatile unsigned long *)(0xff00f004)=0x8D; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x8D; // Previous debug
 	cpu_startup_entry(CPUHP_ONLINE);
-	*(volatile unsigned long *)(0xff00f004)=0x8E; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x8E; // Previous debug
 }
 
 /* Check for early params. */
@@ -946,7 +946,7 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	char *command_line;
 	char *after_dashes;
 
-	*(volatile unsigned long *)(0xff00f004)=0x1; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x1; // Previous debug
 	set_task_stack_end_magic(&init_task);
 	// *(volatile unsigned long *)(0xff00f004)=0x2; // Previous debug
 	smp_setup_processor_id();
@@ -1091,9 +1091,9 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	timekeeping_init();
 	// *(volatile unsigned long *)(0xff00f004)=0x28; // Previous debug
 	kfence_init();
-	*(volatile unsigned long *)(0xff00f004)=0x29; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x29; // Previous debug
 	time_init();
-	*(volatile unsigned long *)(0xff00f004)=0x2A; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x2A; // Previous debug
 
 	/*
 	 * For best initial stack canary entropy, prepare it after:
@@ -1234,12 +1234,12 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	kcsan_init();
 
 	/* Do the rest non-__init'ed, we're now alive */
-	*(volatile unsigned long *)(0xff00f004)=0x55; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x55; // Previous debug
 	arch_call_rest_init();
 
-	*(volatile unsigned long *)(0xff00f004)=0x56; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x56; // Previous debug
 	prevent_tail_call_optimization();
-	*(volatile unsigned long *)(0xff00f004)=0x57; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0x57; // Previous debug
 }
 
 /* Call all constructor functions linked into the kernel. */
@@ -1667,14 +1667,14 @@ static int __ref kernel_init(void *unused)
 			return 0;
 	}
 
-	*(volatile unsigned long *)(0xff00f004)=0xF0; // Previous debug
-	*(volatile unsigned long *)(0xff00f004)=0xF0; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xF0; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xF0; // Previous debug
 
 	if (!try_to_run_init_process("/sbin/init") ||
 	    !try_to_run_init_process("/etc/init") ||
 	    !try_to_run_init_process("/bin/init") ||
 	    !try_to_run_init_process("/bin/sh")) {
-	*(volatile unsigned long *)(0xff00f004)=0xF1; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xF1; // Previous debug
 		return 0;
 	}
 	panic("No working init found.  Try passing init= option to kernel. "
@@ -1687,7 +1687,7 @@ void __init console_on_rootfs(void)
 	struct file *file = filp_open("/dev/console", O_RDWR, 0);
 
 	if (IS_ERR(file)) {
-	*(volatile unsigned long *)(0xff00f004)=0xF2; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xF2; // Previous debug
 		pr_err("Warning: unable to open an initial console.\n");
 		return;
 	}

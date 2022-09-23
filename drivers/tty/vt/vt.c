@@ -4307,7 +4307,7 @@ int do_take_over_console(const struct consw *csw, int first, int last, int deflt
 {
 	int err;
 
-	*(volatile unsigned long *)(0xff00f004)=0xB9; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xB9; // Previous debug
 	err = do_register_con_driver(csw, first, last);
 	/*
 	 * If we get an busy error we still want to bind the console driver
@@ -4317,10 +4317,10 @@ int do_take_over_console(const struct consw *csw, int first, int last, int deflt
 	if (err == -EBUSY)
 		err = 0;
 	if (!err) {
-	*(volatile unsigned long *)(0xff00f004)=0xBA; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xBA; // Previous debug
 		do_bind_con_driver(csw, first, last, deflt);
 	}
-	*(volatile unsigned long *)(0xff00f004)=0xBB; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xBB; // Previous debug
 
 	return err;
 }
