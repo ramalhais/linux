@@ -5,6 +5,8 @@ export CROSS_COMPILE=m68k-linux-gnu-
 export GCC_SUFFIX=-9
 
 # sync tags with upstream linux repo
+# initial: git remote add --fetch --tags upstream https://github.com/torvalds/linux.git
+#
 # git fetch --tags upstream
 # git push --tags
 
