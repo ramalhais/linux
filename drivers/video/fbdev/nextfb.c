@@ -49,25 +49,34 @@ static int nextfb_probe_030(struct platform_device *dev)
 {
 	struct fb_info *info = framebuffer_alloc(sizeof(u32) * 16, &dev->dev);
 
-	nextfb_fix.smem_start 	= 0x0b000000;
+// Assuming the NeXT Computer (030) uses the same framebuffer as the NeXT Mono
+#define NEXTFB_ADDR		0x0b000000UL	
+#define NEXTFB_SIZE		0x3a800UL		// 0x3a800+backing store(frame2)=256KB
+#define NEXTFB_WIDTH	1120
+#define NEXTFB_WIDTH_V	1152	// try 1152 or 1120
+#define NEXTFB_HEIGHT	832
+#define NEXTFB_HEIGHT_V	910		// try 910 or 936
+#define NEXTFB_BPP		2
+
+	nextfb_fix.smem_start 	= (long unsigned int)ioremap_wt(NEXTFB_ADDR, NEXTFB_SIZE);
 
 	// Before we go any further and blow up somewhere because of missing MMU mappings,
 	// let's see if we can write to framebuffer memory and blow up here instead.
 	*(volatile unsigned char *)(nextfb_fix.smem_start) = 0x00;
 
-	nextfb_fix.smem_len		= 0x40000; // 256k this is a guess
-	nextfb_fix.line_length 	= 1152>>2; // 1120 * 2bits per pixel / 8bits per byte = 1120*1/4. >> 2 divides by 2 two times, so, 4.
+	nextfb_fix.smem_len		= NEXTFB_SIZE;
+	nextfb_fix.line_length 	= NEXTFB_WIDTH_V>>2; // 1152 * 2bits per pixel / 8bits per byte = 1152*1/4. >> 2 divides by 2 two times (4).
 	nextfb_fix.type 		= FB_TYPE_PACKED_PIXELS;
 	nextfb_fix.visual 		= FB_VISUAL_PSEUDOCOLOR;
 	nextfb_fix.accel		= FB_ACCEL_NONE;
 
 	strncpy (nextfb_fix.id,	"NeXT (030) Mono", 16);
 	nextfb_var.grayscale	= 1;
-	nextfb_var.xres 		= 1120;
-	nextfb_var.yres 		= 832;
-	nextfb_var.xres_virtual = 1120; // try 1152 or 1120
-	nextfb_var.yres_virtual = 832; // try 910 or 936
-	nextfb_var.bits_per_pixel	= 2;
+	nextfb_var.xres 		= NEXTFB_WIDTH;
+	nextfb_var.yres 		= NEXTFB_HEIGHT;
+	nextfb_var.xres_virtual = NEXTFB_WIDTH_V;
+	nextfb_var.yres_virtual = NEXTFB_HEIGHT_V;
+	nextfb_var.bits_per_pixel	= NEXTFB_BPP;
 	nextfb_var.activate		= FB_ACTIVATE_NOW;
 	nextfb_var.height 		= 274;
 	nextfb_var.width 		= 195;	/* 14" monitor */
@@ -82,22 +91,24 @@ static int nextfb_probe_030(struct platform_device *dev)
 	info->screen_base = (char *)nextfb_fix.smem_start;
 
 	if (register_framebuffer(info) < 0) {
-	*(volatile unsigned long *)(0xff00f004)=0xDF; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xDF; // Previous debug
 		printk(KERN_ERR "Unable to register NeXT frame buffer.\n");
+		iounmap((void *)nextfb_fix.smem_start);
 		framebuffer_release(info);
 		return -EINVAL;
 	}
 
-	fb_info(info, "NeXT fbinfo: hardcoded %dx%dx%dbpp framebuffer @ 0x%lx+0x%x\n",
+	fb_info(info, "NeXT fbinfo: hardcoded %dx%dx%dbpp framebuffer @ 0x%lx+0x%x mapped @ 0x%lx\n",
 		nextfb_var.xres,
 		nextfb_var.yres,
 		nextfb_var.bits_per_pixel,
-		nextfb_fix.smem_start,
-		nextfb_fix.smem_len
+		NEXTFB_ADDR,
+		nextfb_fix.smem_len,
+		nextfb_fix.smem_start
 	);
 
 	fb_info(info, "Finished probing NeXT frame buffer.\n");
-	*(volatile unsigned long *)(0xff00f004)=0xDF; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xDF; // Previous debug
 	return 0;
 }
 
@@ -109,60 +120,61 @@ static int nextfb_probe(struct platform_device *dev)
 	struct fb_info *info = framebuffer_alloc(sizeof(u32) * 16, &dev->dev);
 	int no_fb = 0;
 
-	*(volatile unsigned long *)(0xff00f004)=0xD3; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xD3; // Previous debug
 	if (!info) {
-	*(volatile unsigned long *)(0xff00f004)=0xD4; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xD4; // Previous debug
 		return -ENOMEM;
 	}
 	fb_info(info, "Probing NeXT frame buffer.\n");
-	*(volatile unsigned long *)(0xff00f004)=0xD5; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xD5; // Previous debug
 
 	if (!MACH_IS_NEXT) {
-	*(volatile unsigned long *)(0xff00f004)=0xD6; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xD6; // Previous debug
 		fb_info(info, "This computer is not a NeXT. Bailing out.\n");
 		framebuffer_release(info);
 		return -ENXIO;
 	}
 
-	*(volatile unsigned long *)(0xff00f004)=0xD7; // Previous debug
-	*(volatile unsigned long *)(0xff00f004)=prom_info.fbinfo.pixels_pword; // Previous debug
-	*(volatile unsigned long *)(0xff00f004)=prom_info.fbinfo.line_length; // Previous debug
-	*(volatile unsigned long *)(0xff00f004)=prom_info.fbinfo.vispixx; // Previous debug
-	*(volatile unsigned long *)(0xff00f004)=prom_info.fbinfo.height; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xD7; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=prom_info.fbinfo.pixels_pword; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=prom_info.fbinfo.line_length; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=prom_info.fbinfo.vispixx; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=prom_info.fbinfo.height; // Previous debug
 
 	if (prom_info.fbinfo.pixels_pword <= 0) {
-	*(volatile unsigned long *)(0xff00f004)=0xD7; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xD7; // Previous debug
 		fb_info(info, "Pixels Per Word can't be 0. This is probably a NeXT Computer 68030.\n");
 		framebuffer_release(info);
 		return nextfb_probe_030(dev);
 	}
 
 	if (prom_info.fbinfo.pixels_pword != 2 && prom_info.fbinfo.pixels_pword != 16 && no_fb == 0) {
-	*(volatile unsigned long *)(0xff00f004)=0xD8; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xD8; // Previous debug
 		fb_info(info, "Unknown value %d for Pixels Per Word.\n", prom_info.fbinfo.pixels_pword);
 		framebuffer_release(info);
 		return -ENXIO;
 	}
 	
 	bpp = 32/prom_info.fbinfo.pixels_pword;
-	*(volatile unsigned long *)(0xff00f004)=0xD7; // Previous debug
-	*(volatile unsigned long *)(0xff00f004)=bpp; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xD7; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=bpp; // Previous debug
 
 	frame = prom_info.fbinfo.frames[NEXTFB_FRAME];
 
-	fb_info(info, "NeXT fbinfo: %dx%dx%dbpp (%dppw) frames[1]=0x%x+0x%x\n",
+	nextfb_fix.smem_start 	= (long unsigned int)ioremap_wt(frame.phys, frame.len);
+	nextfb_fix.smem_len		= frame.len;
+
+//	*(volatile unsigned long *)(0xff00f004)=nextfb_fix.smem_start; // Previous debug
+
+	fb_info(info, "NeXT fbinfo: %dx%dx%dbpp (%dppw) framebuffer 1 @ 0x%x+0x%x mapped @ 0x%lx\n",
 		prom_info.fbinfo.vispixx,
 		prom_info.fbinfo.height,
 		bpp,
 		prom_info.fbinfo.pixels_pword,
 		frame.phys,
-		frame.len
+		frame.len,
+		nextfb_fix.smem_start
 	);
-
-	nextfb_fix.smem_start 	= frame.phys;
-	nextfb_fix.smem_len		= frame.len;
-
-	*(volatile unsigned long *)(0xff00f004)=nextfb_fix.smem_start; // Previous debug
 
 	// Before we go any further and blow up somewhere because of missing MMU mappings,
 	// let's see if we can write to framebuffer memory and blow up here instead.
@@ -179,7 +191,7 @@ static int nextfb_probe(struct platform_device *dev)
 	nextfb_fix.accel		= FB_ACCEL_NONE;
 
 	if (bpp == 16) {
-	*(volatile unsigned long *)(0xff00f004)=0xD9; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xD9; // Previous debug
 		strncpy (nextfb_fix.id,	"NeXT C16", 16);
 		// nextfb_var.red		= (struct fb_bitfield){6, 5, 0};
 		// nextfb_var.green	= (struct fb_bitfield){11, 5, 0};
@@ -188,11 +200,11 @@ static int nextfb_probe(struct platform_device *dev)
 		nextfb_var.green	= (struct fb_bitfield){8, 4, 0};
 		nextfb_var.blue		= (struct fb_bitfield){4, 4, 0};
 	} else if (bpp == 2) {
-	*(volatile unsigned long *)(0xff00f004)=0xDA; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xDA; // Previous debug
 		strncpy (nextfb_fix.id,	"NeXT Mono", 16);
 		nextfb_var.grayscale	= 1;
 	} else {
-	*(volatile unsigned long *)(0xff00f004)=0xDB; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xDB; // Previous debug
 		strncpy (nextfb_fix.id,	"NeXT Unknown", 16);
 	}
 	nextfb_var.xres 		= prom_info.fbinfo.vispixx;
@@ -208,11 +220,11 @@ static int nextfb_probe(struct platform_device *dev)
 
 	// fb_info(info, "Scanning other frames[]\n");
 	for(int i=0; i<6; i++) {
-	*(volatile unsigned long *)(0xff00f004)=0xDC; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xDC; // Previous debug
 		if(i==NEXTFB_FRAME) continue;
 		if(prom_info.fbinfo.frames[i].phys || prom_info.fbinfo.frames[i].virt || prom_info.fbinfo.frames[i].len) {
-	*(volatile unsigned long *)(0xff00f004)=0xDD; // Previous debug
-	*(volatile unsigned long *)(0xff00f004)=prom_info.fbinfo.frames[i].phys; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xDD; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=prom_info.fbinfo.frames[i].phys; // Previous debug
 
 			// This seems to be the rest of the memory chip on the framebuffer
 			// Mono: 239616(fb)+22464(mistery) = 262080 bytes. 256KB is 262144 bytes, so fb+mistery+64=256KB
@@ -241,11 +253,11 @@ static int nextfb_probe(struct platform_device *dev)
 
 	// master_outb(3, DISPLAY_CONTROL_REG);
 
-	*(volatile unsigned long *)(0xff00f004)=0xDE; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xDE; // Previous debug
 	if (register_framebuffer(info) < 0) {
-	*(volatile unsigned long *)(0xff00f004)=0xDF; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xDF; // Previous debug
 		printk(KERN_ERR "Unable to register NeXT frame buffer.\n");
-		// fb_dealloc_cmap(&info->cmap);
+		iounmap((void *)nextfb_fix.smem_start);
 		framebuffer_release(info);
 		return -EINVAL;
 	}
@@ -253,7 +265,7 @@ static int nextfb_probe(struct platform_device *dev)
 	// fb_invert_cmaps();
 
 	fb_info(info, "Finished probing NeXT frame buffer.\n");
-	*(volatile unsigned long *)(0xff00f004)=0xDF; // Previous debug
+//	*(volatile unsigned long *)(0xff00f004)=0xDF; // Previous debug
 	return 0;
 }
 
