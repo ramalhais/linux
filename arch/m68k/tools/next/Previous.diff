@@ -1,0 +1,24 @@
+Index: src/printer.c
+===================================================================
+--- src/printer.c	(revision 1159)
++++ src/printer.c	(working copy)
+@@ -769,7 +769,8 @@
+ 
+ void LP_CSR1_Write(void) {
+     Uint8 val = IoMem[IoAccessCurrentAddress & IO_SEG_MASK];
+-    Log_Printf(LOG_LP_REG_LEVEL,"[LP] Printer control write at $%08x val=$%02x PC=$%08x\n", IoAccessCurrentAddress, IoMem[IoAccessCurrentAddress & IO_SEG_MASK], m68k_getpc());
++//    Log_Printf(LOG_LP_REG_LEVEL,"[LP] Printer control write at $%08x val=$%02x PC=$%08x\n", IoAccessCurrentAddress, IoMem[IoAccessCurrentAddress & IO_SEG_MASK], m68k_getpc());
++    Log_Printf(LOG_WARN,"[LP] Printer control write at $%08x val=$%02x PC=$%08x\n", IoAccessCurrentAddress, IoMem[IoAccessCurrentAddress & IO_SEG_MASK], m68k_getpc());
+     
+     if (((val&LP_ON) != (lp.csr.printer&LP_ON)) && ConfigureParams.Printer.bPrinterConnected) {
+         if (val&LP_ON) {
+@@ -834,7 +835,8 @@
+ 
+ void LP_Data_Write(void) {
+     Uint32 val = IoMem_ReadLong(IoAccessCurrentAddress&IO_SEG_MASK);
+-    Log_Printf(LOG_LP_REG_LEVEL,"[LP] Data write at $%08x val=$%08x PC=$%08x\n", IoAccessCurrentAddress, val, m68k_getpc());
++//    Log_Printf(LOG_LP_REG_LEVEL,"[LP] Data write at $%08x val=$%08x PC=$%08x\n", IoAccessCurrentAddress, val, m68k_getpc());
++    Log_Printf(LOG_WARN,"[LP] Data write at 0x%08x val=0x%x\t\tPC=0x%08x\n", IoAccessCurrentAddress, val, m68k_getpc());
+     
+     if (lp.csr.transmit&LP_TX_LOOP) {
+         lp_command_out(lp.command, val);
