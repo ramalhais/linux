@@ -27,7 +27,7 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Install Dependencies
-        run: apt install -y gcc-12-m68k-linux-gnu make gcc flex bison
+        run: sudo apt install -y gcc-12-m68k-linux-gnu make gcc flex bison
       - name: Configure Kernl
         run: |
           cd $GITHUB_WORKSPACE
