@@ -30,7 +30,7 @@ jobs:
         run: |
           sudo apt-cache policy
           sudo apt install -y gcc-10-m68k-linux-gnu make gcc flex bison
-      - name: Configure Kernl
+      - name: Configure Kernel
         run: |
           cd $GITHUB_WORKSPACE
           make ARCH=m68k next_fb_defconfig
@@ -43,8 +43,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: build/${{ github.event.repository.updated_at}}
-          release_name: Release ${{ github.event.repository.updated_at}}
+          tag_name: build/${{ github.sha }}
+          release_name: NeXT-${{ github.sha }}
           # body: |
           #   Changes in this Release
           #   - First Change
@@ -57,7 +57,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./vmlinux-NeXT
           asset_name: vmlinux-NeXT
           asset_content_type: application/octet-stream
@@ -67,7 +67,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./.config
           asset_name: .config
           asset_content_type: text/plain
