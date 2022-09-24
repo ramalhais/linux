@@ -36,4 +36,4 @@ jobs:
           make ARCH=m68k next_fb_defconfig
       - name: Build Kernel
         run: |
-          ./build-NeXT.sh
+          ./build-NeXT-github.sh
