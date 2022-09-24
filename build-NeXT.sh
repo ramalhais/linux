@@ -38,11 +38,12 @@ make -C arch/m68k/tools/next/
 
 ### Wrap kernel binary code in aout header (old UNIX COFF format?)
 ./arch/m68k/tools/next/aout vmlinux.binary_$DATE vmlinux.netimg_aout_$DATE
-sudo cp vmlinux.netimg_aout_$DATE /srv/tftp/
-sudo ln -sf vmlinux.netimg_aout_$DATE /srv/tftp/boot
+#sudo cp vmlinux.netimg_aout_$DATE /srv/tftp/
+#sudo ln -sf vmlinux.netimg_aout_$DATE /srv/tftp/boot
+ln -sf ~/next/linux/vmlinux.netimg_aout_$DATE ~/next/tftp/private/tftpboot/boot
 
 ### Save patch
-git diff v6.0-rc3 > ../linux-v6.0-rc3-NeXT-$DATE.patch
+git diff v6.0-rc6 > ../linux-v6.0-rc3-NeXT-$DATE.patch
 
 ### Save .config
 cp .config ../.config-NeXT-$DATE
