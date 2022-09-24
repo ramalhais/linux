@@ -43,8 +43,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: build/${{DATE}}_${{ github.sha }}
-          release_name: NeXT-${{DATE}}-${{ github.sha }}
+          tag_name: build/${{ env.DATE }}_${{ github.sha }}
+          release_name: NeXT-${{ env.DATE }}-${{ github.sha }}
           # body: |
           #   Changes in this Release
           #   - First Change
