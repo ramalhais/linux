@@ -242,6 +242,7 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 		}
 	}  else if ((data & KD_ADDRMASK) == KD_MADDR) {
 		// Mouse
+	*(volatile unsigned long *)(0xff00f004)=0xFB; // Previous debug
 		input_report_rel(mouse, REL_X, data&NEXT_MOUSE_DX_MASK);
 		input_report_rel(mouse, REL_Y, (data&NEXT_MOUSE_DY_MASK)>>8);
 		input_report_key(mouse, BTN_LEFT, data&NEXT_MOUSE_LEFT_MASK);
