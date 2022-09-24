@@ -36,15 +36,15 @@ jobs:
           make ARCH=m68k next_fb_defconfig
       - name: Build Kernel
         run: |
-          ./build-NeXT-github.sh
+          ./build-NeXT-github.sh && echo "DATE=$(date +%F-%H.%M.%S)" >> $GITHUB_ENV
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: build/${{ github.sha }}
-          release_name: NeXT-${{ github.sha }}
+          tag_name: build/$DATE_${{ github.sha }}
+          release_name: NeXT-$DATE-${{ github.sha }}
           # body: |
           #   Changes in this Release
           #   - First Change
