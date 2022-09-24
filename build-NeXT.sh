@@ -24,6 +24,7 @@ make -j$[$(nproc)*2] || exit 1
 
 #DATE=$(date +%Y%m%d_%H%M%S)
 DATE=$(date +%F-%H.%M.%S)
+KERNELVER=$(make kernelversion)
 
 ### Extract binary from ELF kernel image
 m68k-linux-gnu-objcopy --output-target=binary vmlinux vmlinux.binary_$DATE
@@ -43,7 +44,9 @@ make -C arch/m68k/tools/next/
 ln -sf ~/next/linux/vmlinux.netimg_aout_$DATE ~/next/tftp/private/tftpboot/boot
 
 ### Save patch
-git diff v6.0-rc6 > ../linux-v6.0-rc3-NeXT-$DATE.patch
+git diff v6.0-rc6 > ../linux-v6.0-rc6-NeXT-$DATE.patch
+# git tag NeXT-$(date +%F-%H.%M.%S)
+# git push --tags
 
 ### Save .config
 cp .config ../.config-NeXT-$DATE
