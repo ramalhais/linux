@@ -52,7 +52,7 @@ jobs:
           draft: false
           prerelease: false
       - name: Upload Kernel to Release
-        id: upload-release-asset
+        id: upload-release-asset-kernel
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -62,7 +62,7 @@ jobs:
           asset_name: vmlinux-NeXT
           asset_content_type: application/octet-stream
       - name: Upload .config to Release
-        id: upload-release-asset
+        id: upload-release-asset-config
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
