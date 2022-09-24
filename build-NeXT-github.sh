@@ -15,4 +15,4 @@ m68k-linux-gnu-objcopy --output-target=binary vmlinux vmlinux.binary_$DATE
 ### Compile NeXT tools
 make -C arch/m68k/tools/next/
 
-./arch/m68k/tools/next/aout vmlinux.binary_$DATE vmlinux-$(KERNELVER)-NeXT_$DATE
+./arch/m68k/tools/next/aout vmlinux.binary_$DATE vmlinux-$KERNELVER-NeXT_$DATE
