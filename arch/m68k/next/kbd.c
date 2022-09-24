@@ -51,26 +51,22 @@ struct mon {
 
 #define KD_FLAGKEYS	0x7f00
 
-/* bits in km_data for mouse 
-typedef union {
-	__u32	data;
-	__u32	junk : 16,
-		dy: 7, 
-		rbut: 1,
-		dx: 7,
-		lbut:1;
-} ; */
-
 #define DEFAULT_KEYB_REP_DELAY  (HZ/4)
 #define DEFAULT_KEYB_REP_RATE   (HZ/25)
 
 #define NR_CTRL_KEYS 7
 #define CTRL_BASE_CODE 81
 
+#define NEXT_MOUSE_LEFT_MASK	0x0001
+#define NEXT_MOUSE_RIGHT_MASK	0x0100
+#define NEXT_MOUSE_DX_MASK		0x00FE
+#define NEXT_MOUSE_DY_MASK		0xFE00
+
 static unsigned int oldflagmap=0;
 
 struct next_kbd {
 	struct input_dev *input;
+	struct input_dev *mouse;
 	unsigned short keycodes[CTRL_BASE_CODE+6+1];
 };
 
@@ -171,6 +167,7 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	unsigned long flags;
 	struct next_kbd *kbd = dev_id;
 	struct input_dev *input = kbd->input;
+	struct input_dev *mouse = kbd->mouse;
 	__u32 csr;
 	__u32 data;
 
@@ -243,7 +240,14 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 //	*(volatile unsigned long *)(0xff00f004)=scan; // Previous debug
 	// *(volatile unsigned long *)(0xff00f004)=is_pressed; // Previous debug
 		}
-	} 
+	}  else if ((data & KD_ADDRMASK) == KD_MADDR) {
+		// Mouse
+		input_report_rel(mouse, REL_X, data&NEXT_MOUSE_DX_MASK);
+		input_report_rel(mouse, REL_Y, (data&NEXT_MOUSE_DY_MASK)>>8);
+		input_report_key(mouse, BTN_LEFT, data&NEXT_MOUSE_LEFT_MASK);
+		input_report_key(mouse, BTN_RIGHT, data&NEXT_MOUSE_RIGHT_MASK);
+		input_sync(mouse);
+	}
 	// *(volatile unsigned long *)(0xff00f004)=0xFD; // Previous debug
 
 	local_irq_restore(flags);
@@ -252,13 +256,14 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 
 static int next_kbd_probe(struct platform_device *pdev) {
 	struct input_dev *input;
+	struct input_dev *mouse_dev;
 	struct next_kbd *next_kbd;
 	int ret;
 
 	// *(volatile unsigned long *)(0xff00f004)=0xF4; // Previous debug
 	input = input_allocate_device();
 	if (!input) {
-		dev_err(&pdev->dev, "Unable to allocate input device for NeXT Keyboard\n");
+		dev_err(&pdev->dev, "Failed to allocate input device for NeXT Keyboard\n");
 		return -ENOMEM;
 	}
 
@@ -269,8 +274,8 @@ static int next_kbd_probe(struct platform_device *pdev) {
 
 	next_kbd->input = input;
 
-	input->name = pdev->name;
-	input->phys = "next-kbd/input0";
+	input->name = "NeXT Keyboard";
+	input->phys = "next-kbd/keyboard";
 
 	input->id.bustype = BUS_HOST;
 	input->id.vendor = 0x000F;
@@ -294,13 +299,50 @@ static int next_kbd_probe(struct platform_device *pdev) {
 
 	ret = input_register_device(input);
 	if (ret) {
-		dev_err(&pdev->dev, "Failed to register input device\n");
+		dev_err(&pdev->dev, "Failed to register input device for NeXT Keyboard\n");
+		input_free_device(input);
 		return ret;
 	}
 
 	platform_set_drvdata(pdev, input);
 
-	if (request_irq(IRQ_AUTO_3, next_kbd_int, IRQF_SHARED, "NeXT keyboard/mouse", next_kbd)) {
+	mouse_dev = input_allocate_device();
+	if (!mouse_dev) {
+		dev_err(&pdev->dev, "Failed to allocate input device for NeXT Mouse\n");
+
+		input_unregister_device(input);
+		input_free_device(input);
+
+		return -ENOMEM;
+	}
+
+	next_kbd->mouse = mouse_dev;
+
+	mouse_dev->name = "NeXT Mouse";
+	mouse_dev->phys = "next-kbd/mouse";
+	mouse_dev->id.bustype = BUS_HOST;
+	mouse_dev->id.vendor = 0x000F;
+	mouse_dev->id.product = 0x0002;
+	mouse_dev->id.version = 0x0100;
+
+	mouse_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_REL);
+	mouse_dev->relbit[0] = BIT_MASK(REL_X) | BIT_MASK(REL_Y);
+	mouse_dev->keybit[BIT_WORD(BTN_LEFT)] = BIT_MASK(BTN_LEFT) |
+		BIT_MASK(BTN_MIDDLE) | BIT_MASK(BTN_RIGHT);
+
+	ret = input_register_device(mouse_dev);
+	if (ret) {
+		dev_err(&pdev->dev, "Failed to register input device for NeXT Mouse\n");
+
+		input_free_device(mouse_dev);
+
+		input_unregister_device(input);
+		input_free_device(input);
+
+		return ret;
+	}
+
+	if (request_irq(IRQ_AUTO_3, next_kbd_int, IRQF_SHARED, "NeXT Keyboard/Mouse", next_kbd)) {
 		pr_err("Failed to register NeXT keyboard/mouse interrupt\n");
 	}
 
