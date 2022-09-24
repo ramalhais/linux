@@ -29,7 +29,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-cache policy
-          sudo apt install -y gcc-12-m68k-linux-gnu make gcc flex bison
+          sudo apt install -y gcc-10-m68k-linux-gnu make gcc flex bison
       - name: Configure Kernl
         run: |
           cd $GITHUB_WORKSPACE
