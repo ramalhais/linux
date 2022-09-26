@@ -27,30 +27,31 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Install Dependencies
-        run: |
-          sudo apt-cache policy
-          sudo apt install -y gcc-10-m68k-linux-gnu make gcc flex bison
-      - name: Configure Kernel
-        run: |
-          cd $GITHUB_WORKSPACE
-          make ARCH=m68k next_fb_defconfig
+        run: sudo apt install -y gcc-10-m68k-linux-gnu make gcc flex bison
+
       - name: Build Kernel
         run: |
-          ./build-NeXT-github.sh && echo "DATE=$(date +%F-%H.%M.%S)" >> $GITHUB_ENV
+          cd $GITHUB_WORKSPACE
+          set -e
+          ./build-NeXT-github.sh
+          echo "DATE=$(date +%F-%H.%M.%S)" >> $GITHUB_ENV
+          echo "KERNELVER=$(make kernelversion)" >> $GITHUB_ENV
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: build/${{ env.DATE }}_${{ github.sha }}
-          release_name: NeXT-${{ env.DATE }}-${{ github.sha }}
+          tag_name: build/${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
+          release_name: NeXT-${{ env.DATE }}-${{ env.KERNELVER }}-${{ github.sha }}
           # body: |
           #   Changes in this Release
           #   - First Change
           #   - Second Change
           draft: false
           prerelease: false
+
       - name: Upload Kernel to Release
         id: upload-release-asset-kernel
         uses: actions/upload-release-asset@v1
@@ -59,8 +60,9 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./vmlinux-NeXT
-          asset_name: vmlinux-NeXT
+          asset_name: vmlinux-NeXT-${{ env.KERNELVER }}
           asset_content_type: application/octet-stream
+
       - name: Upload .config to Release
         id: upload-release-asset-config
         uses: actions/upload-release-asset@v1
@@ -69,5 +71,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./.config
-          asset_name: config-NeXT
+          asset_name: config-NeXT-${{ env.KERNELVER }}
           asset_content_type: text/plain
