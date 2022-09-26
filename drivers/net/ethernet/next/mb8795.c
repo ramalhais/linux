@@ -725,7 +725,7 @@ static int mb8795_probe(struct platform_device *pdev)
 		/* assuming we're on a page boundry for dma NEXT_ALIGNment */
 		priv->p_txbuf=virt_to_phys(priv->txbuf);
 
-			// OR
+			// OR linux/arch/m68k/kernel/dma.c
 			// arch_dma_alloc(struct device *dev, size_t size, dma_addr_t *dma_handle,
 			// gfp_t gfp, unsigned long attrs)
 			// Example: priv->txbuf = dma_alloc(pdev->dev, TXBUFLEN, priv->p_txbuf, GFP_DMA | GFP_KERNEL, 0)
