@@ -44,7 +44,7 @@ make -C arch/m68k/tools/next/
 ln -sf ~/next/linux/vmlinux.netimg_aout_$DATE ~/next/tftp/private/tftpboot/boot
 
 ### Save patch
-git diff v6.0-rc6 > ../linux-v6.0-rc6-NeXT-$DATE.patch
+git diff master > ../linux-NeXT-$DATE.patch
 # git tag NeXT-$(date +%F-%H.%M.%S)
 # git push --tags
 
