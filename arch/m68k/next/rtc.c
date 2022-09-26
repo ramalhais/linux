@@ -69,7 +69,7 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 	// *(volatile unsigned long *)(0xff00f004)=intmask; // Previous debug
 	// *(volatile unsigned long *)(0xff00f004)=0x95; // Previous debug
 	// *(volatile unsigned long *)(0xff00f004)=intstat; // Previous debug
-		printk("Ignoring IRQ %d. Not for NeXT timer\n", irq);
+		// printk("Ignoring IRQ %d. Not for NeXT timer\n", irq);
 
 		local_irq_restore(flags);
 		return IRQ_NONE;
@@ -115,15 +115,15 @@ void next_sched_init(void)
 	clocktype=(rtc_read(RTC_STATUS) & RTC_IS_NEW) ? N_C_NEW : N_C_OLD;
 	printk("RTC: %s\n",rtcs[clocktype].chipname);
 
-	// *(volatile unsigned long *)(0xff00f004)=0x98; // Previous debug
-	if (request_irq(IRQ_AUTO_6, next_tick, IRQF_TIMER, "NeXT timer tick", NULL)) {
-	// *(volatile unsigned long *)(0xff00f004)=0x99; // Previous debug
+	*(volatile unsigned long *)(0xff00f004)=0x98; // Previous debug
+	if (request_irq(IRQ_AUTO_6, next_tick, IRQF_TIMER|IRQF_SHARED, "NeXT timer tick", next_tick)) {
+	*(volatile unsigned long *)(0xff00f004)=0x99; // Previous debug
 		pr_err("Couldn't register timer interrupt\n");
 	}
 
-	// *(volatile unsigned long *)(0xff00f004)=0x9A; // Previous debug
+	*(volatile unsigned long *)(0xff00f004)=0x9A; // Previous debug
 	next_intmask_enable(NEXT_IRQ_TIMER-NEXT_IRQ_BASE);
-	// *(volatile unsigned long *)(0xff00f004)=0x9B; // Previous debug
+	*(volatile unsigned long *)(0xff00f004)=0x9B; // Previous debug
 
 	if (__timer_csr) {	// Reading CSR clears the interrupt
 		set_timer_csr(0);
@@ -136,7 +136,7 @@ void next_sched_init(void)
 
 	// *(volatile unsigned long *)(0xff00f004)=0x9E; // Previous debug
 	clocksource_register_hz(&next_clk, TIMER_HZ);
-//	*(volatile unsigned long *)(0xff00f004)=0x9F; // Previous debug
+	*(volatile unsigned long *)(0xff00f004)=0x9F; // Previous debug
 }
 
 /* usec timer, way cool */
