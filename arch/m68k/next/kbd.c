@@ -14,7 +14,7 @@
 
 #include <asm/nextints.h>
 
-MODULE_DESCRIPTION("Keyboard driver for NeXT Computer/Cube/Station");
+MODULE_DESCRIPTION("Keyboard/Mouse driver for NeXT Computer/Cube/Station");
 MODULE_ALIAS("platform:next-keyboard");
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Pedro Ramalhais <ramalhais@gmail.com>");
@@ -176,7 +176,7 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 
 	if (!next_irq_pending(NEXT_IRQ_KYBD_MOUSE)) {
 	// *(volatile unsigned long *)(0xff00f004)=0xF7; // Previous debug
-		printk("Ignoring IRQ%d. Not for NeXT keyboard/mouse\n", irq);
+		// printk("Ignoring IRQ%d. Not for NeXT keyboard/mouse\n", irq);
 		local_irq_restore(flags);
 		return IRQ_NONE;
 	}
@@ -242,7 +242,7 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 		}
 	}  else if ((data & KD_ADDRMASK) == KD_MADDR) {
 		// Mouse
-	*(volatile unsigned long *)(0xff00f004)=0xFB; // Previous debug
+	// *(volatile unsigned long *)(0xff00f004)=0xFB; // Previous debug
 		input_report_rel(mouse, REL_X, data&NEXT_MOUSE_DX_MASK);
 		input_report_rel(mouse, REL_Y, (data&NEXT_MOUSE_DY_MASK)>>8);
 		input_report_key(mouse, BTN_LEFT, data&NEXT_MOUSE_LEFT_MASK);
