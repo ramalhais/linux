@@ -1,8 +1,6 @@
 #!/bin/bash -x
 
-export ARCH=m68k
-export CROSS_COMPILE=m68k-linux-gnu-
-export GCC_SUFFIX=-12
+export ARCH=m68k CROSS_COMPILE=m68k-linux-gnu- GCC_SUFFIX=-12
 
 # sync tags with upstream linux repo
 # initial: git remote add --fetch --tags upstream https://github.com/torvalds/linux.git
