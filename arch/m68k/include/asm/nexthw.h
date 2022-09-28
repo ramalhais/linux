@@ -15,14 +15,37 @@
 
 #include <linux/types.h>
 
+// Info from running Previous emulator:
+// 							mach_type	next_board_rev	dmachip	diskchip
+// NeXT Computer:			0x0			0x0				0x139	0x136
+// NeXTstation:				0x1			0x1				0x139	0x136
+// NeXTcube:				0x2			0x0				0x139	0x136
+// NeXTstation Color:		0x3			0x0				0x139	0x136
+// NeXTstation Turbo:		0x4			0xf				0x0		0xfe66
+// NeXTstation Turbo Color:	0x5			0xf				0x0		0x266
+// NeXTcube Turbo			0x8			0xf				0x0		0xfe66
+
+enum NEXT_MACHINE_TYPE {
+	NEXT_MACHINE_COMPUTER,
+	NEXT_MACHINE_STATION,
+	NEXT_MACHINE_CUBE,
+	NEXT_MACHINE_STATION_COLOR,
+	NEXT_MACHINE_STATION_TURBO,
+	NEXT_MACHINE_STATION_TURBO_COLOR,
+	NEXT_MACHINE_CUBE_TURBO=8
+};
+extern char *next_machine_names[];
+
 /* this needs to deal with the bmap on non turbo 040s.. */
 
-/* this is set up by head.S */
-#define NEXT_IO_BASE (0xff000000)	// MMU mapped to 0x2000.0000
+// MMU mapped in head.S to physical 0x2000.0000
+#define NEXT_IO_BASE (0xff000000)
 
 #define NEXT_SLOT 0x0
+
 // #define NEXT_SLOT_BMAP 0x0	// FIXME NeXT: 030
-#define NEXT_SLOT_BMAP 0x100000	// 040
+// #define NEXT_SLOT_BMAP 0x100000	// 040
+#define NEXT_SLOT_BMAP (prom_info.mach_type == NEXT_MACHINE_COMPUTER ? 0x0 : 0x100000)
 
 #define NEXT_ETHER_RXDMA_BASE 	(NEXT_IO_BASE+NEXT_SLOT+0x000150)
 #define NEXT_ETHER_TXDMA_BASE 	(NEXT_IO_BASE+NEXT_SLOT+0x000110)
@@ -50,12 +73,14 @@
 #define DMA_ENABLED	0x01000000
 
 /* control bits for writing */
-#define DMA_INITDMA		0x00200000
-#define DMA_RESET		0x00100000
-#define DMA_CLEARCHAINI	0x00080000
-#define DMA_SETTMEM		0x00040000
-#define DMA_SETCHAIN	0x00020000
-#define DMA_SETENABLE	0x00010000
+#define DMA_SETTDEV			0x00000000 // DMA from memory to device
+#define DMA_INITDMA			0x00200000
+#define DMA_RESET			0x00100000
+#define DMA_CLEARCHAINI		0x00080000
+#define DMA_SETTMEM			0x00040000 // DMA from device to memory
+#define DMA_SETCHAIN		0x00020000
+#define DMA_SETENABLE		0x00010000
+#define DMA_INITDMA_TURBO	0x00800000 // Turbo-only?
 
 /* this is copied from memory that is initialized by the next prom at boot */
 
