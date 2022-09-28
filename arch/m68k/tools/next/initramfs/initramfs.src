@@ -13,11 +13,15 @@ dir /sys 755 0 0
 dir /mnt 755 0 0
 dir /tmp 755 0 0
 dir /etc 755 0 0
+dir /etc/udhcpc 755 0 0
 
 file /init arch/m68k/tools/next/initramfs/init.sh 755 0 0
 
+file /etc/udhcpc/default.script arch/m68k/tools/next/initramfs/udhcpc-default.script 755 0 0
+file /config_net.sh arch/m68k/tools/next/initramfs/config_net.sh 755 0 0
+
 #file /bin/lolcat arch/m68k/tools/next/initramfs/lolcat 755 0 0
-file /etc/next-ascii.ans arch/m68k/tools/next/initramfs/next-ascii.ans 644 0 0
+#file /etc/next-ascii.ans arch/m68k/tools/next/initramfs/next-ascii.ans 644 0 0
 #file /bin/print256colours.sh arch/m68k/tools/next/initramfs/print256colours.sh 755 0 0
 #file /bin/neofetch arch/m68k/tools/next/initramfs/neofetch 755 0 0
 
