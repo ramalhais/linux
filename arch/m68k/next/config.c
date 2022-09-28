@@ -23,8 +23,20 @@ struct prom_info prom_info;
 /* yanked from the eprom chip */
 struct eprom_info eprom_info;
 
+char *next_machine_names[] = {
+	"NeXT Computer",
+	"NeXTstation",
+	"NeXTcube",
+	"NeXTstation Color",
+	"NeXTstation Turbo",
+	"NeXTstation Turbo Color",
+	"NeXT Unknown 0x6",
+	"NeXT Unknown 0x7",
+	"NeXTcube Turbo"
+};
+
 void next_get_model(char *model) {
-       strcpy(model,"Generic NeXT");
+       strcpy(model, next_machine_names[prom_info.mach_type]);
 }
 
 void __init next_meminit(void) {

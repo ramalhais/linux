@@ -15,7 +15,8 @@ export ARCH=m68k CROSS_COMPILE=m68k-linux-gnu- GCC_SUFFIX=-12
 
 ### Setup NeXT config
 #make next_defconfig
-#make next_defconfig_fb
+#make next_fb_defconfig
+#make next_fb_net_defconfig
 
 ### Build kernel
 make -j$[$(nproc)*2] || exit 1
