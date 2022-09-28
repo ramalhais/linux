@@ -31,32 +31,18 @@
 		o keep full statistics, byte counters, etc
 */
 
+// Probably compatible with AT&T chip T7213 on NeXT Turbos. Register layout
+// seems similar at 0x02006000 but DMA seems to be at a different address
 #define DRV_NAME	"mb8795"
 
-#include <linux/module.h>
-
-#include <linux/kernel.h>
-//#include <linux/sched.h>
-//#include <linux/errno.h>
-//#include <linux/string.h>
-#include <linux/init.h>
-//#include <linux/mm.h>
-#include <asm/io.h>
-//#include <asm/system.h>
-//#include <asm/pgtable.h>
-
-//#include <linux/skbuff.h>
-#include <linux/netdevice.h>
 #include <linux/etherdevice.h>
-#include <linux/interrupt.h>
-
 #include <linux/platform_device.h>
 
 #include <asm/nexthw.h>
 #include <asm/nextints.h>
 
-#undef DEBUGME_TX 
-#undef DEBUGME_RX 
+// #define DEBUGME_TX
+// #define DEBUGME_RX
 
 #undef DEBUGME_FUNC
 
@@ -147,16 +133,12 @@ struct mb8795_private {
 	struct net_device_stats stats;
 };
 		
-/* XXX */
-static int stupidface=0;
-
 /* the ethernet dma on the next seems to be magic
 	so we get our own copy */
-// (PR) I don't think so, just a pointer
-
+// (PR) I don't think so, it's just a pointer
 struct rxdmaregs {
 	volatile __u32	csr;
-	char padding[16364];
+	char padding[0x3fec];
 	volatile __u32	saved_start;  /* save in case of abort? */
 	volatile __u32	saved_end;
 	volatile __u32	saved_next_start;
@@ -165,11 +147,14 @@ struct rxdmaregs {
 	volatile __u32	end;
 	volatile __u32	next_start;	/* next in the chain */
 	volatile __u32	next_end;
+	//Test
+	char paddinnnng[0x1f0];
+	volatile __u32	next_initbuf;
 };
 
 struct txdmaregs {
 	volatile __u32	csr;
-	char padding[0x3fec];
+	char padding[0x3fec]; // 16364
 	volatile __u32	saved_start;  /* save in case of abort? */
 	volatile __u32	saved_end;
 	volatile __u32	saved_next_start;
@@ -178,17 +163,17 @@ struct txdmaregs {
 	volatile __u32	end;
 	volatile __u32	next_start;	/* next in the chain */
 	volatile __u32	next_end;
-	char paddinnnng[0x1f0];
+	char paddinnnng[0x1f0]; // 496
 	volatile __u32	w_start; /* (write only) phys start and end addrs of dma block */
 };
 
 #ifdef DEBUGME
 void	dumpregs(struct mb8795regs *mb)
 {
-	printk("txs: 0x%0X, txma: 0x%0X ",mb->txstat,mb->txmask);
-	printk("rxs: 0x%0X, rxma: 0x%0X\n",mb->rxstat,mb->rxmask);
-	printk("txmo: 0x%0X, rxmo: 0x%0X\n ",mb->txmode,mb->rxmode);
-	printk("reset: 0x%0X\n ",mb->reset);
+	printk("txs: 0x%0x, txma: 0x%0x ",mb->txstat,mb->txmask);
+	printk("rxs: 0x%0x, rxma: 0x%0x\n",mb->rxstat,mb->rxmask);
+	printk("txmo: 0x%0x, rxmo: 0x%0x\n ",mb->txmode,mb->rxmode);
+	printk("reset: 0x%0x\n ",mb->reset);
 };
 
 void hdump(unsigned char *d,int len) {
@@ -204,19 +189,13 @@ void hdump(unsigned char *d,int len) {
 void dumpdmaregs(void *ptr) {
 	/* hack :) */
 	struct rxdmaregs *rxd=(struct rxdmaregs *)ptr;
-	__u32  csr=rxd->csr,saved_start=rxd->saved_start,saved_end=rxd->saved_end,
-		saved_next_start=rxd->saved_next_start,saved_next_end=rxd->saved_next_end,
-		start=rxd->start,end=rxd->end,next_start=rxd->next_start,next_end=rxd->next_end;
 
-	printk("csr:%x ",csr);
-	printk("ss:%x ",saved_start);
-	printk("se:%x " ,saved_end);
-	printk("sns:%x ",saved_next_start);
-	printk("sne:%x ",saved_next_end);
-	printk("s:%x ",start);
-	printk("e:%x ",end);
-	printk("ns:%x ",next_start);
-	printk("ne:%x ",next_end);
+	printk("csr: 0x%x ",			rxd->csr);
+	printk("ss: 0x%x se: 0x%x",		rxd->saved_start, 		rxd->saved_end);
+	printk("sns: 0x%x sne: 0x%x",	rxd->saved_next_start, 	rxd->saved_next_end);
+	printk("s: 0x%x e: 0x%x",		rxd->start, 			rxd->end);
+	printk("ns: 0x%x ne: 0x%x",		rxd->next_start, 		rxd->next_end);
+	printk("next_initbuf: 0x%x",	rxd->next_initbuf);
 };
 	
 #endif
@@ -245,32 +224,33 @@ static void setup_rxdma(struct net_device *ndev)
 
 /* XXX check for return of NULL :( */
 
-static inline struct sk_buff *mb_new_skb(void) {
+static inline struct sk_buff *mb_new_skb(struct net_device *ndev) {
 	struct sk_buff *newskb;
 	unsigned int fixup;
 
-	newskb=dev_alloc_skb(RXBUFLEN);
+	// newskb=dev_alloc_skb(RXBUFLEN);
+	newskb = netdev_alloc_skb(ndev, RXBUFLEN);
 	fixup=(unsigned int)newskb->data&(NEXT_ALIGN-1);
 	if(fixup) skb_reserve(newskb,NEXT_ALIGN-fixup);
 		
 	return newskb;
 }
 
-static inline void handle_packet(struct mb8795_private *priv, struct net_device *dev, struct rxb *rx) {
+static inline void handle_packet(struct mb8795_private *priv, struct net_device *ndev, struct rxb *rx) {
 	int len=rx->len;
 	struct sk_buff *skb = rx->skb;
 
 	cache_clear(rx->p_data,len);
-	skb->dev=dev;
+	skb->dev=ndev;
 	skb_put(skb,len);
-	skb->protocol=eth_type_trans(skb,dev);
+	skb->protocol=eth_type_trans(skb,ndev);
 
 	priv->stats.rx_packets++;
 	priv->stats.rx_bytes+=len;
 
 	netif_rx(skb); 
 
-	rx->skb=mb_new_skb();
+	rx->skb=mb_new_skb(ndev);
 	rx->p_data=virt_to_phys(rx->skb->data);
 	rx->len=0;
 }
@@ -295,7 +275,7 @@ static irqreturn_t mb8795_rxint(int irq, void *dev_id)
 	*(volatile unsigned long *)(0xff00f004)=0xB1; // Previous debug
 
 #ifdef DEBUGME_RX
-	printk("rxs: %x ",rxstat);
+	printk("rxs: %x ", mb->rxstat);
 #endif
 
 	if(mb->rxstat & RSTAT_PRECV) {
@@ -322,7 +302,8 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 	struct rxdmaregs *rxd=(struct rxdmaregs *)priv->rxdma;
 	struct rxb *rx=(struct rxb *)priv->cur_rxb;
 
-	__u32 csr, ss, se, s, ns;
+	// __u32 csr, ss, se, s, ns;
+	__u32 csr, ss,se, sns,sne, s,e, ns,ne;
 
 	local_irq_save(flags);
 
@@ -341,18 +322,39 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 	s=rxd->start;
 	ns=rxd->next_start;
 
+	sns=rxd->saved_next_start;
+	sne=rxd->saved_next_end;
+	e=rxd->end;
+	ne=rxd->next_end;
+
+	// volatile __u32	csr;
+	// char padding[16364];
+	// volatile __u32	saved_start;  /* save in case of abort? */
+	// volatile __u32	saved_end;
+	// volatile __u32	saved_next_start;
+	// volatile __u32	saved_next_end;
+	// volatile __u32	start;		/* phys start and end addrs of dma block */
+	// volatile __u32	end;
+	// volatile __u32	next_start;	/* next in the chain */
+	// volatile __u32	next_end;
+
 #ifdef DEBUGME_RX
-	printk("csr: %x %x %x %x %x",csr,ss,se,s,ns);
+	// printk("csr: %x %x %x %x %x",csr,ss,se,s,ns);
+	// printk("csr: %x saved:%x->%x saved_next:%x->%x start/end:%x->%x next:%x->%x",csr, ss,se, sns,sne, s,e, ns,ne);
+	dumpdmaregs(priv->rxdma);
 #endif
 	/* perhaps should check chip status 
 		sometime to look for rx errors */
 
 	if(csr&DMA_CINT && csr&DMA_ENABLED) {
+	*(volatile unsigned long *)(0xff00f004)=0xB1; // Previous debug
 		/* chain int, we have another buffer yet */
 		rxd->csr=DMA_CLEARCHAINI;
-		rx->len=se-ss-4;
+		// rx->len=se-ss-4; // struct packing problem? Previous bug? NeXT Machine type differences?
+		rx->len=se-(rx->p_data)-4; // hack: For some reason Previous is setting saved_start to zero, so we get the physical start from rx->p_data.
 		handle_packet(priv,priv->ndev,rx);
 	} else {
+	*(volatile unsigned long *)(0xff00f004)=0xB2; // Previous debug
 		/* if we missed the first chained int we'll
 		have a waiting packet in the 'first' slot
 		but aren't currently dealing with it. Fix */
@@ -423,8 +425,8 @@ static irqreturn_t mb8795_txdmaint(int irq, void *dev_id)
 	*(volatile unsigned long *)(0xff00f004)=0xAE; // Previous debug
 
 #ifdef DEBUGME_TX
-	struct mb8795regs *mb=(struct mb8795regs *)priv->mb;
-        printk("txdma : %x  ",mb->txstat);
+	// struct mb8795regs *mb=(struct mb8795regs *)priv->mb;
+	printk("txdma : %x  ",priv->mb->txstat);
 	dumpdmaregs(txd);
 #endif
 
@@ -451,7 +453,7 @@ static int mb8795_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 	*(volatile unsigned long *)(0xff00f004)=0xAC; // Previous debug
 
 #ifdef DEBUGME_TX
-	printk("xmts [%p %d]: %x ",skb->data,skb->len,mb->txstat);
+	printk("xmts [%p %d]: %x ",skb->data,skb->len,priv->mb->txstat);
 #endif
 
 // 	// check for xmit timeout ?
@@ -479,6 +481,7 @@ static int mb8795_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 	memcpy(priv->txbuf,skb->data,skb->len);
 /*	flush_page_to_ram((unsigned long)priv->txbuf&~(PAGE_SIZE-1));  */
 	cache_push(priv->p_txbuf,skb->len);
+	// This should do the same as cache_push():
 	// arch_sync_dma_for_device(phys_addr_t handle, size_t size, enum dma_data_direction dir)
 	// sync_dma_for_device(priv->p_txbuf, skb->len, DMA_TO_DEVICE);
 
@@ -489,7 +492,7 @@ static int mb8795_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 
 	/* ok, cross our fingers */
 	txd->csr=DMA_RESET|DMA_INITDMA|DMA_CLEARCHAINI;
-	txd->csr=0;
+	txd->csr=0; // Configure DMA direction to device? DMA_SETTDEV (same value)?
 
 	priv->txlen=skb->len;
 
@@ -504,14 +507,16 @@ static int mb8795_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 		16/32/64bytes didn't work either.. I hope its not
 		really splatting that much over the net.. I need
 		an analyzer :) */
+
+	// try: eth_skb_pad(struct sk_buff *skb) and remove the +15 below. The 0x80000000 is some kind of magic (bit 31(highest bit))
 	txd->end=(priv->p_txbuf+TXBUFLEN+15) | 0x80000000;
 	txd->saved_end=(priv->p_txbuf+TXBUFLEN+15) | 0x80000000; 
 
-
-	dev_kfree_skb(skb); 
-	
 	// dev->trans_start = jiffies;
 	txd->csr=DMA_SETENABLE;
+
+	// Freeing SKB after triggering DMA may be faster
+	dev_kfree_skb(skb);
 
 	*(volatile unsigned long *)(0xff00f004)=0xAD; // Previous debug
 
@@ -587,7 +592,7 @@ static int mb8795_open(struct net_device *ndev)
 	setup_rxdma(ndev);
 #ifdef DEBUGME_RX
 	printk("setup: ");
-	dumpdmaregs(rxd);
+	dumpdmaregs(priv->rxdma);
 	printk("\n");
 #endif
 
@@ -596,32 +601,27 @@ static int mb8795_open(struct net_device *ndev)
 	priv->rx_dma = priv;
 	priv->tx_dma = priv;
 
-	*(volatile unsigned long *)(0xff00f004)=0xA6; // Previous debug
-	if (request_irq(IRQ_AUTO_3, mb8795_rxint, IRQF_SHARED, "NeXT Keyboard/Mouse", priv->rx)) {
-	*(volatile unsigned long *)(0xff00f004)=0xA7; // Previous debug
-		pr_err("Failed to register NeXT network interface RX interrupt\n");
+	if (request_irq(IRQ_AUTO_3, mb8795_rxint, IRQF_SHARED, "NeXT Ethernet Receive", priv->rx)) {
+		pr_err("Failed to register interrupt for NeXT Ethernet Receive\n");
 		goto err_out_irq_rx;
 	}
-	if (request_irq(IRQ_AUTO_3, mb8795_txint, IRQF_SHARED, "NeXT Keyboard/Mouse", priv->tx)) {
-	*(volatile unsigned long *)(0xff00f004)=0xA8; // Previous debug
-		pr_err("Failed to register NeXT network interface TX interrupt\n");
+	if (request_irq(IRQ_AUTO_3, mb8795_txint, IRQF_SHARED, "NeXT Ethernet Transmit", priv->tx)) {
+		pr_err("Failed to register interrupt for NeXT Ethernet Transmit\n");
 		goto err_out_irq_tx;
 	}
-	if (request_irq(IRQ_AUTO_6, mb8795_rxdmaint, IRQF_SHARED, "NeXT Keyboard/Mouse", priv->rx_dma)) {
-	*(volatile unsigned long *)(0xff00f004)=0xA9; // Previous debug
-		pr_err("Failed to register NeXT network interface RX DMA interrupt\n");
+	if (request_irq(IRQ_AUTO_6, mb8795_rxdmaint, IRQF_SHARED, "NeXT Ethernet DMA Receive", priv->rx_dma)) {
+		pr_err("Failed to register interrupt for NeXT Ethernet DMA Receive\n");
 		goto err_out_irq_rx_dma;
 	}
-	if (request_irq(IRQ_AUTO_6, mb8795_txdmaint, IRQF_SHARED, "NeXT Keyboard/Mouse", priv->tx_dma)) {
+	if (request_irq(IRQ_AUTO_6, mb8795_txdmaint, IRQF_SHARED, "NeXT Ethernet DMA Transmit", priv->tx_dma)) {
 	*(volatile unsigned long *)(0xff00f004)=0xAA; // Previous debug
-		pr_err("Failed to register NeXT network interface TX DMA interrupt\n");
+		pr_err("Failed to register interrupt for NeXT Ethernet DMA Transmit\n");
 		goto err_out_irq_tx_dma;
 	}
 	next_intmask_enable(NEXT_IRQ_ENETR-NEXT_IRQ_BASE);
 	next_intmask_enable(NEXT_IRQ_ENETX-NEXT_IRQ_BASE);
 	next_intmask_enable(NEXT_IRQ_ENETR_DMA-NEXT_IRQ_BASE);
 	next_intmask_enable(NEXT_IRQ_ENETX_DMA-NEXT_IRQ_BASE);
-	*(volatile unsigned long *)(0xff00f004)=0xAB; // Previous debug
 
 	/* enable interrupts */
 /*	I couldn't get the chip to stop giving us tons of errors,
@@ -677,89 +677,84 @@ static int mb8795_probe(struct platform_device *pdev)
 	int err;
 	int i;
 
-	*(volatile unsigned long *)(0xff00f004)=0xA0; // Previous debug
-
 	dev_info(&pdev->dev, "Probing\n");
 
-	if(!stupidface) {
-	*(volatile unsigned long *)(0xff00f004)=0xA1; // Previous debug
-		stupidface=1; /* why do we get called so many times? */
-
-		ndev = alloc_etherdev(sizeof(struct mb8795_private));
-		if (!ndev) {
-	*(volatile unsigned long *)(0xff00f004)=0xA2; // Previous debug
-			dev_err(&pdev->dev, "Failed to allocate ethernet device\n");
-			return -ENOMEM;
-		}
-
-		// ndev->irq = IRQ_AUTO_3;
-		ndev->netdev_ops = &mb8795_ndev_ops;
-		// ndev->features |= 0;
-
-		eth_hw_addr_set(ndev, eprom_info.eaddr);
-		dev_info(&pdev->dev, "Ethernet MAC Address: %pM\n", eprom_info.eaddr);
-
-		priv = netdev_priv(ndev);
-		priv->pdev = pdev;
-		priv->ndev = ndev;
-		platform_set_drvdata(pdev, ndev);
-		SET_NETDEV_DEV(ndev, &pdev->dev);
-
-		// spin_lock_init(&bp->lock);
-
-		err = register_netdev(ndev);
-		if (err) {
-			dev_err(&pdev->dev, "Failed to register net device\n");
-			goto err_out_free_netdev;
-		}
-
-		priv->mb = (struct mb8795regs *)NEXT_ETHER_BASE;
-		priv->rxdma = (struct rxdmaregs *)NEXT_ETHER_RXDMA_BASE;
-		priv->txdma = (struct txdmaregs *)NEXT_ETHER_TXDMA_BASE;
-		priv->txbuf = (unsigned char *)devm_kmalloc(&ndev->dev, TXBUFLEN, GFP_KERNEL);
-		// ___GFP_DMA32 linux/kernel/dma/direct.c
-		// buf_pool->rx_skb = devm_kcalloc(dev, buf_pool->slots,
-		// 				sizeof(struct sk_buff *),
-		// 				GFP_KERNEL);
-
-		/* assuming we're on a page boundry for dma NEXT_ALIGNment */
-		priv->p_txbuf=virt_to_phys(priv->txbuf);
-
-			// OR linux/arch/m68k/kernel/dma.c
-			// arch_dma_alloc(struct device *dev, size_t size, dma_addr_t *dma_handle,
-			// gfp_t gfp, unsigned long attrs)
-			// Example: priv->txbuf = dma_alloc(pdev->dev, TXBUFLEN, priv->p_txbuf, GFP_DMA | GFP_KERNEL, 0)
-			// dma_alloc_coherent(p_dev, TX_REG_DESC_SIZE *
-			// 			TX_DESC_NUM, &priv->tx_base,
-			// 			GFP_DMA | GFP_KERNEL);
-			// This is better since it disables cache
-			// 	dmam_alloc_coherent(struct device *dev, size_t size,
-			// dma_addr_t *dma_handle, gfp_t gfp)
-
-		/* rx ring */
-		for(i=0; i<NRXBUFS; i++) {
-			struct rxb *rx = (struct rxb *)&priv->rxbufs[i];
-
-			rx->skb = mb_new_skb();
-			rx->p_data = virt_to_phys(rx->skb->data);
-			rx->len = 0;  /* is filled in by chain handler */
-
-			if (i) {
-				priv->rxbufs[i-1].next=rx;
-			}
-		}
-
-		/* take care of head/tail */
-		priv->rxbufs[0].next	= &priv->rxbufs[1];
-		priv->rxbufs[i-1].next	= &priv->rxbufs[0];
-		priv->cur_rxb 			= &priv->rxbufs[0];
-		
-	*(volatile unsigned long *)(0xff00f004)=0xA3; // Previous debug
-		return 0;
-	} else {
-	*(volatile unsigned long *)(0xff00f004)=0xA4; // Previous debug
-		dev_info(&pdev->dev, "kernel tried to call us again :(\n");
+	ndev = alloc_etherdev(sizeof(struct mb8795_private));
+	if (!ndev) {
+		dev_err(&pdev->dev, "Failed to allocate ethernet device\n");
+		return -ENOMEM;
 	}
+	ndev->netdev_ops = &mb8795_ndev_ops;
+	SET_NETDEV_DEV(ndev, &pdev->dev);
+
+	priv = netdev_priv(ndev);
+	priv->pdev = pdev;
+	priv->ndev = ndev;
+	priv->mb = (struct mb8795regs *)NEXT_ETHER_BASE;
+	priv->rxdma = (struct rxdmaregs *)NEXT_ETHER_RXDMA_BASE;
+	priv->txdma = (struct txdmaregs *)NEXT_ETHER_TXDMA_BASE;
+	priv->txbuf = (unsigned char *)devm_kmalloc(&ndev->dev, TXBUFLEN, GFP_KERNEL);
+	platform_set_drvdata(pdev, ndev);
+
+	if (eprom_info.eaddr[0]|eprom_info.eaddr[1]|eprom_info.eaddr[2]|eprom_info.eaddr[3]|eprom_info.eaddr[4]|eprom_info.eaddr[5]) {
+		eth_hw_addr_set(ndev, eprom_info.eaddr);
+		dev_info(&pdev->dev, "PROM Ethernet MAC Address: %pM\n", eprom_info.eaddr);
+	} else if (priv->mb->eaddr[0]|priv->mb->eaddr[1]|priv->mb->eaddr[2]|priv->mb->eaddr[3]|priv->mb->eaddr[4]|priv->mb->eaddr[5]) {
+		eth_hw_addr_set(ndev, eprom_info.eaddr);
+		dev_info(&pdev->dev, "Chip Ethernet MAC Address: %pM\n", priv->mb->eaddr);
+	} else {
+		dev_info(&pdev->dev, "Missing Ethernet MAC address. Assigning random Ethernet MAC Address\n");
+		eth_hw_addr_random(ndev);
+	}
+
+	// spin_lock_init(&bp->lock);
+
+	err = register_netdev(ndev);
+	if (err) {
+		dev_err(&pdev->dev, "Failed to register net device\n");
+		goto err_out_free_netdev;
+	}
+
+	// ___GFP_DMA32 linux/kernel/dma/direct.c
+	// buf_pool->rx_skb = devm_kcalloc(dev, buf_pool->slots,
+	// 				sizeof(struct sk_buff *),
+	// 				GFP_KERNEL);
+
+	/* assuming we're on a page boundry for dma alignment */
+	priv->p_txbuf=virt_to_phys(priv->txbuf);
+
+		// OR linux/arch/m68k/kernel/dma.c
+		// arch_dma_alloc(struct device *dev, size_t size, dma_addr_t *dma_handle,
+		// gfp_t gfp, unsigned long attrs)
+		// Example: priv->txbuf = dma_alloc(pdev->dev, TXBUFLEN, priv->p_txbuf, GFP_DMA | GFP_KERNEL, 0)
+		// dma_alloc_coherent(p_dev, TX_REG_DESC_SIZE *
+		// 			TX_DESC_NUM, &priv->tx_base,
+		// 			GFP_DMA | GFP_KERNEL);
+		// This is better since it disables cache
+		// 	dmam_alloc_coherent(struct device *dev, size_t size,
+		// dma_addr_t *dma_handle, gfp_t gfp)
+
+	/* rx ring */
+	for(i=0; i<NRXBUFS; i++) {
+		struct rxb *rx = (struct rxb *)&priv->rxbufs[i];
+
+		rx->skb = mb_new_skb(ndev);
+		rx->p_data = virt_to_phys(rx->skb->data);
+		rx->len = 0;  /* is filled in by chain handler */
+
+		if (i) {
+			priv->rxbufs[i-1].next=rx;
+		}
+	}
+
+	/* take care of head/tail */
+	priv->rxbufs[0].next	= &priv->rxbufs[1];
+	priv->rxbufs[i-1].next	= &priv->rxbufs[0];
+	priv->cur_rxb 			= &priv->rxbufs[0];
+
+	dev_info(&pdev->dev, "Finished probing\n");
+
+	return 0;
 	
 // err_out_unregister_netdev:
 // 	unregister_netdev(ndev);
