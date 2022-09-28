@@ -1,0 +1,9 @@
+ip address add  127.0.0.2/8 dev lo
+ip link set lo up
+
+#ip address add  192.168.10.2/24 dev eth0
+#ip link set eth0 up
+
+udhcpc
+
+mount -t nfs -o vers=2,nolock 10.0.2.254:/private/tftpboot /mnt

@@ -10,13 +10,13 @@
 
 #include <linux/clocksource.h>
 #include <linux/interrupt.h>
-#include <linux/types.h>
 #include <linux/kernel.h>
 #include <linux/mm.h>
+#include <linux/types.h>
 
-#include <asm/nextints.h>
-#include <asm/nexthw.h>
 #include <asm/irq.h>
+#include <asm/nexthw.h>
+#include <asm/nextints.h>
 
 #include "rtc.h"
 
@@ -110,6 +110,16 @@ void next_sched_init(void)
 	// request_irq(IRQ_AUTO_6, irq_catchall, 0, "int6", NULL);
 	// request_irq(IRQ_AUTO_5, irq_catchall, 0, "int5", NULL);
 	// request_irq(IRQ_AUTO_3, irq_catchall, 0, "int3", NULL);
+
+	// Not the best place for this, but if printed on arch/m68k/next/config.c,
+	// you could only see it afterwards with dmesg
+	printk("PROM Machine Info: %s (mach_type=0x%x next_board_rev=0x%x dmachip=0x%x diskchip=0x%x)",
+		next_machine_names[prom_info.mach_type],
+		prom_info.mach_type,
+		prom_info.next_board_rev,
+		prom_info.dmachip,
+		prom_info.diskchip
+	);
 
 	/* could also get this from the prom i think */
 	clocktype=(rtc_read(RTC_STATUS) & RTC_IS_NEW) ? N_C_NEW : N_C_OLD;
