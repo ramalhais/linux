@@ -693,7 +693,6 @@ static int mb8795_probe(struct platform_device *pdev)
 	priv->mb = (struct mb8795regs *)NEXT_ETHER_BASE;
 	priv->rxdma = (struct rxdmaregs *)NEXT_ETHER_RXDMA_BASE;
 	priv->txdma = (struct txdmaregs *)NEXT_ETHER_TXDMA_BASE;
-	priv->txbuf = (unsigned char *)devm_kmalloc(&ndev->dev, TXBUFLEN, GFP_KERNEL);
 	platform_set_drvdata(pdev, ndev);
 
 	if (eprom_info.eaddr[0]|eprom_info.eaddr[1]|eprom_info.eaddr[2]|eprom_info.eaddr[3]|eprom_info.eaddr[4]|eprom_info.eaddr[5]) {
@@ -714,6 +713,8 @@ static int mb8795_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to register net device\n");
 		goto err_out_free_netdev;
 	}
+
+	priv->txbuf = (unsigned char *)devm_kmalloc(&ndev->dev, TXBUFLEN, GFP_KERNEL);
 
 	// ___GFP_DMA32 linux/kernel/dma/direct.c
 	// buf_pool->rx_skb = devm_kcalloc(dev, buf_pool->slots,
