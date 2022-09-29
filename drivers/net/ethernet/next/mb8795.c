@@ -685,7 +685,6 @@ static int mb8795_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 	ndev->netdev_ops = &mb8795_ndev_ops;
-	SET_NETDEV_DEV(ndev, &pdev->dev);
 
 	priv = netdev_priv(ndev);
 	priv->pdev = pdev;
@@ -693,13 +692,12 @@ static int mb8795_probe(struct platform_device *pdev)
 	priv->mb = (struct mb8795regs *)NEXT_ETHER_BASE;
 	priv->rxdma = (struct rxdmaregs *)NEXT_ETHER_RXDMA_BASE;
 	priv->txdma = (struct txdmaregs *)NEXT_ETHER_TXDMA_BASE;
-	platform_set_drvdata(pdev, ndev);
 
 	if (eprom_info.eaddr[0]|eprom_info.eaddr[1]|eprom_info.eaddr[2]|eprom_info.eaddr[3]|eprom_info.eaddr[4]|eprom_info.eaddr[5]) {
 		eth_hw_addr_set(ndev, eprom_info.eaddr);
 		dev_info(&pdev->dev, "PROM Ethernet MAC Address: %pM\n", eprom_info.eaddr);
 	} else if (priv->mb->eaddr[0]|priv->mb->eaddr[1]|priv->mb->eaddr[2]|priv->mb->eaddr[3]|priv->mb->eaddr[4]|priv->mb->eaddr[5]) {
-		eth_hw_addr_set(ndev, eprom_info.eaddr);
+		eth_hw_addr_set(ndev, priv->mb->eaddr);
 		dev_info(&pdev->dev, "Chip Ethernet MAC Address: %pM\n", priv->mb->eaddr);
 	} else {
 		dev_info(&pdev->dev, "Missing Ethernet MAC address. Assigning random Ethernet MAC Address\n");
@@ -714,6 +712,8 @@ static int mb8795_probe(struct platform_device *pdev)
 		goto err_out_free_netdev;
 	}
 
+	platform_set_drvdata(pdev, ndev);
+	SET_NETDEV_DEV(ndev, &pdev->dev);
 	priv->txbuf = (unsigned char *)devm_kmalloc(&ndev->dev, TXBUFLEN, GFP_KERNEL);
 
 	// ___GFP_DMA32 linux/kernel/dma/direct.c
