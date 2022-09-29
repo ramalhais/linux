@@ -4,7 +4,7 @@ export ARCH=m68k
 export CROSS_COMPILE=m68k-linux-gnu-
 export GCC_SUFFIX=-10
 
-make next_fb_net_defconfig && make -j$[$(nproc)*2] || exit 1
+make next_fb_net_nfs_defconfig && make -j$[$(nproc)*2] || exit 1
 
 # DATE=$(date +%F-%H.%M.%S)
 # KERNELVER=$(make kernelversion)
