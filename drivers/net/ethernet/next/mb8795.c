@@ -697,7 +697,7 @@ static int mb8795_probe(struct platform_device *pdev)
 		eth_hw_addr_set(ndev, eprom_info.eaddr);
 		dev_info(&pdev->dev, "PROM Ethernet MAC Address: %pM\n", eprom_info.eaddr);
 	} else if (priv->mb->eaddr[0]|priv->mb->eaddr[1]|priv->mb->eaddr[2]|priv->mb->eaddr[3]|priv->mb->eaddr[4]|priv->mb->eaddr[5]) {
-		eth_hw_addr_set(ndev, priv->mb->eaddr);
+		eth_hw_addr_set(ndev, (const u8 *)priv->mb->eaddr);
 		dev_info(&pdev->dev, "Chip Ethernet MAC Address: %pM\n", priv->mb->eaddr);
 	} else {
 		dev_info(&pdev->dev, "Missing Ethernet MAC address. Assigning random Ethernet MAC Address\n");
