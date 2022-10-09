@@ -15,7 +15,7 @@
 
 #include <linux/types.h>
 
-// Info from running Previous emulator:
+// PROM Info data from running Previous emulator:
 // 							mach_type	next_board_rev	dmachip	diskchip
 // NeXT Computer:			0x0			0x0				0x139	0x136
 // NeXTstation:				0x1			0x1				0x139	0x136
