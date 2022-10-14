@@ -1098,7 +1098,7 @@ L(detect_prom_done):
 	movel	%a2, %a4@
 #endif
 
-	/* grab the first 6 bytes of the eprom which has the mac address */
+	// grab the first 6 bytes of the eprom containing the mac address
 	movel   #0x1000008,%a0
 	lea     %pc@(eprom_info),%a1
 	movel   #6,%d1
@@ -1114,7 +1114,6 @@ L(eprom_040):
 #endif
 
 1:
-	// FIXME NeXT: 030 was blowing up here. maybe TT 0x1000000?
 	moveb   %a0@+,%a1@+
 	dbra    %d1,1b  
 
@@ -1212,8 +1211,8 @@ L(not_next_mem):
 #endif
 
 	get_bi_record BI_MEMCHUNK
-L(detect_mem_done):
 	movel	%a0@(4),%d0 		// mem size in a0@(4)
+L(detect_mem_done):
 	movel	#16*1024*1024,%d1
 	cmpl	%d0,%d1
 	jls	1f
