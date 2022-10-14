@@ -210,7 +210,7 @@ static void fb_set_logocmap(struct fb_info *info,
 	palette_cmap.blue = palette_blue;
 	palette_cmap.transp = NULL;
 
-	for ( i = 0; i < logo->clutsize; i += n) {
+	for (i = 0; i < logo->clutsize; i += n) {
 		n = logo->clutsize - i;
 		/* palette_cmap provides space for only 16 colors at once */
 		if (n > 16)
@@ -249,7 +249,7 @@ static void  fb_set_logo_truepalette(struct fb_info *info,
 	greenshift = info->var.green.offset - (8 - info->var.green.length);
 	blueshift  = info->var.blue.offset  - (8 - info->var.blue.length);
 
-	for (i = 0; i < logo->clutsize; i++) {
+	for ( i = 0; i < logo->clutsize; i++) {
 		palette[i+32] = (safe_shift((clut[0] & redmask), redshift) |
 				 safe_shift((clut[1] & greenmask), greenshift) |
 				 safe_shift((clut[2] & bluemask), blueshift));

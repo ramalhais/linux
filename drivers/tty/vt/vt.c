@@ -901,13 +901,10 @@ static void hide_softcursor(struct vc_data *vc)
 
 static void hide_cursor(struct vc_data *vc)
 {
-	if (vc_is_sel(vc)) {
-
+	if (vc_is_sel(vc))
 		clear_selection();
-	}
 
 	vc->vc_sw->con_cursor(vc, CM_ERASE);
-
 	hide_softcursor(vc);
 }
 
@@ -1034,9 +1031,8 @@ void redraw_screen(struct vc_data *vc, int is_switch)
 			clear_buffer_attributes(vc);
 		}
 
-		if (update && vc->vc_mode != KD_GRAPHICS) {
+		if (update && vc->vc_mode != KD_GRAPHICS)
 			do_update_region(vc, vc->vc_origin, vc->vc_screenbuf_size / 2);
-		}
 	}
 	set_cursor(vc);
 	if (is_switch) {
@@ -1057,9 +1053,8 @@ int vc_cons_allocated(unsigned int i)
 static void visual_init(struct vc_data *vc, int num, int init)
 {
 	/* ++Geert: vc->vc_sw->con_init determines console size */
-	if (vc->vc_sw) {
+	if (vc->vc_sw)
 		module_put(vc->vc_sw->owner);
-	}
 	vc->vc_sw = conswitchp;
 #ifndef VT_SINGLE_DRIVER
 	if (con_driver_map[num])
@@ -3640,7 +3635,6 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
 	struct con_driver *con_driver;
 	int i, j = -1, k = -1, retval = -ENODEV;
 
-
 	if (!try_module_get(owner))
 		return -ENODEV;
 
@@ -3680,9 +3674,8 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
 		int old_was_color;
 		struct vc_data *vc = vc_cons[i].d;
 
-		if (con_driver_map[i]){
+		if (con_driver_map[i])
 			module_put(con_driver_map[i]->owner);
-		}
 		__module_get(owner);
 		con_driver_map[i] = csw;
 
@@ -3707,9 +3700,8 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
 		 * the attributes in the screenbuf will be wrong.  The
 		 * following resets all attributes to something sane.
 		 */
-		if (old_was_color != vc->vc_can_do_color) {
+		if (old_was_color != vc->vc_can_do_color)
 			clear_buffer_attributes(vc);
-		}
 	}
 
 	pr_info("Console: switching ");
@@ -4131,7 +4123,6 @@ static int do_register_con_driver(const struct consw *csw, int first, int last)
 		}
 	}
 
-
 	desc = csw->con_startup();
 	if (!desc) {
 		retval = -ENODEV;
@@ -4160,7 +4151,6 @@ static int do_register_con_driver(const struct consw *csw, int first, int last)
 	if (retval)
 		goto err;
 
-
 	con_driver->dev =
 		device_create_with_groups(vtconsole_class, NULL,
 					  MKDEV(0, con_driver->node),
@@ -4171,7 +4161,6 @@ static int do_register_con_driver(const struct consw *csw, int first, int last)
 			con_driver->desc, PTR_ERR(con_driver->dev));
 		con_driver->dev = NULL;
 	} else {
-
 		vtconsole_init_device(con_driver);
 	}
 
@@ -4273,7 +4262,6 @@ int do_take_over_console(const struct consw *csw, int first, int last, int deflt
 {
 	int err;
 
-
 	err = do_register_con_driver(csw, first, last);
 	/*
 	 * If we get an busy error we still want to bind the console driver
@@ -4282,11 +4270,8 @@ int do_take_over_console(const struct consw *csw, int first, int last, int deflt
 	 */
 	if (err == -EBUSY)
 		err = 0;
-	if (!err) {
-
+	if (!err)
 		do_bind_con_driver(csw, first, last, deflt);
-	}
-
 
 	return err;
 }

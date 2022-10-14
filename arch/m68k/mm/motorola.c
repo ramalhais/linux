@@ -479,7 +479,6 @@ void __init paging_init(void)
 	memblock_set_bottom_up(true);
 
 	for (i = 0; i < m68k_num_memory; i++) {
-
 		m68k_setup_node(i);
 		map_node(i);
 	}
@@ -508,6 +507,7 @@ void __init paging_init(void)
 	for (i = 0; i < m68k_num_memory; i++)
 		if (node_present_pages(i))
 			node_set_state(i, N_NORMAL_MEMORY);
+
 	max_zone_pfn[ZONE_DMA] = memblock_end_of_DRAM();
 	free_area_init(max_zone_pfn);
 }

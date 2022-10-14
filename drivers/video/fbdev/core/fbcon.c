@@ -26,7 +26,7 @@
  *
  *  Hardware cursor support added by Emmanuel Marty (core@ggi-project.org)
  *  Smart redraw scrolling, arbitrary font width support, 512char font support
- *  and software scrollback added by
+ *  and software scrollback added by 
  *                         Jakub Jelinek (jj@ultra.linux.cz)
  *
  *  Random hacking by Martin Mares <mj@ucw.cz>
@@ -959,16 +959,11 @@ static const char *fbcon_startup(void)
 
 	/* Setup default font */
 	if (!p->fontdata && !vc->vc_font.data) {
-		// if (!fontname[0] || !(font = find_font(fontname))) {
-		if (fontname[0]) {
-			font = find_font(fontname);
-		}
-		if (!font) {
+		if (!fontname[0] || !(font = find_font(fontname)))
 			font = get_default_font(info->var.xres,
-					info->var.yres,
-					info->pixmap.blit_x,
-					info->pixmap.blit_y);
-		}
+						info->var.yres,
+						info->pixmap.blit_x,
+						info->pixmap.blit_y);
 		vc->vc_font.width = font->width;
 		vc->vc_font.height = font->height;
 		vc->vc_font.data = (void *)(p->fontdata = font->data);
@@ -1129,9 +1124,8 @@ static void fbcon_init(struct vc_data *vc, int init)
 	} else
 		vc_resize(vc, new_cols, new_rows);
 
-	if (logo) {
+	if (logo)
 		fbcon_prepare_logo(vc, info, cols, rows, new_cols, new_rows);
-	}
 
 	if (ops->rotate_font && ops->rotate_font(info, vc)) {
 		ops->rotate = FB_ROTATE_UR;
@@ -1308,9 +1302,8 @@ static void fbcon_clear_margins(struct vc_data *vc, int bottom_only)
 	struct fb_info *info = fbcon_info_from_console(vc->vc_num);
 	struct fbcon_ops *ops = info->fbcon_par;
 
-	if (!fbcon_is_inactive(vc, info)) {
+	if (!fbcon_is_inactive(vc, info))
 		ops->clear_margins(vc, info, margin_color, bottom_only);
-	}
 }
 
 static void fbcon_cursor(struct vc_data *vc, int mode)
@@ -1324,11 +1317,10 @@ static void fbcon_cursor(struct vc_data *vc, int mode)
 	if (fbcon_is_inactive(vc, info) || vc->vc_deccm != 1)
 		return;
 
-	if (vc->vc_cursor_type & CUR_SW) {
+	if (vc->vc_cursor_type & CUR_SW)
 		fbcon_del_cursor_work(info);
-	} else {
+	else
 		fbcon_add_cursor_work(info);
-	}
 
 	ops->cursor_flash = (mode == CM_ERASE) ? 0 : 1;
 
@@ -2991,8 +2983,6 @@ static int do_fb_registered(struct fb_info *info)
 {
 	int ret = 0, i, idx;
 
-
-
 	WARN_CONSOLE_UNLOCKED();
 
 	fbcon_registered_fb[info->node] = info;
@@ -3001,33 +2991,26 @@ static int do_fb_registered(struct fb_info *info)
 	idx = info->node;
 	fbcon_select_primary(info);
 
-
 	if (deferred_takeover) {
 		pr_info("fbcon: Deferring console take-over\n");
 		return 0;
 	}
 
 	if (info_idx == -1) {
-
 		for (i = first_fb_vc; i <= last_fb_vc; i++) {
 			if (con2fb_map_boot[i] == idx) {
-
 				info_idx = idx;
 				break;
 			}
 		}
 
 		if (info_idx != -1) {
-
 			ret = do_fbcon_takeover(1);
 		}
 	} else {
-
 		for (i = first_fb_vc; i <= last_fb_vc; i++) {
-			if (con2fb_map_boot[i] == idx) {
-
+			if (con2fb_map_boot[i] == idx)
 				set_con2fb_map(i, idx, 0);
-			}
 		}
 	}
 

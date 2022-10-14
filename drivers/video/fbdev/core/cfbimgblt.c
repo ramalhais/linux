@@ -189,10 +189,7 @@ static inline void slow_imageblit(const struct fb_image *image, struct fb_info *
 			u32 end_mask = fb_shifted_pixels_mask_u32(p, shift,
 						bswapmask);
 
-			// FB_WRITEL((FB_READL(dst) & end_mask) | val, dst);
-			uint32_t r = (*(volatile u32 *) (dst));
-			(*(volatile u32 *) (dst) = ((r & end_mask) | val));
-
+			FB_WRITEL((FB_READL(dst) & end_mask) | val, dst);
 		}
 
 		dst1 += pitch;
@@ -279,10 +276,6 @@ static inline void fast_imageblit(const struct fb_image *image, struct fb_info *
 			break;
 		case 2: /* 16 bpp */
 			for (j = k; j >= 4; j -= 4, ++src) {
-				// FB_WRITEL((((*src>>7)&1)*0x6f600000)|(((*src>>6)&1)*0x6f60), dst++);
-				// FB_WRITEL((((*src>>5)&1)*0x6f600000)|(((*src>>4)&1)*0x6f60), dst++);
-				// FB_WRITEL((((*src>>3)&1)*0x6f600000)|(((*src>>2)&1)*0x6f60), dst++);
-				// FB_WRITEL((((*src>>1)&1)*0x6f600000)|(((*src>>0)&1)*0x6f60), dst++);
 				FB_WRITEL(colortab[(*src >> 6) & bit_mask], dst++);
 				FB_WRITEL(colortab[(*src >> 4) & bit_mask], dst++);
 				FB_WRITEL(colortab[(*src >> 2) & bit_mask], dst++);
@@ -341,9 +334,8 @@ void cfb_imageblit(struct fb_info *p, const struct fb_image *image)
 	bitstart &= ~(bpl - 1);
 	dst1 = p->screen_base + bitstart;
 
-	if (p->fbops->fb_sync) {
+	if (p->fbops->fb_sync)
 		p->fbops->fb_sync(p);
-	}
 
 	if (image->depth == 1) {
 		if (p->fix.visual == FB_VISUAL_TRUECOLOR ||
@@ -357,12 +349,11 @@ void cfb_imageblit(struct fb_info *p, const struct fb_image *image)
 
 		if (32 % bpp == 0 && !start_index && !pitch_index &&
 		    ((width & (32/bpp-1)) == 0) &&
-		    bpp >= 8 && bpp <= 32) {
+		    bpp >= 8 && bpp <= 32)
 			fast_imageblit(image, p, dst1, fgcolor, bgcolor);
-		} else {
+		else
 			slow_imageblit(image, p, dst1, fgcolor, bgcolor,
 					start_index, pitch_index);
-		}
 	} else {
 		color_imageblit(image, p, dst1, start_index, pitch_index);
 	}
@@ -373,3 +364,4 @@ EXPORT_SYMBOL(cfb_imageblit);
 MODULE_AUTHOR("James Simmons <jsimmons@users.sf.net>");
 MODULE_DESCRIPTION("Generic software accelerated imaging drawing");
 MODULE_LICENSE("GPL");
+

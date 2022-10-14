@@ -6433,6 +6433,7 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 
 			if (prev->sched_contributes_to_load)
 				rq->nr_uninterruptible++;
+
 			/*
 			 * __schedule()			ttwu()
 			 *   prev_state = prev->state;    if (p->on_rq && ...)

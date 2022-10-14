@@ -370,13 +370,12 @@ static void bit_cursor(struct vc_data *vc, struct fb_info *info, int mode,
 	cursor.image.depth = 1;
 	cursor.rop = ROP_XOR;
 
-	if (info->fbops->fb_cursor) {
+	if (info->fbops->fb_cursor)
 		err = info->fbops->fb_cursor(info, &cursor);
-	}
 
-	if (err) {
+	if (err)
 		soft_cursor(info, &cursor);
-	}
+
 	ops->cursor_reset = 0;
 }
 
