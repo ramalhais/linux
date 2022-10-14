@@ -1501,31 +1501,22 @@ static void * __init memblock_alloc_internal(
 	 * this moment memblock may be deinitialized already and its
 	 * internal data may be destroyed (after execution of memblock_free_all)
 	 */
-// *(volatile unsigned char *)(0xff110000)=0x70; // Previous debug
 	if (WARN_ON_ONCE(slab_is_available()))
 		return kzalloc_node(size, GFP_NOWAIT, nid);
 
-	if (max_addr > memblock.current_limit) {
-// *(volatile unsigned char *)(0xff110000)=0x71; // Previous debug
+	if (max_addr > memblock.current_limit)
 		max_addr = memblock.current_limit;
-	}
 
-// *(volatile unsigned char *)(0xff110000)=0x72; // Previous debug
 	alloc = memblock_alloc_range_nid(size, align, min_addr, max_addr, nid,
 					exact_nid);
 
 	/* retry allocation without lower limit */
-// *(volatile unsigned char *)(0xff110000)=0x73; // Previous debug
-	if (!alloc && min_addr) {
-// *(volatile unsigned char *)(0xff110000)=0x74; // Previous debug
+	if (!alloc && min_addr)
 		alloc = memblock_alloc_range_nid(size, align, 0, max_addr, nid,
 						exact_nid);
-	}
 
-	if (!alloc) {
-// *(volatile unsigned char *)(0xff110000)=0x75; // Previous debug
+	if (!alloc)
 		return NULL;
-	}
 
 	return phys_to_virt(alloc);
 }

@@ -112,11 +112,9 @@ const struct font_desc *get_default_font(int xres, int yres, u32 font_w,
 	int i, c, cc, res;
 	const struct font_desc *f, *g;
 
-	// *(volatile unsigned char *)(0xff110000)=0xE0; // Previous debug
 	g = NULL;
 	cc = -10000;
 	for (i = 0; i < num_fonts; i++) {
-	// *(volatile unsigned char *)(0xff110000)=0xE1; // Previous debug
 		f = fonts[i];
 		c = f->pref;
 #if defined(__mc68000__)
@@ -133,9 +131,7 @@ const struct font_desc *get_default_font(int xres, int yres, u32 font_w,
 			c += 1000;
 
 		/* prefer a bigger font for high resolution */
-	// *(volatile unsigned char *)(0xff110000)=0xE2; // Previous debug
 		res = (xres / f->width) * (yres / f->height) / 1000;
-	// *(volatile unsigned char *)(0xff110000)=0xE3; // Previous debug
 		if (res > 20)
 			c += 20 - res;
 
@@ -148,10 +144,6 @@ const struct font_desc *get_default_font(int xres, int yres, u32 font_w,
 			g = f;
 		}
 	}
-	// if (!g) {// FIXME: there's something wrong with NeXT where g is null (maybe xres/yres is completely wrong)
-	// *(volatile unsigned char *)(0xff110000)=0xE4; // Previous debug
-	// 	g = fonts[0];
-	// }
 	return g;
 }
 EXPORT_SYMBOL(get_default_font);

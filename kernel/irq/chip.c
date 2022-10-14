@@ -973,7 +973,6 @@ static void
 __irq_do_set_handler(struct irq_desc *desc, irq_flow_handler_t handle,
 		     int is_chained, const char *name)
 {
-
 	if (!handle) {
 		handle = handle_bad_irq;
 	} else {
@@ -1079,9 +1078,7 @@ void
 irq_set_chip_and_handler_name(unsigned int irq, const struct irq_chip *chip,
 			      irq_flow_handler_t handle, const char *name)
 {
-
 	irq_set_chip(irq, chip);
-
 	__irq_set_handler(irq, handle, 0, name);
 }
 EXPORT_SYMBOL_GPL(irq_set_chip_and_handler_name);

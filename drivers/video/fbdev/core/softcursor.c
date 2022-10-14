@@ -66,9 +66,8 @@ int soft_cursor(struct fb_info *info, struct fb_cursor *cursor)
 				src[i] = image->data[i] & cursor->mask[i];
 			break;
 		}
-	} else {
+	} else
 		memcpy(src, image->data, dsize);
-	}
 
 	fb_pad_aligned_buffer(dst, d_pitch, src, s_pitch, image->height);
 	image->data = dst;

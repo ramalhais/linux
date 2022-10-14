@@ -16,7 +16,7 @@ unsigned long lpj_fine;
 unsigned long preset_lpj;
 static int __init lpj_setup(char *str)
 {
-	preset_lpj = simple_strtoul(str, NULL, 0);
+	preset_lpj = simple_strtoul(str,NULL,0);
 	return 1;
 }
 
@@ -45,7 +45,7 @@ static unsigned long calibrate_delay_direct(void)
 	int min = -1;
 	int i;
 
-	if (read_current_timer(&pre_start) < 0)
+	if (read_current_timer(&pre_start) < 0 )
 		return 0;
 
 	/*

@@ -153,7 +153,7 @@ EXPORT_SYMBOL(fb_pad_unaligned_buffer);
  * we need to lock this section since fb_cursor
  * may use fb_imageblit()
  */
-char *fb_get_buffer_offset(struct fb_info *info, struct fb_pixmap *buf, u32 size)
+char* fb_get_buffer_offset(struct fb_info *info, struct fb_pixmap *buf, u32 size)
 {
 	u32 align = buf->buf_align - 1, offset;
 	char *addr = buf->addr;
@@ -188,7 +188,7 @@ EXPORT_SYMBOL(fb_get_buffer_offset);
 
 #ifdef CONFIG_LOGO
 
-static inline unsigned int safe_shift(unsigned d, int n)
+static inline unsigned safe_shift(unsigned d, int n)
 {
 	return n < 0 ? d >> -n : d << n;
 }
@@ -210,7 +210,7 @@ static void fb_set_logocmap(struct fb_info *info,
 	palette_cmap.blue = palette_blue;
 	palette_cmap.transp = NULL;
 
-	for (i = 0; i < logo->clutsize; i += n) {
+	for ( i = 0; i < logo->clutsize; i += n) {
 		n = logo->clutsize - i;
 		/* palette_cmap provides space for only 16 colors at once */
 		if (n > 16)
@@ -231,7 +231,7 @@ static void  fb_set_logo_truepalette(struct fb_info *info,
 					    const struct linux_logo *logo,
 					    u32 *palette)
 {
-	static const unsigned char mask[] = {0, 0x80, 0xc0, 0xe0, 0xf0, 0xf8, 0xfc, 0xfe, 0xff};
+	static const unsigned char mask[] = { 0,0x80,0xc0,0xe0,0xf0,0xf8,0xfc,0xfe,0xff };
 	unsigned char redmask, greenmask, bluemask;
 	int redshift, greenshift, blueshift;
 	int i;
@@ -767,7 +767,7 @@ fb_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
 	int c, cnt = 0, err = 0;
 	unsigned long total_size;
 
-	if (!info || !info->screen_base)
+	if (!info || ! info->screen_base)
 		return -ENODEV;
 
 	if (info->state != FBINFO_STATE_RUNNING)
@@ -1652,9 +1652,8 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 		/* Not fatal */
 		printk(KERN_WARNING "Unable to create device for framebuffer %d; errno = %ld\n", i, PTR_ERR(fb_info->dev));
 		fb_info->dev = NULL;
-	} else {
+	} else
 		fb_init_device(fb_info);
-	}
 
 	if (fb_info->pixmap.addr == NULL) {
 		fb_info->pixmap.addr = kmalloc(FBPIXMAPSIZE, GFP_KERNEL);
@@ -1694,7 +1693,7 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 	}
 #endif
 
-	return fbcon_fb_registered(fb_info);;
+	return fbcon_fb_registered(fb_info);
 }
 
 static void unbind_console(struct fb_info *fb_info)
