@@ -62,7 +62,6 @@ const struct linux_logo * __ref fb_find_logo(int depth)
 	if (depth >= 8)
 		logo = &logo_linux_clut224;
 #endif
-
 	return logo;
 }
 EXPORT_SYMBOL_GPL(fb_find_logo);

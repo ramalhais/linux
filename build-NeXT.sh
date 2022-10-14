@@ -24,7 +24,8 @@ make -j$[$(nproc)*2] || exit 1
 
 #DATE=$(date +%Y%m%d_%H%M%S)
 DATE=$(date +%F-%H.%M.%S)
-KERNELVER=$(make kernelversion)
+KERNEL_VERSION=$(make kernelversion)
+KERNEL_RELEASE=$(make kernelrelease)
 
 ### Extract binary from ELF kernel image
 m68k-linux-gnu-objcopy --output-target=binary vmlinux vmlinux.binary_$DATE
@@ -53,3 +54,15 @@ cp .config ../.config-NeXT-$DATE
 
 ### Show generated assembly code
 # m68k-linux-gnu-objdump -D vmlinux|less
+
+### Copy modules to buildroot (need to build this kernel again to include the buildroot image)
+mkdir ../modules
+make INSTALL_MOD_STRIP=1 INSTALL_MOD_PATH=../modules modules_install
+rm -rf ~/git/buildroot/linux-modules/
+rsync -av --mkpath ../modules/lib/modules/$KERNEL_RELEASE/modules.dep ~/git/buildroot/linux-modules/lib/modules/$KERNEL_RELEASE/
+rsync -av --mkpath ../modules/lib/modules/$KERNEL_RELEASE/kernel/fs/nfs/ ~/git/buildroot/linux-modules/lib/modules/$KERNEL_RELEASE/kernel/fs/nfs/
+rsync -av --mkpath ../modules/lib/modules/$KERNEL_RELEASE/kernel/net/sunrpc/ ~/git/buildroot/linux-modules/lib/modules/$KERNEL_RELEASE/kernel/net/sunrpc/
+
+rsync -av --mkpath ../modules/lib/modules/$KERNEL_RELEASE/kernel/drivers/target/ ~/git/buildroot/linux-modules/lib/modules/$KERNEL_RELEASE/kernel/drivers/target/
+rsync -av --mkpath ../modules/lib/modules/$KERNEL_RELEASE/kernel/drivers/scsi/ ~/git/buildroot/linux-modules/lib/modules/$KERNEL_RELEASE/kernel/drivers/scsi/
+
