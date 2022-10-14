@@ -2240,13 +2240,9 @@ config FB_SM712
 config FB_NEXT
 	tristate "NeXT framebuffer support"
 	depends on FB && NEXT
-#	select FB_FOREIGN_ENDIAN
-#	select FB_BIG_ENDIAN
-#	select FB_CFB_REV_PIXELS_IN_BYTE
 	select FB_CFB_FILLRECT
 	select FB_CFB_COPYAREA
 	select FB_CFB_IMAGEBLIT
-	select FONT_8x16 if FRAMEBUFFER_CONSOLE
 	help
 	  This is the frame buffer device driver for NeXT.
 

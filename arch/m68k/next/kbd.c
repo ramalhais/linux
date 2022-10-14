@@ -22,7 +22,7 @@ MODULE_AUTHOR("Pedro Ramalhais <ramalhais@gmail.com>");
 /* shouldn't be global i'll wager :) */
 struct mon {
 	volatile __u32 csr,data,km_data,snd_data;
-} *mon=(struct mon *)NEXT_MON_BASE;
+} *mon = (struct mon *)NEXT_MON_BASE;
 
 /* bits in csr */
 #define KM_INT		0x00800000
@@ -62,7 +62,7 @@ struct mon {
 #define NEXT_MOUSE_DX_MASK		0x00FE
 #define NEXT_MOUSE_DY_MASK		0xFE00
 
-static unsigned int oldflagmap=0;
+unsigned int oldflagmap=0;
 
 struct next_kbd {
 	struct input_dev *input;
@@ -171,12 +171,9 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	__u32 csr;
 	__u32 data;
 
-	// *(volatile unsigned long *)(0xff00f004)=0xF6; // Previous debug
 	local_irq_save(flags);
 
 	if (!next_irq_pending(NEXT_IRQ_KYBD_MOUSE)) {
-	// *(volatile unsigned long *)(0xff00f004)=0xF7; // Previous debug
-		// printk("Ignoring IRQ%d. Not for NeXT keyboard/mouse\n", irq);
 		local_irq_restore(flags);
 		return IRQ_NONE;
 	}
@@ -186,16 +183,13 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	// mon->csr=(csr & ~KM_INT);
 
 	csr = mon->csr;
-	// *(volatile unsigned long *)(0xff00f004)=0xFB; // Previous debug
 
 	if(!(csr & KM_HAVEDATA)) {
-	// *(volatile unsigned long *)(0xff00f004)=0xF8; // Previous debug
-		printk("NeXT keyboard/mouse interrupt, but no data to handle\n");
+		pr_err("NeXT Keyboard and Mouse interrupt, but no data to handle\n");
 		return IRQ_HANDLED;
 	}
 
 	data=mon->km_data;
-	// *(volatile unsigned long *)(0xff00f004)=0xFC; // Previous debug
 
 	if((data & KD_ADDRMASK) == KD_KADDR) {
 		unsigned int changed;
@@ -219,37 +213,29 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 				if (!(changed&mask))
 					continue;
 
-	// *(volatile unsigned long *)(0xff00f004)=0xF9; // Previous debug
 				scan = CTRL_BASE_CODE+index;
 				is_pressed = !(data&KD_DIRECTION); // FIXME: could try sending data&KD_FLAGKEYS&mask instead
 				input_report_key(input, kbd->keycodes[scan], is_pressed);
 				input_sync(input);
-//	*(volatile unsigned long *)(0xff00f004)=scan; // Previous debug
-	// *(volatile unsigned long *)(0xff00f004)=is_pressed; // Previous debug
 			}
 		}
 		if(data&KD_VALID && data&KD_KEYMASK) {
 				unsigned int scan,is_pressed;
 
-	// *(volatile unsigned long *)(0xff00f004)=0xFA; // Previous debug
 			/* a 'real' key has changed */
 			scan = data&KD_KEYMASK;
 			is_pressed = !(data&KD_DIRECTION);
 			input_report_key(input, kbd->keycodes[scan], is_pressed);
 			input_sync(input);
-//	*(volatile unsigned long *)(0xff00f004)=scan; // Previous debug
-	// *(volatile unsigned long *)(0xff00f004)=is_pressed; // Previous debug
 		}
 	}  else if ((data & KD_ADDRMASK) == KD_MADDR) {
 		// Mouse
-	// *(volatile unsigned long *)(0xff00f004)=0xFB; // Previous debug
 		input_report_rel(mouse, REL_X, data&NEXT_MOUSE_DX_MASK);
 		input_report_rel(mouse, REL_Y, (data&NEXT_MOUSE_DY_MASK)>>8);
 		input_report_key(mouse, BTN_LEFT, data&NEXT_MOUSE_LEFT_MASK);
 		input_report_key(mouse, BTN_RIGHT, data&NEXT_MOUSE_RIGHT_MASK);
 		input_sync(mouse);
 	}
-	// *(volatile unsigned long *)(0xff00f004)=0xFD; // Previous debug
 
 	local_irq_restore(flags);
 	return IRQ_HANDLED;
@@ -261,7 +247,6 @@ static int next_kbd_probe(struct platform_device *pdev) {
 	struct next_kbd *next_kbd;
 	int ret;
 
-	// *(volatile unsigned long *)(0xff00f004)=0xF4; // Previous debug
 	input = input_allocate_device();
 	if (!input) {
 		dev_err(&pdev->dev, "Failed to allocate input device for NeXT Keyboard\n");
@@ -343,12 +328,12 @@ static int next_kbd_probe(struct platform_device *pdev) {
 		return ret;
 	}
 
-	if (request_irq(IRQ_AUTO_3, next_kbd_int, IRQF_SHARED, "NeXT Keyboard/Mouse", next_kbd)) {
-		pr_err("Failed to register NeXT keyboard/mouse interrupt\n");
+	if (request_irq(IRQ_AUTO_3, next_kbd_int, IRQF_SHARED, "NeXT Keyboard and Mouse", next_kbd)) {
+		pr_err("Failed to register NeXT Keyboard and Mouse interrupt\n");
+		return -ENOMEM;
 	}
 
 	next_intmask_enable(NEXT_IRQ_KYBD_MOUSE-NEXT_IRQ_BASE);
-	// *(volatile unsigned long *)(0xff00f004)=0xF5; // Previous debug
 
 	return 0;
 }

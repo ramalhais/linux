@@ -84,6 +84,11 @@ const struct linux_logo * __ref fb_find_logo(int depth)
 		if (MACH_IS_MAC)
 			logo = &logo_mac_clut224;
 #endif
+#ifdef CONFIG_LOGO_NEXT_CLUT224
+		/* NeXT Linux logo on m68k */
+		if (MACH_IS_NEXT)
+			logo = &logo_next_clut224;
+#endif
 #ifdef CONFIG_LOGO_PARISC_CLUT224
 		/* PA-RISC Linux logo */
 		logo = &logo_parisc_clut224;

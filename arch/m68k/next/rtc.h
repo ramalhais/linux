@@ -20,50 +20,50 @@
 /* bit to power down in control reg */
 #define RTC_POFF	0x40
 /* RTC_STATUS flags */
-#define RTC_IS_NEW		0x80
+#define RTC_IS_NEW	0x80
 
 /* tell the rtc to write this reg. */
-#define RTC_TOWRITE		0x80
+#define RTC_TOWRITE	0x80
 
 
 /* scr2 regs to talk to the rtc */
-#define SCR2_RTC_DATA		0x00000400
-#define SCR2_RTC_CLOCK		0x00000200
+#define SCR2_RTC_DATA	0x00000400
+#define SCR2_RTC_CLOCK	0x00000200
 
 /* ------  new rtc registers, anyone have docs? - Z ---- */
-#define SCR2_RTC_ENABLE		0x00000100
+#define SCR2_RTC_ENABLE	0x00000100
 
 /* 32bit second counter.. */
-#define RTC_COUNTER0		0x20
-#define RTC_COUNTER1		0x21
-#define RTC_COUNTER2		0x22
-#define RTC_COUNTER3		0x23
+#define RTC_COUNTER0	0x20
+#define RTC_COUNTER1	0x21
+#define RTC_COUNTER2	0x22
+#define RTC_COUNTER3	0x23
 
-#define RTC_STATUS		0x30
-#define RTC_CTL			0x31
+#define RTC_STATUS	0x30
+#define RTC_CTL		0x31
 
-#define RTC_INTERRUPTCTL	0x32
+#define RTC_INTERRUPTCTL 0x32
 /* ------ old rtc specific regs ---- */
 
 /* it stores 8bit regs in bcd.. */
 
 #define from_bcd(x) (((x>>4)*10)+(x&0xf))
 
-#define R_O_SEC			0x20
-#define R_O_MIN			0x21
-#define R_O_HOUR		0x22
-#define R_O_DAYOFWEEK		0x23
-#define R_O_DAYOFMONTH		0x24
-#define R_O_MONTH		0x25
-#define R_O_YEAR		0x26
+#define R_O_SEC		0x20
+#define R_O_MIN		0x21
+#define R_O_HOUR	0x22
+#define R_O_DAYOFWEEK	0x23
+#define R_O_DAYOFMONTH	0x24
+#define R_O_MONTH	0x25
+#define R_O_YEAR	0x26
 
 /*
  * timer.. 
  */
 
 /* control flags */
-#define TIM_ENABLE		0x80
-#define TIM_RESTART		0x40
+#define TIM_ENABLE	0x80
+#define TIM_RESTART	0x40
 
 /* register offsets */
 #define TIMER_R_MSB (0)
@@ -86,3 +86,5 @@
 #define set_timer_csr_bits(x) __timer_csr|=(x)
 
 extern void next_sched_init(void);
+extern void next_poweroff(void);
+extern int next_hwclk(int, struct rtc_time*);
