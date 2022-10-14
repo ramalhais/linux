@@ -3004,9 +3004,8 @@ static int do_fb_registered(struct fb_info *info)
 			}
 		}
 
-		if (info_idx != -1) {
+		if (info_idx != -1)
 			ret = do_fbcon_takeover(1);
-		}
 	} else {
 		for (i = first_fb_vc; i <= last_fb_vc; i++) {
 			if (con2fb_map_boot[i] == idx)

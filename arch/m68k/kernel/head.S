@@ -1211,7 +1211,7 @@ L(not_next_mem):
 #endif
 
 	get_bi_record BI_MEMCHUNK
-	movel	%a0@(4),%d0 		// mem size in a0@(4)
+	movel	%a0@(4),%d0
 L(detect_mem_done):
 	movel	#16*1024*1024,%d1
 	cmpl	%d0,%d1
@@ -1333,8 +1333,8 @@ L(mmu_init_not_atari):
 
 	putc    'Q'
 
-	mmu_map_tt	#0,#0xfe000000,#0x01000000,#_PAGE_CACHE040W // screen and ROM
-	mmu_map_tt	#1,#0xff000000,#0x01000000,#_PAGE_NOCACHE_S // bus
+	mmu_map_tt	#0,#0xfe000000,#0x01000000,#_PAGE_CACHE040W
+	mmu_map_tt	#1,#0xff000000,#0x01000000,#_PAGE_NOCACHE_S
 
 	jbra	L(mmu_init_done)
 
@@ -1672,7 +1672,7 @@ L(mmu_fixup):
 
 	movel	%pc@(L(phys_kernel_start)),%d0
 	subl	#PAGE_OFFSET,%d0
-	lea		%pc@(_stext),%a0
+	lea	%pc@(_stext),%a0
 	subl	%d0,%a0
 	mmu_fixup_page_mmu_cache	%a0
 
