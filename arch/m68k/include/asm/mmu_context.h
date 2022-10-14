@@ -264,7 +264,6 @@ static inline void switch_mm_0230(struct mm_struct *mm)
 
 static inline void switch_mm_0460(struct mm_struct *mm)
 {
-	// *(volatile unsigned long *)(0xff00f004)=0xF0; // Previous debug
 	asm volatile (".chip 68040");
 
 	/* flush address translation cache (user entries) */
@@ -285,14 +284,11 @@ static inline void switch_mm_0460(struct mm_struct *mm)
 	}
 
 	asm volatile (".chip 68k");
-	// *(volatile unsigned long *)(0xff00f004)=0xF1; // Previous debug
 }
 
 static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next, struct task_struct *tsk)
 {
-	// *(volatile unsigned long *)(0xff00f004)=0xF2; // Previous debug
 	if (prev != next) {
-	// *(volatile unsigned long *)(0xff00f004)=0xF3; // Previous debug
 		if (CPU_IS_020_OR_030)
 			switch_mm_0230(next);
 		else

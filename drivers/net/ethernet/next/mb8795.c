@@ -160,7 +160,7 @@ struct rxdmaregs {
 	volatile u32	end;
 	volatile u32	next_start;		// next in the chain
 	volatile u32	next_end;
-	//Test
+	// FIXME: Test. Remove this
 	char		paddinnnng[0x1f0];
 	volatile u32	next_initbuf;
 };
@@ -237,7 +237,8 @@ static void setup_rxdma(struct net_device *ndev)
 
 /* XXX check for return of NULL :( */
 
-static inline struct sk_buff *mb_new_skb(struct net_device *ndev) {
+static inline struct sk_buff *mb_new_skb(struct net_device *ndev)
+{
 	struct sk_buff *newskb;
 	unsigned int fixup;
 
@@ -284,8 +285,6 @@ static irqreturn_t mb8795_rxint(int irq, void *dev_id)
 		return IRQ_NONE;
 	}
 
-	*(volatile unsigned long *)(0xff00f004)=0xC1; // Previous debug
-
 #ifdef DEBUGME_RX
 	pr_info("rxs: %x ", mb->rxstat);
 #endif
@@ -330,8 +329,6 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 		return IRQ_NONE;
 	}
 
-	*(volatile unsigned long *)(0xff00f004)=0xB0; // Previous debug
-
 	csr	= rxd->csr;
 	ss	= rxd->saved_start;
 	se	= rxd->saved_end;
@@ -350,15 +347,13 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 #endif
 	// Perhaps should check chip status sometime to look for rx errors
 
-	if(csr&DMA_CINT && csr&DMA_ENABLED) {
-		*(volatile unsigned long *)(0xff00f004)=0xB1; // Previous debug
+	if (csr&DMA_CINT && csr&DMA_ENABLED) {
 		// Chain interrupt, we have another buffer yet
 		rxd->csr = DMA_CLEARCHAINI;
 		// rx->len=se-ss-4; // struct packing problem? Previous bug? NeXT Machine type differences?
 		rx->len = se-(rx->p_data)-4; // hack: For some reason Previous is setting saved_start to zero, so we get the physical start from rx->p_data.
 		handle_packet(priv,priv->ndev,rx);
 	} else {
-		*(volatile unsigned long *)(0xff00f004)=0xB2; // Previous debug
 		// if we missed the first chained int we'll
 		// have a waiting packet in the 'first' slot
 		// but aren't currently dealing with it. Fix
@@ -392,8 +387,6 @@ static irqreturn_t mb8795_txint(int irq, void *dev_id)
 		return IRQ_NONE;
 	}
 
-	*(volatile unsigned long *)(0xff00f004)=0xAF; // Previous debug
-
 	if (priv->mb->txstat&TSTAT_COLL) {
 		priv->stats.collisions++;
 		priv->mb->txstat = TSTAT_COLL;
@@ -418,8 +411,6 @@ static irqreturn_t mb8795_txdmaint(int irq, void *dev_id)
 		local_irq_restore(flags);
 		return IRQ_NONE;
 	}
-
-	*(volatile unsigned long *)(0xff00f004)=0xAE; // Previous debug
 
 #ifdef DEBUGME_TX
 	pr_info("txdma: %x ", priv->mb->txstat);
@@ -448,8 +439,6 @@ static int mb8795_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 	unsigned long flags;
 
 	local_irq_save(flags);
-
-	*(volatile unsigned long *)(0xff00f004)=0xAC; // Previous debug
 
 #ifdef DEBUGME_TX
 	pr_info("xmts [%p %d]: %x ", skb->data, skb->len, priv->mb->txstat);
@@ -518,7 +507,6 @@ static int mb8795_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 	// Freeing SKB after triggering DMA may be faster
 	dev_kfree_skb(skb);
 
-	*(volatile unsigned long *)(0xff00f004)=0xAD; // Previous debug
 	local_irq_restore(flags);
 	return 0;
 }
@@ -542,7 +530,6 @@ static void mb8795_reset(struct net_device *ndev)
 	// reset / init dma channels
 	rxd->csr = DMA_RESET;
 	txd->csr = DMA_RESET;
-	*(volatile unsigned long *)(0xff00f004)=0xE1; // Previous debug
 }
 
 static int mb8795_stop(struct net_device *ndev)
@@ -572,8 +559,6 @@ static int mb8795_open(struct net_device *ndev)
 {
 	struct mb8795_private *priv = netdev_priv(ndev);
 	struct mb8795regs *mb = (struct mb8795regs *)priv->mb;
-
-	*(volatile unsigned long *)(0xff00f004)=0xA5; // Previous debug
 
 #ifdef DEBUGME_FUNC
 	pr_info("in %s\n", __func_);
@@ -613,7 +598,6 @@ static int mb8795_open(struct net_device *ndev)
 		goto err_out_irq_rx_dma;
 	}
 	if (request_irq(IRQ_AUTO_6, mb8795_txdmaint, IRQF_SHARED, "NeXT Ethernet DMA Transmit", priv->tx_dma)) {
-		*(volatile unsigned long *)(0xff00f004)=0xAA; // Previous debug
 		pr_err("Failed to register interrupt for NeXT Ethernet DMA Transmit\n");
 		goto err_out_irq_tx_dma;
 	}
@@ -756,7 +740,7 @@ static int mb8795_probe(struct platform_device *pdev)
 	dev_info(&pdev->dev, "Finished probing\n");
 
 	return 0;
-	
+
 // err_out_unregister_netdev:
 // 	unregister_netdev(ndev);
 // err_out_free_irq:

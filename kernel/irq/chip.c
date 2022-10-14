@@ -973,13 +973,10 @@ static void
 __irq_do_set_handler(struct irq_desc *desc, irq_flow_handler_t handle,
 		     int is_chained, const char *name)
 {
-	// *(volatile unsigned long *)(0xff00f004)=0x9F; // Previous debug
 
 	if (!handle) {
-	// *(volatile unsigned long *)(0xff00f004)=0xA0; // Previous debug
 		handle = handle_bad_irq;
 	} else {
-	// *(volatile unsigned long *)(0xff00f004)=0xA1; // Previous debug
 		struct irq_data *irq_data = &desc->irq_data;
 #ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
 		/*
@@ -1009,13 +1006,10 @@ __irq_do_set_handler(struct irq_desc *desc, irq_flow_handler_t handle,
 
 	/* Uninstall? */
 	if (handle == handle_bad_irq) {
-	// *(volatile unsigned long *)(0xff00f004)=0xA2; // Previous debug
 		if (desc->irq_data.chip != &no_irq_chip)
-	// *(volatile unsigned long *)(0xff00f004)=0xA3; // Previous debug
 			mask_ack_irq(desc);
 		irq_state_set_disabled(desc);
 		if (is_chained) {
-	// *(volatile unsigned long *)(0xff00f004)=0xA4; // Previous debug
 			desc->action = NULL;
 			WARN_ON(irq_chip_pm_put(irq_desc_get_irq_data(desc)));
 		}
@@ -1025,7 +1019,6 @@ __irq_do_set_handler(struct irq_desc *desc, irq_flow_handler_t handle,
 	desc->name = name;
 
 	if (handle != handle_bad_irq && is_chained) {
-	// *(volatile unsigned long *)(0xff00f004)=0xA5; // Previous debug
 		unsigned int type = irqd_get_trigger_type(&desc->irq_data);
 
 		/*
@@ -1037,7 +1030,6 @@ __irq_do_set_handler(struct irq_desc *desc, irq_flow_handler_t handle,
 		 * do know better.
 		 */
 		if (type != IRQ_TYPE_NONE) {
-	// *(volatile unsigned long *)(0xff00f004)=0xA6; // Previous debug
 			__irq_set_trigger(desc, type);
 			desc->handle_irq = handle;
 		}
@@ -1087,9 +1079,9 @@ void
 irq_set_chip_and_handler_name(unsigned int irq, const struct irq_chip *chip,
 			      irq_flow_handler_t handle, const char *name)
 {
-	// *(volatile unsigned long *)(0xff00f004)=0x9D; // Previous debug
+
 	irq_set_chip(irq, chip);
-	// *(volatile unsigned long *)(0xff00f004)=0x9E; // Previous debug
+
 	__irq_set_handler(irq, handle, 0, name);
 }
 EXPORT_SYMBOL_GPL(irq_set_chip_and_handler_name);

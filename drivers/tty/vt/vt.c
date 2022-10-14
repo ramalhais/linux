@@ -902,12 +902,12 @@ static void hide_softcursor(struct vc_data *vc)
 static void hide_cursor(struct vc_data *vc)
 {
 	if (vc_is_sel(vc)) {
-	// *(volatile unsigned long *)(0xff00f004)=0x6E; // Previous debug
+
 		clear_selection();
 	}
-	// *(volatile unsigned long *)(0xff00f004)=0x6F; // Previous debug
+
 	vc->vc_sw->con_cursor(vc, CM_ERASE);
-	// *(volatile unsigned long *)(0xff00f004)=0x70; // Previous debug
+
 	hide_softcursor(vc);
 }
 
@@ -991,14 +991,12 @@ void redraw_screen(struct vc_data *vc, int is_switch)
 	WARN_CONSOLE_UNLOCKED();
 
 	if (!vc) {
-	// *(volatile unsigned long *)(0xff00f004)=0x60; // Previous debug
 		/* strange ... */
 		/* printk("redraw_screen: tty %d not allocated ??\n", new_console+1); */
 		return;
 	}
 
 	if (is_switch) {
-	// *(volatile unsigned long *)(0xff00f004)=0x61; // Previous debug
 		struct vc_data *old_vc = vc_cons[fg_console].d;
 		if (old_vc == vc)
 			return;
@@ -1014,20 +1012,16 @@ void redraw_screen(struct vc_data *vc, int is_switch)
 		if (tty0dev)
 			sysfs_notify(&tty0dev->kobj, NULL, "active");
 	} else {
-	// *(volatile unsigned long *)(0xff00f004)=0x62; // Previous debug
 		hide_cursor(vc);
 		redraw = 1;
 	}
 
 	if (redraw) {
-	// *(volatile unsigned long *)(0xff00f004)=0x63; // Previous debug
 		int update;
 		int old_was_color = vc->vc_can_do_color;
 
 		set_origin(vc);
-	// *(volatile unsigned long *)(0xff00f004)=0x64; // Previous debug
 		update = vc->vc_sw->con_switch(vc);
-	// *(volatile unsigned long *)(0xff00f004)=0x65; // Previous debug
 		set_palette(vc);
 		/*
 		 * If console changed from mono<->color, the best we can do
@@ -1036,26 +1030,18 @@ void redraw_screen(struct vc_data *vc, int is_switch)
 		 * without overly complex code.
 		 */
 		if (old_was_color != vc->vc_can_do_color) {
-	// *(volatile unsigned long *)(0xff00f004)=0x66; // Previous debug
 			update_attr(vc);
-	// *(volatile unsigned long *)(0xff00f004)=0x67; // Previous debug
 			clear_buffer_attributes(vc);
-	// *(volatile unsigned long *)(0xff00f004)=0x68; // Previous debug
 		}
 
 		if (update && vc->vc_mode != KD_GRAPHICS) {
-	// *(volatile unsigned long *)(0xff00f004)=0x69; // Previous debug
 			do_update_region(vc, vc->vc_origin, vc->vc_screenbuf_size / 2);
 		}
 	}
 	set_cursor(vc);
-	// *(volatile unsigned long *)(0xff00f004)=0x6A; // Previous debug
 	if (is_switch) {
-	// *(volatile unsigned long *)(0xff00f004)=0x6B; // Previous debug
 		vt_set_leds_compute_shiftstate();
-	// *(volatile unsigned long *)(0xff00f004)=0x6C; // Previous debug
 		notify_update(vc);
-	// *(volatile unsigned long *)(0xff00f004)=0x6D; // Previous debug
 	}
 }
 
@@ -1072,12 +1058,9 @@ static void visual_init(struct vc_data *vc, int num, int init)
 {
 	/* ++Geert: vc->vc_sw->con_init determines console size */
 	if (vc->vc_sw) {
-	// *(volatile unsigned long *)(0xff00f004)=0x20; // Previous debug
 		module_put(vc->vc_sw->owner);
 	}
-	// *(volatile unsigned long *)(0xff00f004)=0x21; // Previous debug
 	vc->vc_sw = conswitchp;
-	// *(volatile unsigned long *)(0xff00f004)=0x22; // Previous debug
 #ifndef VT_SINGLE_DRIVER
 	if (con_driver_map[num])
 		vc->vc_sw = con_driver_map[num];
@@ -1093,9 +1076,7 @@ static void visual_init(struct vc_data *vc, int num, int init)
 	vc->vc_complement_mask = 0;
 	vc->vc_can_do_color = 0;
 	vc->vc_cur_blink_ms = DEFAULT_CURSOR_BLINK_MS;
-	// *(volatile unsigned long *)(0xff00f004)=0x23; // Previous debug
 	vc->vc_sw->con_init(vc, init);
-	// *(volatile unsigned long *)(0xff00f004)=0x24; // Previous debug
 	if (!vc->vc_complement_mask)
 		vc->vc_complement_mask = vc->vc_can_do_color ? 0x7700 : 0x0800;
 	vc->vc_s_complement_mask = vc->vc_complement_mask;
@@ -3659,7 +3640,7 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
 	struct con_driver *con_driver;
 	int i, j = -1, k = -1, retval = -ENODEV;
 
-	// *(volatile unsigned long *)(0xff00f004)=0x10; // Previous debug
+
 	if (!try_module_get(owner))
 		return -ENODEV;
 
@@ -3667,7 +3648,6 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
 
 	/* check if driver is registered */
 	for (i = 0; i < MAX_NR_CON_DRIVER; i++) {
-	// *(volatile unsigned long *)(0xff00f004)=0x11; // Previous debug
 		con_driver = &registered_con_driver[i];
 
 		if (con_driver->con == csw) {
@@ -3680,19 +3660,15 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
 	if (retval)
 		goto err;
 
-	// *(volatile unsigned long *)(0xff00f004)=0x12; // Previous debug
 	if (!(con_driver->flag & CON_DRIVER_FLAG_INIT)) {
-	// *(volatile unsigned long *)(0xff00f004)=0x13; // Previous debug
 		csw->con_startup();
 		con_driver->flag |= CON_DRIVER_FLAG_INIT;
 	}
 
 	if (deflt) {
-	// *(volatile unsigned long *)(0xff00f004)=0x14; // Previous debug
 		if (conswitchp)
 			module_put(conswitchp->owner);
 
-	// *(volatile unsigned long *)(0xff00f004)=0x15; // Previous debug
 		__module_get(owner);
 		conswitchp = csw;
 	}
@@ -3701,16 +3677,13 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
 	last = min(last, con_driver->last);
 
 	for (i = first; i <= last; i++) {
-	// *(volatile unsigned long *)(0xff00f004)=0x16; // Previous debug
 		int old_was_color;
 		struct vc_data *vc = vc_cons[i].d;
 
 		if (con_driver_map[i]){
-	// *(volatile unsigned long *)(0xff00f004)=0x17; // Previous debug
 			module_put(con_driver_map[i]->owner);
 		}
 		__module_get(owner);
-	// *(volatile unsigned long *)(0xff00f004)=0x18; // Previous debug
 		con_driver_map[i] = csw;
 
 		if (!vc || !vc->vc_sw)
@@ -3719,21 +3692,15 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
 		j = i;
 
 		if (con_is_visible(vc)) {
-	// *(volatile unsigned long *)(0xff00f004)=0x19; // Previous debug
 			k = i;
 			save_screen(vc);
 		}
 
-	// *(volatile unsigned long *)(0xff00f004)=0x1A; // Previous debug
 		old_was_color = vc->vc_can_do_color;
-	// *(volatile unsigned long *)(0xff00f004)=0x1B; // Previous debug
 		vc->vc_sw->con_deinit(vc);
 		vc->vc_origin = (unsigned long)vc->vc_screenbuf;
-	// *(volatile unsigned long *)(0xff00f004)=0x1C; // Previous debug
 		visual_init(vc, i, 0);
-	// *(volatile unsigned long *)(0xff00f004)=0x1D; // Previous debug
 		set_origin(vc);
-	// *(volatile unsigned long *)(0xff00f004)=0x1E; // Previous debug
 		update_attr(vc);
 
 		/* If the console changed between mono <-> color, then
@@ -3741,7 +3708,6 @@ static int do_bind_con_driver(const struct consw *csw, int first, int last,
 		 * following resets all attributes to something sane.
 		 */
 		if (old_was_color != vc->vc_can_do_color) {
-	// *(volatile unsigned long *)(0xff00f004)=0x1F; // Previous debug
 			clear_buffer_attributes(vc);
 		}
 	}
@@ -4165,7 +4131,7 @@ static int do_register_con_driver(const struct consw *csw, int first, int last)
 		}
 	}
 
-	// *(volatile unsigned long *)(0xff00f004)=0xBB; // Previous debug
+
 	desc = csw->con_startup();
 	if (!desc) {
 		retval = -ENODEV;
@@ -4194,7 +4160,7 @@ static int do_register_con_driver(const struct consw *csw, int first, int last)
 	if (retval)
 		goto err;
 
-	// *(volatile unsigned long *)(0xff00f004)=0xBC; // Previous debug
+
 	con_driver->dev =
 		device_create_with_groups(vtconsole_class, NULL,
 					  MKDEV(0, con_driver->node),
@@ -4205,7 +4171,7 @@ static int do_register_con_driver(const struct consw *csw, int first, int last)
 			con_driver->desc, PTR_ERR(con_driver->dev));
 		con_driver->dev = NULL;
 	} else {
-	// *(volatile unsigned long *)(0xff00f004)=0xBD; // Previous debug
+
 		vtconsole_init_device(con_driver);
 	}
 
@@ -4307,7 +4273,7 @@ int do_take_over_console(const struct consw *csw, int first, int last, int deflt
 {
 	int err;
 
-//	*(volatile unsigned long *)(0xff00f004)=0xB9; // Previous debug
+
 	err = do_register_con_driver(csw, first, last);
 	/*
 	 * If we get an busy error we still want to bind the console driver
@@ -4317,10 +4283,10 @@ int do_take_over_console(const struct consw *csw, int first, int last, int deflt
 	if (err == -EBUSY)
 		err = 0;
 	if (!err) {
-//	*(volatile unsigned long *)(0xff00f004)=0xBA; // Previous debug
+
 		do_bind_con_driver(csw, first, last, deflt);
 	}
-//	*(volatile unsigned long *)(0xff00f004)=0xBB; // Previous debug
+
 
 	return err;
 }

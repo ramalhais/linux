@@ -9,4 +9,4 @@ ip link set lo up
 
 udhcpc
 
-mount -t nfs -o vers=2,nolock 10.0.2.254:/private/tftpboot /mnt
+#mount -t nfs -o vers=2,nolock 10.0.2.254:/private/tftpboot /mnt

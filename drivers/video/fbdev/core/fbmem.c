@@ -153,7 +153,7 @@ EXPORT_SYMBOL(fb_pad_unaligned_buffer);
  * we need to lock this section since fb_cursor
  * may use fb_imageblit()
  */
-char* fb_get_buffer_offset(struct fb_info *info, struct fb_pixmap *buf, u32 size)
+char *fb_get_buffer_offset(struct fb_info *info, struct fb_pixmap *buf, u32 size)
 {
 	u32 align = buf->buf_align - 1, offset;
 	char *addr = buf->addr;
@@ -188,7 +188,7 @@ EXPORT_SYMBOL(fb_get_buffer_offset);
 
 #ifdef CONFIG_LOGO
 
-static inline unsigned safe_shift(unsigned d, int n)
+static inline unsigned int safe_shift(unsigned d, int n)
 {
 	return n < 0 ? d >> -n : d << n;
 }
@@ -231,7 +231,7 @@ static void  fb_set_logo_truepalette(struct fb_info *info,
 					    const struct linux_logo *logo,
 					    u32 *palette)
 {
-	static const unsigned char mask[] = { 0,0x80,0xc0,0xe0,0xf0,0xf8,0xfc,0xfe,0xff };
+	static const unsigned char mask[] = {0, 0x80, 0xc0, 0xe0, 0xf0, 0xf8, 0xfc, 0xfe, 0xff};
 	unsigned char redmask, greenmask, bluemask;
 	int redshift, greenshift, blueshift;
 	int i;
@@ -249,7 +249,7 @@ static void  fb_set_logo_truepalette(struct fb_info *info,
 	greenshift = info->var.green.offset - (8 - info->var.green.length);
 	blueshift  = info->var.blue.offset  - (8 - info->var.blue.length);
 
-	for ( i = 0; i < logo->clutsize; i++) {
+	for (i = 0; i < logo->clutsize; i++) {
 		palette[i+32] = (safe_shift((clut[0] & redmask), redshift) |
 				 safe_shift((clut[1] & greenmask), greenshift) |
 				 safe_shift((clut[2] & bluemask), blueshift));
@@ -767,7 +767,7 @@ fb_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
 	int c, cnt = 0, err = 0;
 	unsigned long total_size;
 
-	if (!info || ! info->screen_base)
+	if (!info || !info->screen_base)
 		return -ENODEV;
 
 	if (info->state != FBINFO_STATE_RUNNING)
@@ -1627,16 +1627,13 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 	int i;
 	struct fb_videomode mode;
 
-//	*(volatile unsigned long *)(0xff00f004)=0xA0; // Previous debug
 	if (fb_check_foreignness(fb_info))
 		return -ENOSYS;
 
-//	*(volatile unsigned long *)(0xff00f004)=0xA1; // Previous debug
 	do_remove_conflicting_framebuffers(fb_info->apertures,
 					   fb_info->fix.id,
 					   fb_is_primary_device(fb_info));
 
-//	*(volatile unsigned long *)(0xff00f004)=0xA2; // Previous debug
 	if (num_registered_fb == FB_MAX)
 		return -ENXIO;
 
@@ -1645,26 +1642,21 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 		if (!registered_fb[i])
 			break;
 	fb_info->node = i;
-//	*(volatile unsigned long *)(0xff00f004)=0xA3; // Previous debug
 	refcount_set(&fb_info->count, 1);
 	mutex_init(&fb_info->lock);
 	mutex_init(&fb_info->mm_lock);
 
 	fb_info->dev = device_create(fb_class, fb_info->device,
 				     MKDEV(FB_MAJOR, i), NULL, "fb%d", i);
-//	*(volatile unsigned long *)(0xff00f004)=0xA4; // Previous debug
 	if (IS_ERR(fb_info->dev)) {
-//	*(volatile unsigned long *)(0xff00f004)=0xA5; // Previous debug
 		/* Not fatal */
 		printk(KERN_WARNING "Unable to create device for framebuffer %d; errno = %ld\n", i, PTR_ERR(fb_info->dev));
 		fb_info->dev = NULL;
 	} else {
-//	*(volatile unsigned long *)(0xff00f004)=0xA6; // Previous debug
 		fb_init_device(fb_info);
 	}
 
 	if (fb_info->pixmap.addr == NULL) {
-//	*(volatile unsigned long *)(0xff00f004)=0xA7; // Previous debug
 		fb_info->pixmap.addr = kmalloc(FBPIXMAPSIZE, GFP_KERNEL);
 		if (fb_info->pixmap.addr) {
 			fb_info->pixmap.size = FBPIXMAPSIZE;
@@ -1690,12 +1682,9 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 	else
 		pm_vt_switch_required(fb_info->dev, true);
 
-//	*(volatile unsigned long *)(0xff00f004)=0xA8; // Previous debug
 	fb_var_to_videomode(&mode, &fb_info->var);
-//	*(volatile unsigned long *)(0xff00f004)=0xA9; // Previous debug
 	fb_add_videomode(&mode, &fb_info->modelist);
 	registered_fb[i] = fb_info;
-//	*(volatile unsigned long *)(0xff00f004)=0xAA; // Previous debug
 
 #ifdef CONFIG_GUMSTIX_AM200EPD
 	{
@@ -1705,7 +1694,6 @@ static int do_register_framebuffer(struct fb_info *fb_info)
 	}
 #endif
 
-//	*(volatile unsigned long *)(0xff00f004)=0xAB; // Previous debug
 	return fbcon_fb_registered(fb_info);;
 }
 

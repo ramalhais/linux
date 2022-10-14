@@ -195,7 +195,7 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
 void __init setup_arch(char **cmdline_p)
 {
 	/* The bootinfo is located right after the kernel */
-	if (!CPU_IS_COLDFIRE)
+	if (!CPU_IS_COLDFIRE && !MACH_IS_NEXT)
 		m68k_parse_bootinfo((const struct bi_record *)_end);
 
 	if (CPU_IS_040)
@@ -299,7 +299,6 @@ void __init setup_arch(char **cmdline_p)
 #ifdef CONFIG_NEXT
 	case MACH_NEXT:
 		config_next();
-// *(volatile unsigned long *)(0xff00f004)=0x76; // Previous debug
 		break;
 #endif
 #ifdef CONFIG_COLDFIRE
@@ -328,11 +327,9 @@ void __init setup_arch(char **cmdline_p)
 	}
 #endif
 
-// *(volatile unsigned long *)(0xff00f004)=0x77; // Previous debug
 	paging_init();
 
 #ifdef CONFIG_NATFEAT
-// *(volatile unsigned long *)(0xff00f004)=0x78; // Previous debug
 	nf_init();
 #endif
 
@@ -365,7 +362,6 @@ void __init setup_arch(char **cmdline_p)
 	}
 #endif
 #endif
-// *(volatile unsigned long *)(0xff00f004)=0x79; // Previous debug
 
 }
 

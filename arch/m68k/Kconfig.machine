@@ -177,22 +177,9 @@ config NEXT
 	select FB_NEXT
 	select FRAMEBUFFER_CONSOLE
 	select CONFIG_DUMMY_CONSOLE
-#	select CONFIG_DUMMY_CONSOLE_COLUMNS=140
-#	select CONFIG_DUMMY_CONSOLE_ROWS=52
-#	select VT
 	select EARLY_PRINTK
 	select CONFIG_PRINTK
 	select CONFIG_PRINTK_TIME
-	select BLK_DEV_INITRD
-	select RD_XZ
-	select INITRAMFS_COMPRESSION_XZ
-	select BINFMT_SCRIPT
-	select PROC_FS
-#	select CONFIG_SYSCTL
-	select SYSFS
-#	select CONFIGFS_FS
-	#INITRAMFS_SOURCE="arch/m68k/tools/next/initramfs/initramfs.src"
-	select CC_OPTIMIZE_FOR_SIZE
 
 	help
 	  This option enables support for the NeXT series of

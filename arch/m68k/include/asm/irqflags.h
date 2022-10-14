@@ -49,7 +49,6 @@ static inline void arch_local_irq_enable(void)
 			:
 			: "i" (ALLOWINT)
 			: "memory");
-	// *(volatile unsigned long *)(0xff00f004)=0xA7; // Previous debug
 	}
 #endif
 }

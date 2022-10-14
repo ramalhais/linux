@@ -425,18 +425,11 @@ void input_event(struct input_dev *dev,
 {
 	unsigned long flags;
 
-	// *(volatile unsigned long *)(0xff00f004)=0xD0; // Previous debug
 	if (is_event_supported(type, dev->evbit, EV_MAX)) {
-	// *(volatile unsigned long *)(0xff00f004)=0xD1; // Previous debug
-
 		spin_lock_irqsave(&dev->event_lock, flags);
-	// *(volatile unsigned long *)(0xff00f004)=0xD2; // Previous debug
 		input_handle_event(dev, type, code, value);
-	// *(volatile unsigned long *)(0xff00f004)=0xD3; // Previous debug
 		spin_unlock_irqrestore(&dev->event_lock, flags);
-	// *(volatile unsigned long *)(0xff00f004)=0xD4; // Previous debug
 	}
-	// *(volatile unsigned long *)(0xff00f004)=0xD5; // Previous debug
 }
 EXPORT_SYMBOL(input_event);
 
