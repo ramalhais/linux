@@ -362,7 +362,6 @@ void __init setup_arch(char **cmdline_p)
 	}
 #endif
 #endif
-
 }
 
 static int show_cpuinfo(struct seq_file *m, void *v)

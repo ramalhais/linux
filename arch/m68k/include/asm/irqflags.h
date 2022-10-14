@@ -43,13 +43,11 @@ static inline void arch_local_irq_enable(void)
 # if defined(CONFIG_MMU)
 	if (MACH_IS_Q40 || !hardirq_count())
 # endif
-	{
 		asm volatile (
 			"andiw %0,%%sr"
 			:
 			: "i" (ALLOWINT)
 			: "memory");
-	}
 #endif
 }
 

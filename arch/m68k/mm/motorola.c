@@ -493,10 +493,9 @@ void __init paging_init(void)
 	 * to a couple of allocated pages
 	 */
 	empty_zero_page = memblock_alloc(PAGE_SIZE, PAGE_SIZE);
-	if (!empty_zero_page) {
+	if (!empty_zero_page)
 		panic("%s: Failed to allocate %lu bytes align=0x%lx\n",
 		      __func__, PAGE_SIZE, PAGE_SIZE);
-	}
 
 	/*
 	 * Set up SFC/DFC registers
@@ -506,13 +505,9 @@ void __init paging_init(void)
 #ifdef DEBUG
 	printk ("before free_area_init\n");
 #endif
-	for (i = 0; i < m68k_num_memory; i++) {
-
-		if (node_present_pages(i)) {
-
+	for (i = 0; i < m68k_num_memory; i++)
+		if (node_present_pages(i))
 			node_set_state(i, N_NORMAL_MEMORY);
-		}
-	}
 	max_zone_pfn[ZONE_DMA] = memblock_end_of_DRAM();
 	free_area_init(max_zone_pfn);
 }
