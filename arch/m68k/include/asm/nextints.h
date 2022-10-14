@@ -39,7 +39,6 @@
 // hard wired interrupts
 #define NEXT_IRQ_NMI		(NEXT_IRQ_BASE+31)
 #define NEXT_IRQ_PFAIL		(NEXT_IRQ_BASE+30)
-
 #define NEXT_IPL_7MIN		30
 #define NEXT_IPL_7NUM		2
 
@@ -55,19 +54,16 @@
 #define NEXT_IRQ_DSP_DMA	(NEXT_IRQ_BASE+20)
 #define NEXT_IRQ_M2R_DMA	(NEXT_IRQ_BASE+19)
 #define NEXT_IRQ_R2M_DMA	(NEXT_IRQ_BASE+18)
-
 #define NEXT_IPL_6MIN		18
 #define NEXT_IPL_6NUM		12
 
 #define NEXT_IRQ_SCC		(NEXT_IRQ_BASE+17)
 #define NEXT_IRQ_REMOTE		(NEXT_IRQ_BASE+16)
 #define NEXT_IRQ_BUS		(NEXT_IRQ_BASE+15)
-
 #define NEXT_IPL_5MIN		15
 #define NEXT_IPL_5NUM		3
 
 #define NEXT_IRQ_DSP_4		(NEXT_IRQ_BASE+14)
-
 #define NEXT_IRQ_C16_VIDEO	(NEXT_IRQ_BASE+13) // old esdi?
 #define NEXT_IRQ_SCSI		(NEXT_IRQ_BASE+12) 
 #define NEXT_IRQ_PRINTER	(NEXT_IRQ_BASE+11)
@@ -80,12 +76,10 @@
 #define NEXT_IRQ_MONITOR	(NEXT_IRQ_BASE+4)
 #define NEXT_IRQ_KYBD_MOUSE	(NEXT_IRQ_BASE+3)
 #define NEXT_IRQ_POWER		(NEXT_IRQ_BASE+2)
-
 #define NEXT_IPL_3MIN		2
 #define NEXT_IPL_3NUM		12
 
 #define NEXT_IRQ_SOFTINT1	(NEXT_IRQ_BASE+1)
-
 #define NEXT_IRQ_SOFTINT0	(NEXT_IRQ_BASE+0)
 
 extern void next_init_IRQ(void);
