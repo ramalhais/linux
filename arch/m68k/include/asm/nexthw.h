@@ -1,14 +1,9 @@
-/*
-** asm/nexthw.h -- This header defines NeXT specific macros and defines
-**                    for playing with NeXT hardware.
-**
-** Copyright 1998 by Zach Brown <zab@zabbo.net>
-**
-** This file is subject to the terms and conditions of the GNU General Public
-** License.  See the file COPYING in the main directory of this archive
-** for more details.
-**
-*/
+// asm/nexthw.h
+// This header defines NeXT specific macros and defines for playing with NeXT hardware.
+// Copyright 1998 by Zach Brown <zab@zabbo.net>
+// This file is subject to the terms and conditions of the GNU General Public
+// License.  See the file COPYING in the main directory of this archive
+// for more details.
 
 #ifndef _ASM_NEXTHW_H_
 #define _ASM_NEXTHW_H_
@@ -16,14 +11,14 @@
 #include <linux/types.h>
 
 // PROM Info data from running Previous emulator:
-// 							mach_type	next_board_rev	dmachip	diskchip
-// NeXT Computer:			0x0			0x0				0x139	0x136
-// NeXTstation:				0x1			0x1				0x139	0x136
-// NeXTcube:				0x2			0x0				0x139	0x136
-// NeXTstation Color:		0x3			0x0				0x139	0x136
-// NeXTstation Turbo:		0x4			0xf				0x0		0xfe66
-// NeXTstation Turbo Color:	0x5			0xf				0x0		0x266
-// NeXTcube Turbo			0x8			0xf				0x0		0xfe66
+// 				mach_type	next_board_rev	dmachip	diskchip
+// NeXT Computer:		0x0		0x0		0x139	0x136
+// NeXTstation:			0x1		0x1		0x139	0x136
+// NeXTcube:			0x2		0x0		0x139	0x136
+// NeXTstation Color:		0x3		0x0		0x139	0x136
+// NeXTstation Turbo:		0x4		0xf		0x0	0xfe66
+// NeXTstation Turbo Color:	0x5		0xf		0x0	0x266
+// NeXTcube Turbo		0x8		0xf		0x0	0xfe66
 
 enum NEXT_MACHINE_TYPE {
 	NEXT_MACHINE_COMPUTER,
@@ -47,42 +42,41 @@ extern char *next_machine_names[];
 // #define NEXT_SLOT_BMAP 0x100000	// 040
 #define NEXT_SLOT_BMAP (prom_info.mach_type == NEXT_MACHINE_COMPUTER ? 0x0 : 0x100000)
 
-#define NEXT_ETHER_RXDMA_BASE 	(NEXT_IO_BASE+NEXT_SLOT+0x000150)
-#define NEXT_ETHER_TXDMA_BASE 	(NEXT_IO_BASE+NEXT_SLOT+0x000110)
-#define NEXT_SCR1_BASE			(NEXT_IO_BASE+NEXT_SLOT+0x00c000)
-#define NEXT_SCR2_BASE 			(NEXT_IO_BASE+NEXT_SLOT+0x00d000)
-#define NEXT_MON_BASE 			(NEXT_IO_BASE+NEXT_SLOT+0x00e000)
+#define NEXT_ETHER_RXDMA_BASE	(NEXT_IO_BASE+NEXT_SLOT+0x000150)
+#define NEXT_ETHER_TXDMA_BASE	(NEXT_IO_BASE+NEXT_SLOT+0x000110)
+#define NEXT_SCR1_BASE		(NEXT_IO_BASE+NEXT_SLOT+0x00c000)
+#define NEXT_SCR2_BASE		(NEXT_IO_BASE+NEXT_SLOT+0x00d000)
+#define NEXT_MON_BASE		(NEXT_IO_BASE+NEXT_SLOT+0x00e000)
 
-#define NEXT_ETHER_BASE 		(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x006000)
-#define NEXT_SCSI_BASE 			(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x014000)
-#define NEXT_TIMER_BASE 		(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x016000)
+#define NEXT_ETHER_BASE		(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x006000)
+#define NEXT_SCSI_BASE		(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x014000)
+#define NEXT_TIMER_BASE		(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x016000)
 
-	/* magical scsi register */
-
-#define NSCSI_RESET		0x02	/* ? */
-#define NSCSI_INTMASK		0x20	/* pass the 90a int pin to the int chip */
+// magical scsi register
+#define NSCSI_RESET	0x02	// ?
+#define NSCSI_INTMASK	0x20	// pass the 90a int pin to the int chip
 
 #define _sctl_reg ((volatile __u8 *)(NEXT_SCSI_BASE+0x20))
 #define write_sctl(x) *(_sctl_reg)=x
 
-	/* common dma csr bits */
+// common dma csr bits
 
-/* status bits for reading */
+// status bits for reading
 #define DMA_BUSERR	0x10000000
 #define DMA_CINT	0x08000000
 #define DMA_ENABLED	0x01000000
 
-/* control bits for writing */
-#define DMA_SETTDEV			0x00000000 // DMA from memory to device
-#define DMA_INITDMA			0x00200000
-#define DMA_RESET			0x00100000
+// control bits for writing
+#define DMA_SETTDEV		0x00000000 // DMA from memory to device
+#define DMA_INITDMA		0x00200000
+#define DMA_RESET		0x00100000
 #define DMA_CLEARCHAINI		0x00080000
-#define DMA_SETTMEM			0x00040000 // DMA from device to memory
+#define DMA_SETTMEM		0x00040000 // DMA from device to memory
 #define DMA_SETCHAIN		0x00020000
 #define DMA_SETENABLE		0x00010000
 #define DMA_INITDMA_TURBO	0x00800000 // Turbo-only?
 
-/* this is copied from memory that is initialized by the next prom at boot */
+// this is copied from memory that is initialized by the next prom at boot
 
 #define NUMSIMMS 4
 
@@ -233,4 +227,4 @@ struct eprom_info {
 };
 extern struct eprom_info eprom_info;
 
-#endif /* asm/nexthw.h */
+#endif // _ASM_NEXTHW_H_
