@@ -15,8 +15,8 @@
 #include <linux/reboot.h>
 #include <asm/machdep.h>
 
-#include <asm/nextints.h> 
-#include <asm/nexthw.h> 
+#include <asm/nextints.h>
+#include <asm/nexthw.h>
 #include "rtc.h"
 
 /* supplied by the boot prom software */
@@ -55,7 +55,7 @@ void __init next_meminit(void) {
 		/*
 		* round len up to the nearest meg as it seems
 		* the end addr sometimes doesn't include the
-		* last page 
+		* last page
 		*/
 		// (PR) The NeXT PROM sets up data at the end of the last filled memory bank and reserves that.
 		// It's OK, we can reuse it, as long as we don't expect vbr and monitor global to be there.

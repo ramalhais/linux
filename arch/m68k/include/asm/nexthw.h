@@ -10,15 +10,15 @@
 
 #include <linux/types.h>
 
-// PROM Info data from running Previous emulator:
-// 				mach_type	next_board_rev	dmachip	diskchip
-// NeXT Computer:		0x0		0x0		0x139	0x136
-// NeXTstation:			0x1		0x1		0x139	0x136
-// NeXTcube:			0x2		0x0		0x139	0x136
-// NeXTstation Color:		0x3		0x0		0x139	0x136
-// NeXTstation Turbo:		0x4		0xf		0x0	0xfe66
-// NeXTstation Turbo Color:	0x5		0xf		0x0	0x266
-// NeXTcube Turbo		0x8		0xf		0x0	0xfe66
+//	PROM Info data from running Previous emulator:
+//					mach_type	next_board_rev	dmachip	diskchip
+//	NeXT Computer:			0x0		0x0		0x139	0x136
+//	NeXTstation:			0x1		0x1		0x139	0x136
+//	NeXTcube:			0x2		0x0		0x139	0x136
+//	NeXTstation Color:		0x3		0x0		0x139	0x136
+//	NeXTstation Turbo:		0x4		0xf		0x0	0xfe66
+//	NeXTstation Turbo Color:	0x5		0xf		0x0	0x266
+//	NeXTcube Turbo			0x8		0xf		0x0	0xfe66
 
 enum NEXT_MACHINE_TYPE {
 	NEXT_MACHINE_COMPUTER,
@@ -81,144 +81,139 @@ extern char *next_machine_names[];
 #define NUMSIMMS 4
 
 struct prom_info {
-	__u8	simm_something[NUMSIMMS];
-	__u8	prom_flags;
-	__u32	stuff[4];
-	// uint32_t mg_sid;
-	// uint32_t mg_pagesize;
-	// uint32_t mg_mon_stack;
-	// uint32_t mg_vbr;
+	u8	simm_something[NUMSIMMS];
+	u8	prom_flags;
+	u32	sid;
+	u32	pagesize;
+	u32	mon_stack;
+	u32	vbr;
 
 	struct nvram_settings {
-		__u32	flags;
-		// uint32_t ni_reset:4,
-		// 	#define	SCC_ALT_CONS	0x08000000
-		// 	ni_alt_cons : 1,
-		// 	#define	ALLOW_EJECT	0x04000000
-		// 	ni_allow_eject : 1,
-		// 	ni_vol_r : 6,
-		// 	ni_brightness : 6,
-		// 	#define	HW_PWD	0x6
-		// 	ni_hw_pwd : 4,
-		// 	ni_vol_l : 6,
-		// 	ni_spkren : 1,
-		// 	ni_lowpass : 1,
-		// 	#define	BOOT_ANY	0x00000002
-		// 	ni_boot_any : 1,
-		// 	#define	ANY_CMD		0x00000001
-		// 	ni_any_cmd : 1;
-		__u8	eaddr[6];  /* and passwd !? */
-		// #define NVRAM_HW_PASSWD 6
-		// unsigned char ni_ep[NVRAM_HW_PASSWD];
-		__u16	simm_something;  /* 4 bits / simm */
-		// uint16_t ni_simm;		/* 4 SIMMs, 4 bits per SIMM */
-		__u8	whoknows[2];
-		// char ni_adobe[2];
-		__u8	bigmystery[3];
-		// unsigned char ni_pot[3];
-		__u8	moreflags;
-		// unsigned char	ni_new_clock_chip : 1,
-		// 	ni_auto_poweron : 1,
-		// 	ni_use_console_slot : 1,	/* Console slot was set by user. */
-		// 	ni_console_slot : 2,		/* Preferred console dev slot>>1 */
-		// 	: 3;	
-		__u8	bootcmdline[12];
-		// #define	NVRAM_BOOTCMD	12
-		// char ni_bootcmd[NVRAM_BOOTCMD];
-		__u16	checksum;
-		// uint16_t ni_cksum;
+		u32	flags;
+		#define	NV_RESET	0xF0000000
+		#define	NV_ALT_CONS	0x08000000
+		#define	NV_ALLOW_EJECT	0x04000000
+		#define	NV_VOL_R	0x03F00000
+		#define	NV_BRIGHTNESS	0x000FC000
+		#define	NV_HW_PWD	0x00003C00
+		#define	NV_VOL_L	0x000003F0
+		#define	NV_SPKREN	0x00000008
+		#define	NV_LOWPASS	0x00000004
+		#define	NV_BOOT_ANY	0x00000002
+		#define	NV_ANY_CMD	0x00000001
+		u8	eaddr[6];	// and passwd !?
+		u16	simm_something;	// 4 bits / simm
+		u8	adobe[2];
+		u8	pot[3];
+		u8	moreflags;
+		#define NV_NEW_CLOCK_CHIP	0x80
+		#define NV_AUTO_POWERON		0x40
+		#define NV_USE_CONSOLE_SLORT	0x20
+		#define NV_CONSOLE_SLOT		0x18
+		u8	bootcmdline[12];
+		u16	checksum;
 	} nvram;
 
-	__u8 inetntoa[18],inputline[128];  /* ??? */
+	u8 inetntoa[18],inputline[128];
 	struct  mem_layout {
-        	__u32 start,end;
+		u32 start;
+		u32 end;
 	} simm_info[NUMSIMMS];
 
-	__u32	base_ptr,brk_ptr;
-	__u32	bootdev_ptr,bootarg_ptr,bootinfo_ptr,bootfile_ptr;
-	__u8	bootfile[64];
-	__u32	boot_mode; /*enum*/
-	__u8	km_mon_stuff[4+4+2+2+2+2+2+2+4+4+4+2+4+3*2+2]; // 46
-	__u32	moninit; /* ? */
-	__u32	sio_ptr;
-	__u32	time;
-	__u32	sddp_ptr,dgp_ptr,s5cp_ptr,odc_ptr,odd_ptr;
-	__u8	radix;  /* ? */
+	u32	base_ptr;
+	u32	brk_ptr;
+	u32	bootdev_ptr;
+	u32	bootarg_ptr;
+	u32	bootinfo_ptr;
+	u32	bootfile_ptr;
+	u8	bootfile[64];
+	u32	boot_mode; // enum
+	u8	km_mon_stuff[4+4+2+2+2+2+2+2+4+4+4+2+4+3*2+2]; // 46
+	u32	moninit;
+	u32	sio_ptr;
+	u32	time;
+	u32	sddp_ptr;
+	u32	dgp_ptr;
+	u32	s5cp_ptr;
+	u32	odc_ptr;
+	u32	odd_ptr;
+	u8	radix;
 
-	__u32	dmachip,diskchip;
-	__u32	stat_ptr,mask_ptr;
+	u32	dmachip;
+	u32	diskchip;
+	u32	stat_ptr;
+	u32	mask_ptr;
 
-	__u32	nofault_func;
-	__u8	fmt;
-	__u32	addr[8],na;  /* ??? */
-	__u32	mousex,mousey;
-	__u32	cursor[2][32];
+	u32	nofault_func;
+	u8	fmt;
+	u32	addr[8],na;
+	u32	mousex;
+	u32	mousey;
+	u32	cursor[2][32];
 
-	__u32	getc_func,try_getc_func,putc_func,
-		alert_func,alert_conf_func,alloc_func,
-		boot_slider_func;
-	__u32	event_ptr;
-	
-	__u32	event_high; /* ? */
-	
-	/* the port is not complete until we have a boot loader
-		that uses this to have a dancing penguin! */
-	// struct anim {
-	// 	__u16	x,y;
-	// 	__u32	icon_ptr;
-	// 	__u8	next;
-	// 	__u8	time;
-	// } *anim_ptr;
-	__u32	anim_ptr;
-	__u32	anim_time;
+	u32	getc_func;
+	u32	try_getc_func;
+	u32	putc_func;
+	u32	alert_func;
+	u32	alert_conf_func;
+	u32	alloc_func;
+	u32	boot_slider_func;
+	u32	event_ptr;
+	u32	event_high;
 
-	__u32	scsi_intr_func;		/* void () */
-	__u32	scsi_intr_arg;
+	// the port is not complete until we have a boot loader
+	// that uses this to have a dancing penguin!
+	struct anim {
+		u16	x;
+		u16	y;
+		u32	icon_ptr;
+		u8	next;
+		u8	time;
+	} *anim_ptr;
+	u32	anim_time;
 
-	__u16	minor,seq; /* ? */
-
-	__u32	anim_run_func;		/* int () */
-	
-	__u16	major;
-
-	__u32	client_ether_addr_ptr;
-	
-	__u32	cons_i,cons_o;
-
-	__u32	test_msg_ptr;
+	u32	scsi_intr_func;	// void ()
+	u32	scsi_intr_arg;
+	u16	minor;
+	u16	seq;
+	u32	anim_run_func;	// int ()
+	u16	major;
+	u32	client_ether_addr_ptr;
+	u32	cons_i;
+	u32	cons_o;
+	u32	test_msg_ptr;
 
 	struct nextfb_prominfo {
-		uint32_t        pixels_pword;
-		uint32_t        line_length;  /* bytes / scan */
-		uint32_t        vispixx;  /* pixels displayed */
-		uint32_t        realpixx;  /* real pixel width  */
-		uint32_t        height;
-		uint32_t        flags;
-		uint32_t        whitebits[4];
-		// uint32_t		white;
-		// uint32_t		light_grey;
-		// uint32_t		dark_grey;
-		// uint32_t		black;
-		/* not sure what these do */
-		uint8_t         slot;
-		uint8_t         fbnum;
-		uint8_t         laneid; /* ?? */
-		uint32_t        before_code; /* ?? */
-		uint32_t        after_code; /* ?? */
+		u32	pixels_pword;
+		u32	line_length;	// bytes / scan
+		u32	vispixx;	// pixels displayed
+		u32	realpixx;	// real pixel width
+		u32	height;
+		u32	flags;
+		u32	white;
+		u32	light_grey;
+		u32	dark_grey;
+		u32	black;
+		u8	slot;
+		u8	fbnum;
+		u8	laneid;
+		u32	before_code;
+		u32	after_code;
 		struct nextfb_businfo {
-			uint32_t        phys;
-			uint32_t        virt;
-			uint32_t        len;
-		} frames[6];  /* [1] == real */
-		uint32_t        stack; /* ?? */
+			u32	phys;
+			u32	virt;
+			u32	len;
+		} frames[6];	// [1] is framebuffer, [2] is backing store
+		u32	stack;
 	} fbinfo;
 
-	__u32	fdgp_ptr;  /* ? */
-	__u8	mach_type,next_board_rev;
+	u32	fdgp_ptr;
+	u8	mach_type;
+	u8	next_board_rev;
 
-	__u32	as_tune_func;	/* int () */
-	__u32	moreflags;
-};      
+	u32	as_tune_func;	// int ()
+	u32	moreflags;
+};
 
 extern struct prom_info prom_info;
 
