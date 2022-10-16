@@ -1,12 +1,7 @@
-/*
- *  linux/arch/m68k/next/rtc.c
- *
- *  Copyright (C) 1998 Zach Brown <zab@zabbo.net>
- *  Copyright (C) 2022 Pedro Ramalhais <ramalhais@gmail.com>
- *
- *  drive the NeXT clock chips.
- *
- */
+// arch/m68k/next/rtc.c
+// Copyright (C) 1998 Zach Brown <zab@zabbo.net>
+// Copyright (C) 2022 Pedro Ramalhais <ramalhais@gmail.com>
+// Drive the NeXT clock chips.
 
 #include <linux/clocksource.h>
 #include <linux/interrupt.h>

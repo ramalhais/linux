@@ -1,39 +1,30 @@
-/*
- *  linux/arch/m68k/next/rtc.h
- *
- *  deal with the RTC and timer chip
- *
- *  Copyright (C) 1998 Zach Brown <zab@zabbo.net>
- */
+// arch/m68k/next/rtc.h
+// Deal with the RTC and timer chip
+// Copyright (C) 1998 Zach Brown <zab@zabbo.net>
 
 #include <asm/nexthw.h>
 
-/*
- * NeXT clock registers
- *  there are two models, the 'old' MC68HC68T1 and
- *  'new' MCS1850.
- *
- * I don't know if mot publishes a doc on the 1850 anymore :(
- *
- */
+// NeXT clock registers
+// there are two models, the 'old' MC68HC68T1 and 'new' MCS1850.
+// I don't know if mot publishes a doc on the 1850 anymore :(
 
-/* bit to power down in control reg */
+// bit to power down in control reg
 #define RTC_POFF	0x40
-/* RTC_STATUS flags */
+// RTC_STATUS flags
 #define RTC_IS_NEW	0x80
 
-/* tell the rtc to write this reg. */
+// tell the rtc to write this reg.
 #define RTC_TOWRITE	0x80
 
 
-/* scr2 regs to talk to the rtc */
+// scr2 regs to talk to the rtc
 #define SCR2_RTC_DATA	0x00000400
 #define SCR2_RTC_CLOCK	0x00000200
 
-/* ------  new rtc registers, anyone have docs? - Z ---- */
+// new rtc registers, anyone have docs? - Z
 #define SCR2_RTC_ENABLE	0x00000100
 
-/* 32bit second counter.. */
+// 32bit second counter
 #define RTC_COUNTER0	0x20
 #define RTC_COUNTER1	0x21
 #define RTC_COUNTER2	0x22
@@ -43,9 +34,9 @@
 #define RTC_CTL		0x31
 
 #define RTC_INTERRUPTCTL 0x32
-/* ------ old rtc specific regs ---- */
+// old rtc specific regs
 
-/* it stores 8bit regs in bcd.. */
+// it stores 8bit regs in bcd...
 
 #define from_bcd(x) (((x>>4)*10)+(x&0xf))
 
@@ -57,20 +48,18 @@
 #define R_O_MONTH	0x25
 #define R_O_YEAR	0x26
 
-/*
- * timer.. 
- */
+// timer...
 
 /* control flags */
 #define TIM_ENABLE	0x80
 #define TIM_RESTART	0x40
 
-/* register offsets */
+// register offsets
 #define TIMER_R_MSB (0)
 #define TIMER_R_LSB (1)
 #define TIMER_R_CSR (4)
 
-/* silly, silly.. */
+// silly, silly
 
 #define __timer_msb *(volatile unsigned char *)(NEXT_TIMER_BASE+TIMER_R_MSB)
 #define __timer_lsb *(volatile unsigned char *)(NEXT_TIMER_BASE+TIMER_R_LSB)
