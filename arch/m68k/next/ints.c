@@ -1,12 +1,8 @@
-/*
- *  linux/arch/m68k/next/ints.c
- *
- *  Copyright (C) 1998 Zach Brown <zab@zabbo.net>
- *
- *  NeXT interrupt goo.
- *
- *  alot of this was based on macints.c
- */
+// arch/m68k/next/ints.c
+// Copyright (C) 1998 Zach Brown <zab@zabbo.net>
+// NeXT interrupt goo.
+// A lot of this was based on macints.c
+// (PR) Currently unused. Need to setup an irqchip to make this sane.
 
 #include <linux/init.h>
 //#include <linux/config.h>
@@ -25,7 +21,7 @@
 
 #include "rtc.h"
 
-#undef NEXT_DEBUGINT 
+#undef NEXT_DEBUGINT
 
 /*
  * Interrupt handler and parameter types
@@ -114,8 +110,8 @@ static unsigned long next_irqs[NEXT_NRINTS];
 /*
  * funcs
  */
-void next_default_handler(int vec, void *blah2, struct pt_regs *fp); 
-void next_do_int(int vec, void *blah2, struct pt_regs *fp); 
+void next_default_handler(int vec, void *blah2, struct pt_regs *fp);
+void next_do_int(int vec, void *blah2, struct pt_regs *fp);
 void video_shutup(int irq, void *dev_id, struct pt_regs *regs);
 
 extern void next_poweroff(int vec, void *blah2, struct pt_regs *fp);
@@ -131,8 +127,7 @@ void next_set_int_mask(int mask) {
 #ifdef NEXT_DEBUGINT
 	printk("ourmask: %x realmask: %x\n",ourmask,next_get_intmask());
 #endif
-	
-}	
+}
 
 void next_disable_irq (unsigned int irq) {
 #ifdef NEXT_DEBUGINT
@@ -178,7 +173,6 @@ void next_turnon_irq (unsigned int irq) {
 
 #ifdef NEXT_DEBUGINT
 	printk("Initializing NeXT interrupts\n");
-	
 #endif
 	next_set_int_mask(0);
 
@@ -224,7 +218,7 @@ void next_turnon_irq (unsigned int irq) {
 */
 
 /*
- * Register our machine pseudo irqs through the vector unmungers, 
+ * Register our machine pseudo irqs through the vector unmungers,
  * or in place if they are the only int in their ipl
  */
 /*
@@ -251,7 +245,7 @@ int next_request_irq (unsigned int irq, void (*handler)(int, void *, struct pt_r
                         __FUNCTION__, irq,  devname);
                 return -EINVAL;
         }
-	
+
 	info=irqinfo[irq-NEXT_IRQ_BASE];
 
 	if(INF_SHARED(info)) {
@@ -259,7 +253,7 @@ int next_request_irq (unsigned int irq, void (*handler)(int, void *, struct pt_r
 */
 		/* really should check for conflicts *//*
 		hand=&handler_table[irq-NEXT_IRQ_BASE];
-		
+
 		hand->handler=handler;
 		hand->dev_id=dev_id;
 		hand->flags=flags;
@@ -305,7 +299,7 @@ void next_free_irq (unsigned int irq, void *dev_id)
         if(INF_SHARED(info)) {*/
 		/* really should check for conflicts *//*
 		hand=&handler_table[irq-NEXT_IRQ_BASE];
-	
+
 		if(hand->dev_id != dev_id) {
 			restore_flags(flags);
 			printk("%s: tried to remove invalid irq\n", __FUNCTION__);
@@ -347,7 +341,7 @@ void next_do_int(int irq, void *dev_id, struct pt_regs *regs)
 	index=levelinfo[irq]>>16;
 	bit=1<<index;
 	for(i=levelinfo[irq]&0xff;i;i--,bit<<=1,index++) {
-		if(!(stat & bit & ourmask)) continue; 
+		if(!(stat & bit & ourmask)) continue;
 
 		info=irqinfo[index];
 		hand=&handler_table[index];
@@ -360,14 +354,14 @@ void next_do_int(int irq, void *dev_id, struct pt_regs *regs)
 			continue;
 		}
 #endif
-			
+
 		(hand->handler)(irq, hand->dev_id, regs);
 */
 		/* retrigger timer int, should be elsewhere *//*
 		if(index == NEXT_IRQ_TIMER-NEXT_IRQ_BASE)  {
 */
 			/* only touch the update bit *//*
-		        set_timer_csr_bits(TIM_RESTART); 
+		        set_timer_csr_bits(TIM_RESTART);
 		}
 	}
 
@@ -380,9 +374,9 @@ void next_default_handler(int vec, void *blah2, struct pt_regs *fp)
 }
 /*
 void (*next_default_handlers[SYS_IRQS])(int, void *, struct pt_regs *) = {
-	next_default_handler, next_default_handler, 
 	next_default_handler, next_default_handler,
-	next_default_handler, next_default_handler, 
+	next_default_handler, next_default_handler,
+	next_default_handler, next_default_handler,
 	next_default_handler, next_default_handler
 };
 */
@@ -391,7 +385,7 @@ void next_process_int(int vec, struct pt_regs *fp)
 	printk("next_process_int()ing int from vec %d\n",vec);
 }
 
-int next_get_irq_list(char *buf) 
+int next_get_irq_list(char *buf)
 {
 	int i,len=0;
 
@@ -405,7 +399,7 @@ int next_get_irq_list(char *buf)
 
 		len+=sprintf(buf+len, "next %2d: %10lu %s\n",
 			i+1,next_irqs[i],hand->devname);
-	} 
+	}
 
 	return len;
 }

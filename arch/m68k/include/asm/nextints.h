@@ -1,14 +1,9 @@
-/*
-** asm/nextings.h -- This header defines NeXT specific macros and defines
-**                    for playing with NeXT hardware.
-**
-** Copyright 1998 by Zach Brown <zab@zabbo.net>
-**
-** This file is subject to the terms and conditions of the GNU General Public
-** License.  See the file COPYING in the main directory of this archive
-** for more details.
-**
-*/
+// arch/m68k/include/asm/nextints.h
+// This header defines NeXT specific macros and defines for playing with NeXT hardware.
+// Copyright 1998 by Zach Brown <zab@zabbo.net>
+// This file is subject to the terms and conditions of the GNU General Public
+// License.  See the file COPYING in the main directory of this archive
+// for more details.
 
 
 #ifndef _ASM_NEXTINTS_H_
@@ -64,8 +59,8 @@
 #define NEXT_IPL_5NUM		3
 
 #define NEXT_IRQ_DSP_4		(NEXT_IRQ_BASE+14)
-#define NEXT_IRQ_C16_VIDEO	(NEXT_IRQ_BASE+13) // old esdi?
-#define NEXT_IRQ_SCSI		(NEXT_IRQ_BASE+12) 
+#define NEXT_IRQ_C16_VIDEO	(NEXT_IRQ_BASE+13)	// old esdi?
+#define NEXT_IRQ_SCSI		(NEXT_IRQ_BASE+12)
 #define NEXT_IRQ_PRINTER	(NEXT_IRQ_BASE+11)
 #define NEXT_IRQ_ENETX		(NEXT_IRQ_BASE+10)
 #define NEXT_IRQ_ENETR		(NEXT_IRQ_BASE+9)
