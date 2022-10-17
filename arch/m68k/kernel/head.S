@@ -287,7 +287,7 @@
 
 #ifdef CONFIG_NEXT
 
-//#define DEBUG_QEMU 1
+#define DEBUG_QEMU 1
 #define  DEBUG_QEMU_ADDR #0x0200f004 // Previous debug
 //#define DEBUG_QEMU_ADDR #0x02004200
 #define  DEBUG_QEMU_ADDR_FF #0xff00f004 // Previous debug mmu_map'ed
@@ -1199,15 +1199,35 @@ L(nocon):
 #endif
 
 #ifdef CONFIG_NEXT
-
 	is_not_next(L(not_next_mem))
 
-	// FIXME NeXT: get the first DIMM slot memory chunk. should get the value from prom_info.
-	movel	#16*1024*1024,%d0	// Assume first slot has 16MB of memory. should get this from prom_info
+	lea     %pc@(prom_info),%a2
+	// prom_info.simm_info[0].end is at byte offset 204
+	movel	%a2@(204), %d0
+	// prom_info.simm_info[0].start is at byte offset 200
+	movel	%a2@(200), %d1
+
+#if defined(DEBUG_QEMU)
+	movel	DEBUG_QEMU_ADDR, %a4
+	movel	#0x15, %a4@
+	movel	%d0, %a4@
+	movel	%d1, %a4@
+#endif
+	// Calculate the size of memory in first slot (end-start)
+	subl	%d1, %d0
+	// The PROM steals some memory from the last filled slot. If only first slot is filled, we reclaim it here:
+	addl	#0x000fffff, %d0
+	andl	#0xfff00000, %d0
+
+#if defined(DEBUG_QEMU)
+	movel	DEBUG_QEMU_ADDR, %a4
+	movel	#0x16, %a4@
+	movel	%d0, %a4@
+#endif
+
 	jbra	L(detect_mem_done)
 
 L(not_next_mem):
-
 #endif
 
 	get_bi_record BI_MEMCHUNK
@@ -1560,7 +1580,6 @@ L(notapollo):
 #endif
 
 #ifdef CONFIG_NEXT
-
 	is_not_next(L(notnext))
 
 #if defined(DEBUG_QEMU)
@@ -1575,6 +1594,7 @@ L(notapollo):
 	// 030
 	putc	'3'
 	// Map 030 NeXT IO space: Map 16MB logical 0xff00.0000 to physical 0x0200.0000
+	// FIXME: Should probably use ioremap()
 	mmu_map	#0xff000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE030
 
 #if defined(DEBUG_QEMU)
@@ -1582,17 +1602,13 @@ L(notapollo):
 	movel	#0x17, %a4@
 #endif
 
-	// Transparent Map 030 framebuffer.
-	// FIXME NeXT: Remove this. Not needed anymore since we map it on the driver using ioremap_wt(),
-	// although the TT map on the CPU is probably faster.
-//	mmu_map_tt	#0,#0x0b000000,#0x01000000,#_PAGE_NOCACHE030
-
 	jbra	L(mmu_init_done)
 
 1:	// 040
 	putc	'4'
 
 	// Map 040 NeXT IO space: Map 16MB logical 0xff00.0000 to physical 0x0200.0000
+	// FIXME: Should probably use ioremap()
 	mmu_map #0xff000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
 
 #if defined(DEBUG_QEMU)
@@ -1600,12 +1616,12 @@ L(notapollo):
 	movel	#0x18, %a4@
 #endif
 
-// NeXT 040 PROM left us with:
-// tt1: mapping for 0x0 -> 0x0
-// tt0: mapping for 0x0200.0000 -> 0x0200.0000.
-// Need to disable the tt1 0x0 transparent mapping, or it won't work because the kernel will relocate to 0x0.
-// Actually, kernel will try to use these addresses for memory mapping starting at 0x0. Set this to something that will not be used (or disable?)
-// Disable Transparent Translation Registers
+	// NeXT 040 PROM left us with:
+	// tt1: mapping for 0x0 -> 0x0
+	// tt0: mapping for 0x0200.0000 -> 0x0200.0000.
+	// Need to disable the tt1 0x0 transparent mapping, or it won't work because the kernel will relocate to 0x0.
+	// Actually, kernel will try to use these addresses for memory mapping starting at 0x0. Set this to something that will not be used (or disable?)
+	// Disable Transparent Translation Registers
 	.chip	68040
 	move	#0,%d0
 	movec	%d0,%itt0
@@ -1613,23 +1629,6 @@ L(notapollo):
 	movec	%d0,%itt1
 	movec	%d0,%dtt1
 	.chip	68k
-
-	// We need to map the framebuffer at 0x0b00.0000
-	// FIXME NeXT: maybe map to 0x0fb00.0000 and fixup the address in the nextfb driver?
-	// FIXME NeXT: We should detect the machine type and map_tt accordingly
-	// FIXME NeXT: not needed anymore since we map it on the driver using ioremap_wt(),
-	// although the TT map on the CPU is probably faster.
-
-	// Non-Turbo Mono machines have the framebuffer at 0x0b00.0000
-//	mmu_map_tt	#0,#0x0b000000,#0x01000000,#_PAGE_CACHE040W
-
-	// Non-Turbo Color machines have the framebuffer at 0x2c00.0000.
-//	mmu_map_tt	#0,#0x2c000000,#0x01000000,#_PAGE_CACHE040W
-
-	// Turbo (Mono/Color) machines have the framebuffer at 0x0c00.0000
-	// and physical memory goes up to 0x0bff.ffff which conflicts with Mono machines' framebuffer mapping.
-	// FIXME NeXT: Let's just map normally (no TT) or conditionally set these mappings.
-//	mmu_map_tt	#1,#0x0c000000,#0x01000000,#_PAGE_CACHE040W
 
 	jbra	L(mmu_init_done)
 
@@ -1860,10 +1859,10 @@ L(mmu_fixup_done):
 //	orl	#0xff000000,%a1@
 
 #if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR_FF, %a4
-	movel	#0x1C, %a4@
-	movel	%a1, %a4@
-	movel	%a1@, %a4@
+//	movel	DEBUG_QEMU_ADDR_FF, %a4
+//	movel	#0x1C, %a4@
+//	movel	%a1, %a4@
+//	movel	%a1@, %a4@
 #endif
 
 1:
