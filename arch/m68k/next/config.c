@@ -77,13 +77,13 @@ void __init next_meminit(void) {
 void __init next_init_IRQ(void)
 {
 	// Disable all interrupts on NeXT IRQ controller
-	next_get_intmask() = 0;
+	next_intmask = 0;
 }
 
 void next_get_hardware_list(struct seq_file *m)
 {
-	seq_printf(m, "FIXME: Add more info\n");
-	seq_printf(m, "Interrupt Mask: 0x%x\n", next_get_intmask());
+	seq_printf(m, "Interrupt Mask: 0x%x\n", next_intmask);
+	seq_printf(m, "Interrupt Status: 0x%x\n", next_intstat);
 }
 
 void __init config_next(void)

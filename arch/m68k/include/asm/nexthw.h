@@ -33,13 +33,11 @@ extern char *next_machine_names[];
 
 /* this needs to deal with the bmap on non turbo 040s.. */
 
-// MMU mapped in head.S to physical 0x2000.0000
+// MMU mapped in head.S to physical 0x0200.0000
 #define NEXT_IO_BASE (0xff000000)
 
 #define NEXT_SLOT 0x0
 
-// #define NEXT_SLOT_BMAP 0x0	// FIXME NeXT: 030
-// #define NEXT_SLOT_BMAP 0x100000	// 040
 #define NEXT_SLOT_BMAP (prom_info.mach_type == NEXT_MACHINE_COMPUTER ? 0x0 : 0x100000)
 
 #define NEXT_ETHER_RXDMA_BASE	(NEXT_IO_BASE+NEXT_SLOT+0x000150)
@@ -63,24 +61,26 @@ extern char *next_machine_names[];
 
 // status bits for reading
 #define DMA_BUSERR	0x10000000
-#define DMA_CINT	0x08000000
+#define DMA_CINT	0x08000000 // DMA complete
+#define DMA_SUPDATE	0x02000000 // DMA single update
 #define DMA_ENABLED	0x01000000
+#define DMA_STATUS_MASK	(DMA_ENABLED|DMA_SUPDATE|DMA_CINT|DMA_BUSERR)
 
 // control bits for writing
-#define DMA_SETTDEV		0x00000000 // DMA from memory to device
+#define DMA_INITDMA_TURBO	0x00800000 // Turbo-only?
 #define DMA_INITDMA		0x00200000
 #define DMA_RESET		0x00100000
-#define DMA_CLEARCHAINI		0x00080000
+#define DMA_CLEARCHAINI		0x00080000 // Clear Complete
 #define DMA_SETTMEM		0x00040000 // DMA from device to memory
-#define DMA_SETCHAIN		0x00020000
+#define DMA_SETCHAIN		0x00020000 // DMA single update
 #define DMA_SETENABLE		0x00010000
-#define DMA_INITDMA_TURBO	0x00800000 // Turbo-only?
+#define DMA_SETTDEV		0x00000000 // DMA from memory to device
+#define DMA_CMD_MASK		(DMA_SETENABLE|DMA_SETCHAIN|DMA_CLEARCHAINI|DMA_RESET|DMA_INITDMA)
 
 // this is copied from memory that is initialized by the next prom at boot
 
-#define NUMSIMMS 4
-
 struct prom_info {
+	#define NUMSIMMS 4
 	u8	simm_something[NUMSIMMS];
 	u8	prom_flags;
 	u32	sid;
