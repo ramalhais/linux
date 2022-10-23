@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
+
 // arch/m68k/next/kbd.c
 // Copyright (C) 1998 Zach Brown <zab@zabbo.net>
 // Copyright (C) 2022 Pedro Ramalhais <ramalhais@gmail.com>
@@ -9,14 +11,17 @@
 
 #include <asm/nextints.h>
 
-MODULE_DESCRIPTION("Keyboard/Mouse driver for NeXT Computer/Cube/Station");
+MODULE_DESCRIPTION("Keyboard/Mouse driver for NeXT Computer/cube/station");
 MODULE_ALIAS("platform:next-keyboard");
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Pedro Ramalhais <ramalhais@gmail.com>");
 
 /* shouldn't be global i'll wager :) */
 struct mon {
-	volatile __u32 csr,data,km_data,snd_data;
+	volatile u32 csr;
+	volatile u32 data;
+	volatile u32 km_data;
+	volatile u32 snd_data;
 } *mon = (struct mon *)NEXT_MON_BASE;
 
 /* bits in csr */
@@ -54,10 +59,10 @@ struct mon {
 
 #define NEXT_MOUSE_LEFT_MASK	0x0001
 #define NEXT_MOUSE_RIGHT_MASK	0x0100
-#define NEXT_MOUSE_DX_MASK		0x00FE
-#define NEXT_MOUSE_DY_MASK		0xFE00
+#define NEXT_MOUSE_DX_MASK	0x00FE
+#define NEXT_MOUSE_DY_MASK	0xFE00
 
-unsigned int oldflagmap=0;
+unsigned int oldflagmap;
 
 struct next_kbd {
 	struct input_dev *input;
@@ -159,12 +164,12 @@ struct next_kbd tpl_next_kbd = {
 
 static irqreturn_t next_kbd_int(int irq, void *dev_id)
 {
-	unsigned long flags;
 	struct next_kbd *kbd = dev_id;
 	struct input_dev *input = kbd->input;
 	struct input_dev *mouse = kbd->mouse;
-	__u32 csr;
-	__u32 data;
+	u32 csr;
+	u32 data;
+	unsigned long flags;
 
 	local_irq_save(flags);
 
@@ -173,37 +178,38 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 		return IRQ_NONE;
 	}
 
-	/* ack the int */
+	// ack the int
 	// This is not right, at leat in Previous emulator
 	// mon->csr=(csr & ~KM_INT);
 
 	csr = mon->csr;
 
-	if(!(csr & KM_HAVEDATA)) {
+	if (!(csr & KM_HAVEDATA)) {
 		pr_err("NeXT Keyboard and Mouse interrupt, but no data to handle\n");
-		return IRQ_HANDLED;
+		goto bail;
 	}
 
-	data=mon->km_data;
+	data = mon->km_data;
 
-	if((data & KD_ADDRMASK) == KD_KADDR) {
+	if ((data & KD_ADDRMASK) == KD_KADDR) {
 		unsigned int changed;
-		/* keyboard reporting */
+		// keyboard reporting
 
-		/* the next only has a bitmap of which ctl keys
-		are currently down, so we just triggers ups and downs
-		to match how we last thought the world was. We do this
-		first so real keys pressed after we get out of sync
-		don't suffer. */
+		// the next only has a bitmap of which ctl keys
+		// are currently down, so we just triggers ups and downs
+		// to match how we last thought the world was. We do this
+		// first so real keys pressed after we get out of sync
+		// don't suffer.
 
-		changed=oldflagmap;
-		oldflagmap=data & KD_FLAGKEYS;
+		changed = oldflagmap;
+		oldflagmap = data & KD_FLAGKEYS;
 
-		if((changed^=oldflagmap)) {
-			unsigned int mask,index;
+		changed ^= oldflagmap;
+		if ((changed)) {
+			unsigned int mask, index;
 			/* use cool bitmap instructions */
-			for(mask=KD_CNTL,index=0; index<NR_CTRL_KEYS; mask<<=1,index++) {
-				unsigned int scan,is_pressed;
+			for (mask = KD_CNTL, index = 0; index < NR_CTRL_KEYS; mask <<= 1, index++) {
+				unsigned int scan, is_pressed;
 
 				if (!(changed&mask))
 					continue;
@@ -214,8 +220,8 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 				input_sync(input);
 			}
 		}
-		if(data&KD_VALID && data&KD_KEYMASK) {
-				unsigned int scan,is_pressed;
+		if (data&KD_VALID && data&KD_KEYMASK) {
+			unsigned int scan, is_pressed;
 
 			/* a 'real' key has changed */
 			scan = data&KD_KEYMASK;
@@ -223,7 +229,7 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 			input_report_key(input, kbd->keycodes[scan], is_pressed);
 			input_sync(input);
 		}
-	}  else if ((data & KD_ADDRMASK) == KD_MADDR) {
+	} else if ((data & KD_ADDRMASK) == KD_MADDR) {
 		// Mouse
 		input_report_rel(mouse, REL_X, data&NEXT_MOUSE_DX_MASK);
 		input_report_rel(mouse, REL_Y, (data&NEXT_MOUSE_DY_MASK)>>8);
@@ -232,11 +238,13 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 		input_sync(mouse);
 	}
 
+bail:
 	local_irq_restore(flags);
 	return IRQ_HANDLED;
 }
 
-static int next_kbd_probe(struct platform_device *pdev) {
+static int next_kbd_probe(struct platform_device *pdev)
+{
 	struct input_dev *input;
 	struct input_dev *mouse_dev;
 	struct next_kbd *next_kbd;
@@ -249,9 +257,8 @@ static int next_kbd_probe(struct platform_device *pdev) {
 	}
 
 	next_kbd = devm_kzalloc(&pdev->dev, sizeof(*next_kbd), GFP_KERNEL);
-	if (!next_kbd) {
+	if (!next_kbd)
 		return -ENOMEM;
-	}
 
 	next_kbd->input = input;
 
@@ -269,9 +276,8 @@ static int next_kbd_probe(struct platform_device *pdev) {
 
 	for (int i = 0; i < ARRAY_SIZE(next_kbd->keycodes); i++) {
 		next_kbd->keycodes[i] = tpl_next_kbd.keycodes[i];
-		if (next_kbd->keycodes[i] != 0) {
+		if (next_kbd->keycodes[i] != 0)
 			__set_bit(next_kbd->keycodes[i], input->keybit);
-		}
 	}
 	__clear_bit(KEY_RESERVED, input->keybit);
 

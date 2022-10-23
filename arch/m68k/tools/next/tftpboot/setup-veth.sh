@@ -1,15 +1,15 @@
 # Configuration
 HOST_IF=ens33
 HOST_VIF=veth0
-HIST_VIF_IP=192.168.111.1
+HOST_VIF_IP=192.168.111.1
 GUEST_VIF=veth0guest
 
 
 # Configure networking
 ip link add $HOST_VIF type veth peer $GUEST_VIF
 ethtool --offload $HOST_VIF tx off
-ip addr add $HIST_VIF_IP/24 dev $HOST_VIF
-ip link set $HIST_VIF up
+ip addr add $HOST_VIF_IP/24 dev $HOST_VIF
+ip link set $HOST_VIF up
 ip link set $GUEST_VIF up
 
 # NeXT PROM doesn't do ARP. Match these to dhcpd.conf.

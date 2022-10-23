@@ -18,10 +18,10 @@
 #define NEXT_IRQ_BASE 8
 
 #define next_intmask_ptr ((volatile u_int *)NEXT_INTMASK)
-#define next_get_intmask() (*next_intmask_ptr)
+#define next_intmask (*next_intmask_ptr)
 
 #define next_intstat_ptr ((volatile u_int *)NEXT_INTSTAT)
-#define next_get_intstat() (*next_intstat_ptr)
+#define next_intstat (*next_intstat_ptr)
 
 #define next_irq_pending(x) \
 	((*next_intstat_ptr)&(1<<(x-NEXT_IRQ_BASE)))

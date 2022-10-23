@@ -125,7 +125,7 @@ int ourmask;
 void next_set_int_mask(int mask) {
 	*(next_intmask_ptr)=ourmask=mask;
 #ifdef NEXT_DEBUGINT
-	printk("ourmask: %x realmask: %x\n",ourmask,next_get_intmask());
+	printk("ourmask: %x realmask: %x\n",ourmask,next_intmask);
 #endif
 }
 
@@ -142,7 +142,7 @@ void next_enable_irq (unsigned int irq) {
 #endif
 	*(next_intmask_ptr)=ourmask|=1<<(irq-NEXT_IRQ_BASE);
 #ifdef NEXT_DEBUGINT
-	printk("ourmask: %x realmask: %x\n",ourmask,next_get_intmask());
+	printk("ourmask: %x realmask: %x\n",ourmask,next_intmask);
 #endif
 }
 
@@ -176,9 +176,9 @@ void next_turnon_irq (unsigned int irq) {
 #endif
 	next_set_int_mask(0);
 
-	if(next_get_intmask()) {
+	if(next_intmask) {
 		printk("Uh oh, you're intrmask appears to be on crack: 0x%0x isn't 0.\n",
-			next_get_intmask());
+			next_intmask);
 	}
 */
 	/* XXX use for int cursor in fbcon instead
@@ -212,7 +212,7 @@ void next_turnon_irq (unsigned int irq) {
 
 
 #ifdef NEXT_DEBUGINT
-	printk("Done initing interrupt fun. mask: %x stat: %x\n",next_get_intmask(),next_get_intstat());
+	printk("Done initing interrupt fun. mask: %x stat: %x\n",next_intmask,next_intstat);
 #endif
 }
 */
@@ -331,7 +331,7 @@ void next_free_irq (unsigned int irq, void *dev_id)
 void next_do_int(int irq, void *dev_id, struct pt_regs *regs)
 {
 	register unsigned int i,bit,index,info;
-	int stat=next_get_intstat();
+	int stat=next_intstat;
 	struct irqhandler *hand;
 	*/
 	/*
@@ -370,7 +370,7 @@ void next_do_int(int irq, void *dev_id, struct pt_regs *regs)
 void next_default_handler(int vec, void *blah2, struct pt_regs *fp)
 {
 	printk("Unexpected interrupt %d (mask: 0x%0X stat: 0x%0X\n",
-		vec,next_get_intmask(),next_get_intstat());
+		vec,next_intmask,next_intstat);
 }
 /*
 void (*next_default_handlers[SYS_IRQS])(int, void *, struct pt_regs *) = {
