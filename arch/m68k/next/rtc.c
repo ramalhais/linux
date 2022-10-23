@@ -129,22 +129,22 @@ int next_hwclk(int op, struct rtc_time *t)
 	}
 
 	if (!op) {
-		t->tm_sec = bcd2bin(rtc_read(R_O_SEC));
-		t->tm_min = bcd2bin(rtc_read(R_O_MIN));
-		t->tm_hour = bcd2bin(rtc_read(R_O_HOUR));
-		t->tm_wday = bcd2bin(rtc_read(R_O_DAYOFWEEK));
-		t->tm_mday = bcd2bin(rtc_read(R_O_DAYOFMONTH));
-		t->tm_mon = bcd2bin(rtc_read(R_O_MONTH)) - 1;
-		t->tm_year = bcd2bin(rtc_read(R_O_YEAR));
+		t->tm_sec	= bcd2bin(rtc_read(R_O_SEC));
+		t->tm_min	= bcd2bin(rtc_read(R_O_MIN));
+		t->tm_hour	= bcd2bin(rtc_read(R_O_HOUR));
+		t->tm_wday	= bcd2bin(rtc_read(R_O_DAYOFWEEK));
+		t->tm_mday	= bcd2bin(rtc_read(R_O_DAYOFMONTH));
+		t->tm_mon	= bcd2bin(rtc_read(R_O_MONTH)) - 1;
+		t->tm_year	= bcd2bin(rtc_read(R_O_YEAR));
 		if (t->tm_year < 70)
 			t->tm_year += 100;
 	} else {
-		rtc_write(R_O_SEC, bin2bcd(t->tm_sec));
-		rtc_write(R_O_MIN, bin2bcd(t->tm_min));
-		rtc_write(R_O_HOUR, bin2bcd(t->tm_hour));
-		rtc_write(R_O_DAYOFWEEK, bin2bcd(t->tm_wday));
-		rtc_write(R_O_DAYOFMONTH, bin2bcd(t->tm_mday));
-		rtc_write(R_O_MONTH, bin2bcd(t->tm_mon + 1));
+		rtc_write(R_O_SEC,		bin2bcd(t->tm_sec));
+		rtc_write(R_O_MIN,		bin2bcd(t->tm_min));
+		rtc_write(R_O_HOUR,		bin2bcd(t->tm_hour));
+		rtc_write(R_O_DAYOFWEEK,	bin2bcd(t->tm_wday));
+		rtc_write(R_O_DAYOFMONTH,	bin2bcd(t->tm_mday));
+		rtc_write(R_O_MONTH,		bin2bcd(t->tm_mon + 1));
 
 		if (t->tm_year < 100)
 			rtc_write(R_O_YEAR, bin2bcd(t->tm_year));

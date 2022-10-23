@@ -287,7 +287,7 @@
 
 #ifdef CONFIG_NEXT
 
-#define DEBUG_QEMU 1
+//#define DEBUG_QEMU 1
 #define  DEBUG_QEMU_ADDR #0x0200f004 // Previous debug
 //#define DEBUG_QEMU_ADDR #0x02004200
 #define  DEBUG_QEMU_ADDR_FF #0xff00f004 // Previous debug mmu_map'ed
