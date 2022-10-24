@@ -124,21 +124,21 @@ struct mb8795regs {
 
 #define TXBUFLEN (1514)
 #define MAXTXBYTES (1514+4+2*NEXT_ALIGN)
-/* must have len be !(%NEXT_ALIGN) so the end addr is */
+// must have len be !(%NEXT_ALIGN) so the end addr is
 #define RXBUFLEN (MAXTXBYTES-(MAXTXBYTES%NEXT_ALIGN))
 
 // #define NEXT_RXBUF(x) ((x+1)%NRXBUFS)
 
 // #define MAX_DMASIZE 4096
-// #define	DMA_ENDALIGNMENT	16	/* DMA must start(Previous) and end on quad longword */ //default
-// #define ENDMA_ENDALIGNMENT	32	/* Ethernet DMA is very special */ //TX
+// #define	DMA_ENDALIGNMENT	16	// DMA must start(Previous) and end on quad longword //default
+// #define ENDMA_ENDALIGNMENT	32	// Ethernet DMA is very special //TX
 // #define	DMA_ENDALIGN(type, addr)	\
-// 	((type)(((unsigned)(addr)+DMA_ENDALIGNMENT-1) \
-// 		&~(DMA_ENDALIGNMENT-1))) // default
+//	((type)(((unsigned)(addr)+DMA_ENDALIGNMENT-1) \
+//		&~(DMA_ENDALIGNMENT-1))) // default
 
 // #define	ENDMA_ENDALIGN(type, addr)	\
-// 	((type)((((unsigned)(addr)+ENDMA_ENDALIGNMENT-1) \
-// 		 &~(DMA_ENDALIGNMENT-1))|0x80000000)) // TX with end of packet bit?
+//	((type)((((unsigned)(addr)+ENDMA_ENDALIGNMENT-1) \
+//		 &~(DMA_ENDALIGNMENT-1))|0x80000000)) // TX with end of packet bit?
 
 struct mb8795_private {
 	struct platform_device *pdev;
