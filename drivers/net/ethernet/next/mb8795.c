@@ -24,12 +24,12 @@
 
 // This driver is far from done, but I'm tired of wrestling
 // with the dma silliness.  things to do:
-// 	o pay attention to error conditions (service ints, reset, etc)
-// 	o _stop() for real
-// 	o modular
-// 	o dma into properly alligned skbs
-// 	o handle first packet if we miss the first chain int
-// 	o keep full statistics, byte counters, etc
+// - pay attention to error conditions (service ints, reset, etc)
+// - stop() for real
+// - modular
+// - dma into properly alligned skbs
+// - handle first packet if we miss the first chain int
+// - keep full statistics, byte counters, etc
 
 // Probably compatible with AT&T chip T7213 on NeXT Turbos. Register layout
 // seems similar at 0x02006000 but DMA seems to be at a different address
