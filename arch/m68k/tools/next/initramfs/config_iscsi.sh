@@ -1,13 +1,13 @@
 TARGET_ADDR=192.168.111.1
-INITIATOR=NeXT
+INITIATOR=$(hostname -f)
 
 #
 # Make a specific target disk available
 #
 #TARGET_DISK=nextdisk
 #TARGET_GROUP=1
-# ex: iscsistart -t NeXT -t nextdisk -g 1 -a 192.168.111.1
-#iscsistart -t $INITIATOR -t $TARGET_DISK -g $TARGET_GROUP -a $TARGET_ADDR
+# ex: iscsistart -i NeXT -t nextdisk -g 1 -a 192.168.111.1
+#iscsistart --initiatorname=$INITIATOR --targetname=$TARGET_DISK --tgpt=$TARGET_GROUP --address=$TARGET_ADDR
 
 #
 # Make all target disks from $TARGET_ADDR available
