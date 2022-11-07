@@ -3,4 +3,4 @@
 CC = cc
 CFLAGS = -Wall -O2
 
-all: aout simpkern
+all: aout simpkern next-disklabel
