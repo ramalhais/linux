@@ -826,7 +826,7 @@ build_identify:
 		select_and_stop = true;
 	}
 
-	if (select_and_stop) {
+	if (select_and_stop && esp->rev != ESP100 && esp->rev != ESP100A) {
 		esp->cmd_bytes_left = cmd->cmd_len;
 		esp->cmd_bytes_ptr = &cmd->cmnd[0];
 
@@ -843,7 +843,7 @@ build_identify:
 		esp->select_state = ESP_SELECT_MSGOUT;
 	} else {
 		start_cmd = ESP_CMD_SELA;
-		if (ent->tag[0]) {
+		if (ent->tag[0] && esp->rev != ESP100 && esp->rev != ESP100A) {
 			*p++ = ent->tag[0];
 			*p++ = ent->tag[1];
 
@@ -1795,12 +1795,12 @@ again:
 		}
 		esp->ops->dma_invalidate(esp);
 
-		if (esp->ireg != ESP_INTR_BSERV) {
+		if (esp->ireg != ESP_INTR_BSERV && esp->ireg != ESP_INTR_FDONE) {
 			/* We should always see exactly a bus-service
 			 * interrupt at the end of a successful transfer.
 			 */
 			shost_printk(KERN_INFO, esp->host,
-				     "data done, not BSERV, resetting\n");
+				     "data done, not BSERV nor FDONE. resetting\n");
 			esp_schedule_reset(esp);
 			return 0;
 		}

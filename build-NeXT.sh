@@ -26,6 +26,7 @@ export _BUILDROOT_OVERLAY_DIR=$_BUILDROOT_DIR/linux-modules/
 # Kernel Modules
 #
 
+if false; then
 # Cleanup and build modules
 rm -rf $_MODULES_DIR
 mkdir $_MODULES_DIR
@@ -52,6 +53,7 @@ rm -f $_BUILDROOT_DIR/output/build/host-gcc-final-*/.stamp_host_installed
 
 # Build buildroot
 make -C $_BUILDROOT_DIR
+fi
 
 #
 # Kernel image
