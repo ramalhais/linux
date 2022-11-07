@@ -40,8 +40,10 @@ extern char *next_machine_names[];
 
 #define NEXT_SLOT_BMAP (prom_info.mach_type == NEXT_MACHINE_COMPUTER ? 0x0 : 0x100000)
 
+#define NEXT_SCSI_DMA_BASE	(NEXT_IO_BASE+NEXT_SLOT+0x000010)
 #define NEXT_ETHER_RXDMA_BASE	(NEXT_IO_BASE+NEXT_SLOT+0x000150)
 #define NEXT_ETHER_TXDMA_BASE	(NEXT_IO_BASE+NEXT_SLOT+0x000110)
+
 #define NEXT_SCR1_BASE		(NEXT_IO_BASE+NEXT_SLOT+0x00c000)
 #define NEXT_SCR2_BASE		(NEXT_IO_BASE+NEXT_SLOT+0x00d000)
 #define NEXT_MON_BASE		(NEXT_IO_BASE+NEXT_SLOT+0x00e000)
@@ -49,6 +51,38 @@ extern char *next_machine_names[];
 #define NEXT_ETHER_BASE		(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x006000)
 #define NEXT_SCSI_BASE		(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x014000)
 #define NEXT_TIMER_BASE		(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x016000)
+
+struct next_dma_channel {
+	volatile u32	csr;
+	char		ignore[0x3efc];
+	volatile u32	turbo_rx_saved_start;	// only used on turbos. they don't have saved_* registers mapped
+	char		ignore2[0xec];
+	volatile u32	saved_start;		// dd_saved_next // save in case of abort?
+	volatile u32	saved_end;		// dd_saved_limit
+	volatile u32	saved_next_start;	// dd_saved_start
+	volatile u32	saved_next_end;		// dd_saved_stop
+	volatile u32	start;			// dd_next // TX: r_start (read only) phys start and end addrs of dma block
+	volatile u32	end;			// dd_limit
+	volatile u32	next_start;		// dd_start // next in the chain
+	volatile u32	next_end;		// dd_stop
+	char		ignore3[0x1f0];
+	volatile u32	next_initbuf;		// dd_next_initbuf // TX: w_start (write only) phys start and end addrs of dma block
+};
+
+#define NEXT_IS_TURBO (prom_info.mach_type >= NEXT_MACHINE_STATION_TURBO)
+
+// SCSI
+#define ESPCTRL_CLKMASK     0xc0    /* clock selection bits */
+#define ESPCTRL_CLK10MHz    0x00
+#define ESPCTRL_CLK12MHz    0x40
+#define ESPCTRL_CLK16MHz    0xc0
+#define ESPCTRL_CLK20MHz    0x80
+#define ESPCTRL_ENABLE_INT  0x20    /* enable ESP interrupt */
+#define ESPCTRL_MODE_DMA    0x10    /* select mode: 1 = dma, 0 = pio */
+#define ESPCTRL_DMA_READ    0x08    /* select direction: 1 = scsi>mem, 0 = mem>scsi */
+#define ESPCTRL_FLUSH       0x04    /* flush DMA buffer */
+#define ESPCTRL_RESET       0x02    /* hard reset ESP */
+#define ESPCTRL_CHIP_TYPE   0x01    /* select chip type: 1 = WD33C92, 0 = NCR53C90(A) */
 
 // magical scsi register
 #define NSCSI_RESET	0x02	// ?

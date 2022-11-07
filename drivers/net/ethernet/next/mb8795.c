@@ -171,23 +171,6 @@ struct mb8795_private {
 	struct net_device_stats stats;
 };
 
-struct next_dma_channel {
-	volatile u32	csr;
-	char		ignore[0x3efc];
-	volatile u32	turbo_rx_saved_start;	// only used on turbos. they don't have saved_* registers mapped
-	char		ignore2[0xec];
-	volatile u32	saved_start;		// dd_saved_next // save in case of abort?
-	volatile u32	saved_end;		// dd_saved_limit
-	volatile u32	saved_next_start;	// dd_saved_start
-	volatile u32	saved_next_end;		// dd_saved_stop
-	volatile u32	start;			// dd_next // TX: r_start (read only) phys start and end addrs of dma block
-	volatile u32	end;			// dd_limit
-	volatile u32	next_start;		// dd_start // next in the chain
-	volatile u32	next_end;		// dd_stop
-	char		ignore3[0x1f0];
-	volatile u32	next_initbuf;		// dd_next_initbuf // TX: w_start (write only) phys start and end addrs of dma block
-};
-
 #ifdef DEBUGME
 void	dumpregs(struct mb8795regs *mb)
 {
@@ -774,17 +757,8 @@ static int mb8795_probe(struct platform_device *pdev)
 	priv = netdev_priv(ndev);
 	priv->pdev = pdev;
 	priv->ndev = ndev;
-	switch (prom_info.mach_type) {
-	case NEXT_MACHINE_STATION_TURBO:
-	case NEXT_MACHINE_STATION_TURBO_COLOR:
-	case NEXT_MACHINE_CUBE_TURBO:
-		priv->is_turbo = true;
-		dev_info(&pdev->dev, "Setting up Turbo variant\n");
-		break;
-	default:
-		priv->is_turbo = false;
-		break;
-	}
+	priv->is_turbo = NEXT_IS_TURBO;
+
 	priv->mb = (struct mb8795regs *)NEXT_ETHER_BASE;
 	priv->rxdma = (struct next_dma_channel *)NEXT_ETHER_RXDMA_BASE;
 	priv->txdma = (struct next_dma_channel *)NEXT_ETHER_TXDMA_BASE;
