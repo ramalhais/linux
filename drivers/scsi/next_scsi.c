@@ -75,6 +75,7 @@ static void next_scsi_esp_send_dma_cmd(struct esp *esp, u32 addr, u32 esp_count,
 				  u32 dma_count, int write, u8 cmd)
 {
 	struct next_dma_channel *scsi_dma = (struct next_dma_channel *)NEXT_SCSI_DMA_BASE;
+	u32 dma_end;
 
 	BUG_ON(!(cmd & ESP_CMD_DMA));
 
@@ -98,9 +99,9 @@ static void next_scsi_esp_send_dma_cmd(struct esp *esp, u32 addr, u32 esp_count,
 	// vdma_set_count ((int)esp->dma_regs, dma_count);
 	// vdma_enable ((int)esp->dma_regs);
 	scsi_dma->start = addr;//dd_next
-	scsi_dma->end = addr+dma_count;//dd_limit
+	dma_end = addr+dma_count;//dd_limit
 	#define	DMA_ENDALIGNMENT 16
-	scsi_dma->end = (scsi_dma->end+DMA_ENDALIGNMENT-1)&~(DMA_ENDALIGNMENT-1);
+	scsi_dma->end = (dma_end+DMA_ENDALIGNMENT-1)&~(DMA_ENDALIGNMENT-1);
 
 	// rx = rx->next;
 
@@ -188,7 +189,7 @@ static int next_scsi_probe(struct platform_device *dev)
 	esp->dev = &dev->dev;
 	esp->ops = &next_scsi_esp_ops;
 
-	esp->flags = ESP_FLAG_USE_FIFO/*|ESP_FLAG_NO_DMA_MAP*/;
+	esp->flags = ESP_FLAG_USE_FIFO|ESP_FLAG_NO_SELAS|ESP_FLAG_NO_SA3/*|ESP_FLAG_NO_DMA_MAP*/; // Previous does not implement SELAS or SA3. Might work on real hardware (probably not SA3).
 
 	// res = platform_get_resource(dev, IORESOURCE_MEM, 0);
 	// if (!res)
@@ -202,7 +203,8 @@ static int next_scsi_probe(struct platform_device *dev)
 	// if (!res)
 	// 	goto fail_unlink;
 
-	esp->dma_regs = (void __iomem *)(NEXT_SCSI_BASE + 0x20);//res->start
+	#define NEXT_SCSI_DMA_REGS_OFFSET 0x20
+	esp->dma_regs = (void __iomem *)(NEXT_SCSI_BASE + NEXT_SCSI_DMA_REGS_OFFSET);//res->start
 
 	esp->command_block = dma_alloc_coherent(esp->dev, 16,
 						&esp->command_block_dma,
