@@ -129,8 +129,11 @@ void print_dl(struct next68k_disklabel *dl) {
 	printf("cd_checksum\t\t0x%x (%hu)\n",		dl->cd_checksum, dl->cd_checksum);
 
 	for (int part = 0; part < NEXT68K_LABEL_MAXPARTITIONS; part++) {
-		if (dl->cd_partitions[part].cp_offset == -1)
+		if (dl->cd_partitions[part].cp_offset == -1) {
+			printf("\n### Skipping Partition %d ###\n", part);
+			print_part(&dl->cd_partitions[part]);
 			continue;
+		}
 		printf("\n### Partition %d ###\n", part);
 		print_part(&dl->cd_partitions[part]);
 	}
