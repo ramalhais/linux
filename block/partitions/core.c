@@ -55,6 +55,9 @@ static int (*check_part[])(struct parsed_partitions *) = {
 #ifdef CONFIG_MSDOS_PARTITION
 	msdos_partition,
 #endif
+#ifdef CONFIG_NEXT_PARTITION
+	next_partition,
+#endif
 #ifdef CONFIG_OSF_PARTITION
 	osf_partition,
 #endif
