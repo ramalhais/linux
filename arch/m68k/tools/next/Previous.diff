@@ -1,6 +1,166 @@
+Index: src/dma.c
+===================================================================
+--- src/dma.c	(revision 1191)
++++ src/dma.c	(working copy)
+@@ -24,8 +24,10 @@
+ #include "dsp.h"
+ #include "mmu_common.h"
+ 
+-#define LOG_DMA_LEVEL LOG_DEBUG
++// #define LOG_DMA_LEVEL LOG_DEBUG
++#define LOG_DMA_LEVEL LOG_WARN
+ 
++
+ #define IO_SEG_MASK	0x1FFFF
+ 
+ 
+@@ -1117,7 +1119,7 @@
+ 	int interrupt = get_interrupt_type(channel);
+ 	Uint32 writecsr = IoMem_ReadLong(IoAccessCurrentAddress & IO_SEG_MASK);
+ 
+-	Log_Printf(LOG_DMA_LEVEL,"DMA CSR write at $%08x val=$%08x PC=$%08x\n", IoAccessCurrentAddress, writecsr, m68k_getpc());
++	Log_Printf(/*LOG_DMA_LEVEL*/LOG_WARN,"DMA CSR write at $%08x val=$%08x PC=$%08x\n", IoAccessCurrentAddress, writecsr, m68k_getpc());
+ 	
+ 	/* For debugging */
+ 	if(writecsr&TDMA_DEV2M)
+@@ -1145,7 +1147,7 @@
+ 		case 0:
+ 			Log_Printf(LOG_DMA_LEVEL,"DMA no command"); break;
+ 		default:
+-			Log_Printf(LOG_WARN,"DMA: unknown command!"); break;
++			Log_Printf(LOG_WARN,"DMA: unknown command! writecsr=0x%x", writecsr); break;
+ 	}
+ 	
+ 	/* Handle CSR bits */
+Index: src/enet_pcap.c
+===================================================================
+--- src/enet_pcap.c	(revision 1191)
++++ src/enet_pcap.c	(working copy)
+@@ -58,7 +58,7 @@
+ {
+     while(pcap_started)
+     {
+-        host_sleep_ms(10);
++        host_sleep_ms(1);
+         pcap_tick();
+     }
+     return 0;
+@@ -127,13 +127,17 @@
+         }
+         Log_Printf(LOG_WARN, "Device: %s", dev);
+         
+-        pcap_handle = pcap_open_live(dev, 1518, 1, 1000, errbuf);
++        // pcap_handle = pcap_open_live(dev, 1518, 1, 1000, errbuf);
++        // pcap_handle = pcap_open_live(dev, 1518, 1, 10, errbuf);
++        pcap_handle = pcap_open_live(dev, 1518, 1, 1, errbuf);
+         
+         if (pcap_handle == NULL) {
+             Log_Printf(LOG_WARN, "[PCAP] Error: Couldn't open device %s: %s", dev, errbuf);
+             return;
+         }
+-        
++
++        pcap_set_immediate_mode(pcap_handle, 1);
++
+         if (pcap_getnonblock(pcap_handle, errbuf) == 0) {
+             Log_Printf(LOG_WARN, "[PCAP] Setting interface to non-blocking mode.");
+             if (pcap_setnonblock(pcap_handle, 1, errbuf) != 0) {
+Index: src/esp.c
+===================================================================
+--- src/esp.c	(revision 1191)
++++ src/esp.c	(working copy)
+@@ -11,10 +11,14 @@
+ #include "dma.h"
+ #include "scsi.h"
+ 
+-#define LOG_ESPDMA_LEVEL    LOG_DEBUG   /* Print debugging messages for ESP DMA registers */
+-#define LOG_ESPCMD_LEVEL    LOG_DEBUG   /* Print debugging messages for ESP commands */
+-#define LOG_ESPREG_LEVEL    LOG_DEBUG   /* Print debugging messages for ESP registers */
+-#define LOG_ESPFIFO_LEVEL   LOG_DEBUG   /* Print debugging messages for ESP FIFO */
++// #define LOG_ESPDMA_LEVEL    LOG_DEBUG   /* Print debugging messages for ESP DMA registers */
++// #define LOG_ESPCMD_LEVEL    LOG_DEBUG   /* Print debugging messages for ESP commands */
++// #define LOG_ESPREG_LEVEL    LOG_DEBUG   /* Print debugging messages for ESP registers */
++// #define LOG_ESPFIFO_LEVEL   LOG_DEBUG   /* Print debugging messages for ESP FIFO */
++#define LOG_ESPDMA_LEVEL    LOG_WARN   /* Print debugging messages for ESP DMA registers */
++#define LOG_ESPCMD_LEVEL    LOG_WARN   /* Print debugging messages for ESP commands */
++#define LOG_ESPREG_LEVEL    LOG_WARN   /* Print debugging messages for ESP registers */
++#define LOG_ESPFIFO_LEVEL   LOG_WARN   /* Print debugging messages for ESP FIFO */
+ 
+ 
+ #define IO_SEG_MASK	0x1FFFF
+@@ -754,7 +758,8 @@
+ } esp_io_state;
+ 
+ bool esp_transfer_done(bool write) {
+-    Log_Printf(LOG_ESPCMD_LEVEL, "[ESP] Transfer done: ESP counter = %i, SCSI residual bytes: %i",
++    Log_Printf(LOG_ESPCMD_LEVEL, "[ESP] %s Transfer done: ESP counter = %i, SCSI residual bytes: %i",
++               write ? "Write" : "Read",
+                esp_counter,scsi_buffer.size);
+     
+     if (esp_counter == 0) { /* Transfer done */
+@@ -801,7 +806,7 @@
+ }
+ void ESP_IO_Handler(void) {
+     CycInt_AcknowledgeInterrupt();
+-    
++
+     switch (esp_io_state) {
+         case ESP_IO_STATE_TRANSFERING:
+             switch (SCSIbus.phase) {
+Index: src/ethernet.c
+===================================================================
+--- src/ethernet.c	(revision 1191)
++++ src/ethernet.c	(working copy)
+@@ -653,7 +653,7 @@
+ 				if (enet_rx_buffer.size==old_size) {
+ 					Log_Printf(LOG_WARN, "[newEN] Receiving packet: Error! Receiver overflow (DMA disabled)!");
+ 					enet_rx_interrupt(RXSTAT_OVERFLOW);
+-					enet.rx_mode &= ~RXMODE_ENABLE;
++					// enet.rx_mode &= ~RXMODE_ENABLE;
+ 					rx_chain = false;
+ 					enet_rx_buffer.size = 0;
+ 					enet.tx_status &= ~TXSTAT_NET_BUSY;
+Index: src/ioMemTabNEXT.c
+===================================================================
+--- src/ioMemTabNEXT.c	(revision 1191)
++++ src/ioMemTabNEXT.c	(working copy)
+@@ -264,10 +264,10 @@
+ 	{ 0x0201400a, SIZE_BYTE, IoMem_ReadWithoutInterceptionButTrace, ESP_Test_Write },
+ 	/* Additional Registers for NCR53C90A (68040) */
+ 	{ 0x0201400b, SIZE_BYTE, ESP_Conf2_Read, IoMem_WriteWithoutInterceptionButTrace },
+-	{ 0x0201400c, SIZE_BYTE, IoMem_ReadWithoutInterceptionButTrace, IoMem_WriteWithoutInterceptionButTrace },
+-	{ 0x0201400d, SIZE_BYTE, IoMem_ReadWithoutInterceptionButTrace, IoMem_WriteWithoutInterceptionButTrace },
+-	{ 0x0201400e, SIZE_BYTE, IoMem_ReadWithoutInterceptionButTrace, IoMem_WriteWithoutInterceptionButTrace },
+-	{ 0x0201400f, SIZE_BYTE, IoMem_ReadWithoutInterceptionButTrace, IoMem_WriteWithoutInterceptionButTrace },
++	{ 0x0201400c, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterceptionButTrace }, //IoMem_ReadWithoutInterceptionButTrace
++	{ 0x0201400d, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterceptionButTrace }, //IoMem_ReadWithoutInterceptionButTrace
++	{ 0x0201400e, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterceptionButTrace }, //IoMem_ReadWithoutInterceptionButTrace
++	{ 0x0201400f, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterceptionButTrace }, //IoMem_ReadWithoutInterceptionButTrace
+ 	
+ 	/* SCSI DMA Control/Status */
+ 	{ 0x02014020, SIZE_BYTE, ESP_DMA_CTRL_Read, ESP_DMA_CTRL_Write },
+Index: src/ioMemTabTurbo.c
+===================================================================
+--- src/ioMemTabTurbo.c	(revision 1191)
++++ src/ioMemTabTurbo.c	(working copy)
+@@ -182,10 +182,10 @@
+ 	{ 0x02014009, SIZE_BYTE, IoMem_ReadWithoutInterceptionButTrace, ESP_ClockConv_Write },
+ 	{ 0x0201400a, SIZE_BYTE, IoMem_ReadWithoutInterceptionButTrace, ESP_Test_Write },
+ 	{ 0x0201400b, SIZE_BYTE, ESP_Conf2_Read, IoMem_WriteWithoutInterceptionButTrace },
+-	{ 0x0201400c, SIZE_BYTE, IoMem_ReadWithoutInterceptionButTrace, IoMem_WriteWithoutInterceptionButTrace },
+-	{ 0x0201400d, SIZE_BYTE, IoMem_ReadWithoutInterceptionButTrace, IoMem_WriteWithoutInterceptionButTrace },
+-	{ 0x0201400e, SIZE_BYTE, IoMem_ReadWithoutInterceptionButTrace, IoMem_WriteWithoutInterceptionButTrace },
+-	{ 0x0201400f, SIZE_BYTE, IoMem_ReadWithoutInterceptionButTrace, IoMem_WriteWithoutInterceptionButTrace },
++	{ 0x0201400c, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterceptionButTrace }, //IoMem_ReadWithoutInterceptionButTrace
++	{ 0x0201400d, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterceptionButTrace }, //IoMem_ReadWithoutInterceptionButTrace
++	{ 0x0201400e, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterceptionButTrace }, //IoMem_ReadWithoutInterceptionButTrace
++	{ 0x0201400f, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterceptionButTrace }, //IoMem_ReadWithoutInterceptionButTrace
+ 	
+ 	/* SCSI DMA Control/Status Registers */
+ 	{ 0x02014020, SIZE_BYTE, ESP_DMA_CTRL_Read, ESP_DMA_CTRL_Write },
 Index: src/printer.c
 ===================================================================
---- src/printer.c	(revision 1159)
+--- src/printer.c	(revision 1191)
 +++ src/printer.c	(working copy)
 @@ -769,7 +769,8 @@
  
