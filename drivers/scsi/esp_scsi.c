@@ -265,7 +265,11 @@ static void esp_reset_esp(struct esp *esp)
 			esp->rev = FSC;
 			/* Enable Active Negation */
 			esp_write8(ESP_CONFIG4_RADE, ESP_CFG4);
+		} else if (family_code == ESP_UID_F100A) {
+			esp->rev = FAS100A;
 		} else {
+			shost_printk(KERN_ALERT, esp->host,
+				"Chip with unknown family_code=0x%x. Defaulting to FAS100A!\n", family_code);
 			esp->rev = FAS100A;
 		}
 		esp->min_period = ((4 * esp->ccycle) / 1000);
@@ -826,7 +830,7 @@ build_identify:
 		select_and_stop = true;
 	}
 
-	if (select_and_stop && esp->rev != ESP100 && esp->rev != ESP100A) {
+	if (select_and_stop && !(esp->flags&ESP_FLAG_NO_SELAS)) {
 		esp->cmd_bytes_left = cmd->cmd_len;
 		esp->cmd_bytes_ptr = &cmd->cmnd[0];
 
@@ -843,7 +847,7 @@ build_identify:
 		esp->select_state = ESP_SELECT_MSGOUT;
 	} else {
 		start_cmd = ESP_CMD_SELA;
-		if (ent->tag[0] && esp->rev != ESP100 && esp->rev != ESP100A) {
+		if (ent->tag[0] && !(esp->flags&ESP_FLAG_NO_SA3)) {
 			*p++ = ent->tag[0];
 			*p++ = ent->tag[1];
 

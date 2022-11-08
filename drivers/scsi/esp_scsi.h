@@ -490,6 +490,8 @@ struct esp {
 #define ESP_FLAG_DISABLE_SYNC	0x00000020
 #define ESP_FLAG_USE_FIFO	0x00000040
 #define ESP_FLAG_NO_DMA_MAP	0x00000080
+#define ESP_FLAG_NO_SELAS	0x00000100
+#define ESP_FLAG_NO_SA3		0x00000200
 
 	u8			select_state;
 #define ESP_SELECT_NONE		0x00 /* Not selecting */
