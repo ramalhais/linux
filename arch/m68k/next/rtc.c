@@ -9,7 +9,7 @@
 #include <linux/mm.h>
 #include <linux/types.h>
 #include <linux/bcd.h>
-#include <uapi/linux/rtc.h>
+#include <linux/rtc.h>
 
 #include <asm/irq.h>
 #include <asm/nexthw.h>
@@ -121,13 +121,8 @@ static u64 next_read_clk(struct clocksource *cs)
 	return clk_total + next_gettimeoffset();
 }
 
-int next_hwclk(int op, struct rtc_time *t)
+int next_hwclk_old(int op, struct rtc_time *t)
 {
-	if (clocktype != N_C_OLD) {
-		pr_info("NeXT NEW Hardware Clock is unsupported");
-		return -1;
-	}
-
 	if (!op) {
 		t->tm_sec	= bcd2bin(rtc_read(R_O_SEC));
 		t->tm_min	= bcd2bin(rtc_read(R_O_MIN));
@@ -153,6 +148,33 @@ int next_hwclk(int op, struct rtc_time *t)
 	}
 
 	return 0;
+}
+
+int next_hwclk_new(int op, struct rtc_time *t)
+{
+	time64_t now;
+
+	if (!op) {
+		now = rtc_read(R_O_SEC)<<24 | rtc_read(R_O_MIN)<<16 | rtc_read(R_O_HOUR)<<8 | rtc_read(R_O_DAYOFWEEK);
+		rtc_time64_to_tm(now, t);
+	} else {
+		now = rtc_tm_to_time64(t);
+		rtc_write(R_O_SEC,	now>>24&0xff);
+		rtc_write(R_O_MIN,	now>>16&0xff);
+		rtc_write(R_O_HOUR,	now>>8&0xff);
+		rtc_write(R_O_DAYOFWEEK,now&0xff);
+	}
+
+	return 0;
+}
+
+int next_hwclk(int op, struct rtc_time *t)
+{
+	if (clocktype == N_C_OLD) {
+		return next_hwclk_old(op, t);
+	} else {
+		return next_hwclk_new(op, t);
+	}
 }
 
 void next_poweroff(void)
