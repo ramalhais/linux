@@ -43,10 +43,10 @@
 #define R_O_SEC		0x20
 #define R_O_MIN		0x21
 #define R_O_HOUR	0x22
-#define R_O_DAYOFWEEK	0x23
+#define R_O_DAYOFWEEK	0x23 // (sunday = 1)
 #define R_O_DAYOFMONTH	0x24
 #define R_O_MONTH	0x25
-#define R_O_YEAR	0x26
+#define R_O_YEAR	0x26 // year (0 - 99)
 
 // timer...
 
