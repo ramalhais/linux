@@ -83,6 +83,7 @@ static inline dma_addr_t dma_direct_map_phys(struct device *dev,
 {
 	dma_addr_t dma_addr;
 
+	// pr_warn("offset=0x%lx size=0x%x dir=0x%x phys_page=0x%x dma_addr=0x%x\n", offset, size, dir, phys, dma_addr);
 	if (is_swiotlb_force_bounce(dev)) {
 		if (attrs & (DMA_ATTR_MMIO | DMA_ATTR_REQUIRE_COHERENT))
 			return DMA_MAPPING_ERROR;

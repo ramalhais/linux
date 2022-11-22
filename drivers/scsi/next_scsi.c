@@ -29,6 +29,11 @@
 
 #define DRV_MODULE_NAME "next_scsi"
 
+#define	NEXT_SCSI_DMA_ENDALIGNMENT 16
+#define NEXT_SCSI_DMA_REGS_OFFSET 0x20
+#define NEXT_SCSI_ID 7
+#define NEXT_SCSI_HZ 10000000
+
 static void next_scsi_esp_write8(struct esp *esp, u8 val, unsigned long reg)
 {
 	*(volatile u8 *)(esp->regs + reg) = val;
@@ -100,8 +105,7 @@ static void next_scsi_esp_send_dma_cmd(struct esp *esp, u32 addr, u32 esp_count,
 	// vdma_enable ((int)esp->dma_regs);
 	scsi_dma->start = addr;//dd_next
 	dma_end = addr+dma_count;//dd_limit
-	#define	DMA_ENDALIGNMENT 16
-	scsi_dma->end = (dma_end+DMA_ENDALIGNMENT-1)&~(DMA_ENDALIGNMENT-1);
+	scsi_dma->end = (dma_end+NEXT_SCSI_DMA_ENDALIGNMENT-1)&~(NEXT_SCSI_DMA_ENDALIGNMENT-1);
 
 	// rx = rx->next;
 
@@ -182,7 +186,7 @@ static int next_scsi_probe(struct platform_device *dev)
 	if (!host)
 		goto fail;
 
-	host->max_id = 8;
+	host->max_id = NEXT_SCSI_ID + 1;
 	esp = shost_priv(host);
 
 	esp->host = host;
@@ -203,7 +207,6 @@ static int next_scsi_probe(struct platform_device *dev)
 	// if (!res)
 	// 	goto fail_unlink;
 
-	#define NEXT_SCSI_DMA_REGS_OFFSET 0x20
 	esp->dma_regs = (void __iomem *)(NEXT_SCSI_BASE + NEXT_SCSI_DMA_REGS_OFFSET);//res->start
 
 	esp->command_block = dma_alloc_coherent(esp->dev, 16,
@@ -226,10 +229,10 @@ static int next_scsi_probe(struct platform_device *dev)
 	next_intmask_enable(NEXT_IRQ_SCSI-NEXT_IRQ_BASE);
 	next_intmask_enable(NEXT_IRQ_SCSI_DMA-NEXT_IRQ_BASE);
 
-	esp->scsi_id = 7;
+	esp->scsi_id = NEXT_SCSI_ID;
 	esp->host->this_id = esp->scsi_id;
 	esp->scsi_id_mask = (1 << esp->scsi_id);
-	esp->cfreq = 40000000;
+	esp->cfreq = NEXT_SCSI_HZ;
 
 	dev_set_drvdata(&dev->dev, esp);
 
