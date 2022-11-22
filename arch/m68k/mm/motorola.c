@@ -476,8 +476,10 @@ void __init paging_init(void)
 
 	high_memory = phys_to_virt(max_addr) + 1;
 
-	min_low_pfn = availmem >> PAGE_SHIFT;
-	max_pfn = max_low_pfn = (max_addr >> PAGE_SHIFT) + 1;
+	//min_low_pfn = availmem >> PAGE_SHIFT;
+	//max_pfn = max_low_pfn = (max_addr >> PAGE_SHIFT) + 1;
+	min_low_pfn = PFN_DOWN(min_addr);
+	max_pfn = max_low_pfn = max_addr >> PAGE_SHIFT;
 
 	/* Reserve kernel text/data/bss and the memory allocated in head.S */
 	memblock_reserve(m68k_memory[0].addr, availmem - m68k_memory[0].addr);
