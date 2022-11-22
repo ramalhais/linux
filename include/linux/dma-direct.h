@@ -101,12 +101,17 @@ static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size,
 {
 	dma_addr_t end = addr + size - 1;
 
-	if (addr == DMA_MAPPING_ERROR)
+	if (addr == DMA_MAPPING_ERROR) {
+		// pr_warn("dma_capable: DMA_MAPPING_ERROR\n");
 		return false;
+	}
 	if (is_ram && !IS_ENABLED(CONFIG_ARCH_DMA_ADDR_T_64BIT) &&
-	    min(addr, end) < phys_to_dma(dev, PFN_PHYS(min_low_pfn)))
+	    min(addr, end) < phys_to_dma(dev, PFN_PHYS(min_low_pfn))) {
+		// pr_warn("dma_capable: addr<min_low_pfn\n");
 		return false;
-
+	}
+	// if (end > min_not_zero(*dev->dma_mask, dev->bus_dma_limit))
+	// 	pr_warn("dma_capable: end>bus_dma_limit\n");
 	return end <= min_not_zero(*dev->dma_mask, dev->bus_dma_limit);
 }
 
