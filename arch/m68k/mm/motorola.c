@@ -465,7 +465,8 @@ void __init paging_init(void)
 
 	high_memory = phys_to_virt(max_addr);
 
-	min_low_pfn = availmem >> PAGE_SHIFT;
+	// min_low_pfn = availmem >> PAGE_SHIFT;
+	min_low_pfn = PFN_DOWN(min_addr);
 	max_pfn = max_low_pfn = max_addr >> PAGE_SHIFT;
 
 	/* Reserve kernel text/data/bss and the memory allocated in head.S */

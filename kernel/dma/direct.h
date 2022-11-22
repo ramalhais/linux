@@ -88,18 +88,22 @@ static inline dma_addr_t dma_direct_map_page(struct device *dev,
 	phys_addr_t phys = page_to_phys(page) + offset;
 	dma_addr_t dma_addr = phys_to_dma(dev, phys);
 
+	// pr_warn("offset=0x%lx size=0x%x dir=0x%x phys_page=0x%x dma_addr=0x%x\n", offset, size, dir, phys, dma_addr);
 	if (is_swiotlb_force_bounce(dev)) {
+		// pr_warn("is_swiotlb_force_bounce\n");
 		if (is_pci_p2pdma_page(page))
 			return DMA_MAPPING_ERROR;
 		return swiotlb_map(dev, phys, size, dir, attrs);
 	}
 
 	if (unlikely(!dma_capable(dev, dma_addr, size, true))) {
+		// pr_warn("!dma_capable\n");
 		if (is_pci_p2pdma_page(page))
 			return DMA_MAPPING_ERROR;
-		if (is_swiotlb_active(dev))
+		if (is_swiotlb_active(dev)) {
+			// pr_warn("is_swiotlb_active\n");
 			return swiotlb_map(dev, phys, size, dir, attrs);
-
+		}
 		dev_WARN_ONCE(dev, 1,
 			     "DMA addr %pad+%zu overflow (mask %llx, bus limit %llx).\n",
 			     &dma_addr, size, *dev->dma_mask, dev->bus_dma_limit);
