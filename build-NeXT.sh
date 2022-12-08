@@ -75,14 +75,15 @@ make -C arch/m68k/tools/next/
 
 # Wrap kernel binary code in Mach-O header (bigger than aout (COFF?) header)
 #./arch/m68k/tools/next/simpkern vmlinux.binary_$DATE vmlinux.macho_$DATE
+#./arch/m68k/tools/next/macho vmlinux.binary_$DATE vmlinux.macho_$DATE
 #sudo cp vmlinux.macho_$DATE /srv/tftp/
 #sudo ln -sf vmlinux.macho_$DATE /srv/tftp/boot
 
 # Wrap kernel binary code in aout header (old UNIX COFF format?)
-./arch/m68k/tools/next/aout vmlinux.binary_$DATE vmlinux.netimg_aout_$DATE
-#sudo cp vmlinux.netimg_aout_$DATE /srv/tftp/
-#sudo ln -sf vmlinux.netimg_aout_$DATE /srv/tftp/boot
-ln -sf ~/next/linux/vmlinux.netimg_aout_$DATE ~/next/tftp/private/tftpboot/boot
+./arch/m68k/tools/next/aout vmlinux.binary_$DATE vmlinux.aout_$DATE
+#sudo cp vmlinux.aout_$DATE /srv/tftp/
+#sudo ln -sf vmlinux.aout_$DATE /srv/tftp/boot
+ln -sf ~/next/linux/vmlinux.aout_$DATE ~/next/tftp/private/tftpboot/boot
 
 ### Save patch
 git diff master > ../linux-NeXT-$DATE.patch
