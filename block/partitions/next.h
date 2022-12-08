@@ -14,20 +14,19 @@
 #define	NEXT_LABEL_NBADBLOCKS		1670
 
 struct __attribute__ ((packed)) next_partition {
-	__be32	offset;		/* starting sector */
-	__be32	size;		/* number of sectors in partition */
-	__be16	bsize;		/* block size in bytes */
-	__be16	fsize;		/* filesystem basic fragment size */
-	char	opt;			/* optimization type: 's'pace/'t'ime */
+	__be32	offset;	// starting sector
+	__be32	size;	// number of sectors in partition
+	__be16	bsize;	// block size in bytes
+	__be16	fsize;	// filesystem basic fragment size
+	char	opt;	// optimization type: 's'pace/'t'ime
 	char	pad1;
-	__be16	cpg;			/* filesystem cylinders per group */
-	__be16	density;		/* bytes per inode density */
-	int8_t	minfree;		/* minfree (%) */
-	int8_t	newfs;		/* run newfs during init */
-	char	mountpt[NEXT_LABEL_MAXMPTLEN];
-					/* default/standard mount point */
-	int8_t	automnt;		/* auto-mount when inserted */
-	char	type[NEXT_LABEL_MAXFSTLEN]; /* file system type name */
+	__be16	cpg;		// filesystem cylinders per group
+	__be16	density;	// bytes per inode density
+	int8_t	minfree;	// minfree (%)
+	int8_t	newfs;		// run newfs during init
+	char	mountpt[NEXT_LABEL_MAXMPTLEN]; // default/standard mount point
+	int8_t	automnt;	// auto-mount when inserted
+	char	type[NEXT_LABEL_MAXFSTLEN]; // file system type name
 	char	pad2;
 };
 
@@ -36,10 +35,10 @@ struct __attribute__ ((packed)) next_disklabel {
 	__be32	block;	// this disklabel's start block number (there seem to be more disklabel copies)
 	__be32	size;	// size of data (sectors)
 	char	label[NEXT_LABEL_CPULBLLEN];
-	__be32 flags;
-	__be32 tag;
-	char	name[NEXT_LABEL_MAXDNMLEN];	// SCSI drive name (written at format time?)
-	char	type[NEXT_LABEL_MAXTYPLEN];	// drive type (written at format time?). ex: fixed_rw_scsi
+	__be32	flags;
+	__be32	tag;
+	char	name[NEXT_LABEL_MAXDNMLEN]; // SCSI drive name (written at format time?)
+	char	type[NEXT_LABEL_MAXTYPLEN]; // drive type (written at format time?). ex: fixed_rw_scsi
 	__be32	secsize;	// bytes per sector
 	__be32	ntracks;	// tracks per cylinder
 	__be32	nsectors;	// sectors per track
@@ -59,11 +58,10 @@ struct __attribute__ ((packed)) next_disklabel {
 	char	rwpartition;	// r/w partition letter. ex: b
 	struct next_partition partitions[NEXT_LABEL_MAXPARTITIONS];
 	union {
-		__be16	v3_checksum;	// disklabel version 3 checksum
-		__be32	badblocks[NEXT_LABEL_NBADBLOCKS];
-					/* block number that is bad */
+		__be16	v3_checksum; // disklabel version 3 checksum
+		__be32	badblocks[NEXT_LABEL_NBADBLOCKS]; // block number that is bad
 	} un;
-	__be16 checksum;		/* label version 1 or 2 checksum */
+	__be16	checksum; // label version 1 or 2 checksum
 };
 
 #define	NEXT_LABEL_checksum	checksum
