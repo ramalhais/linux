@@ -15,6 +15,8 @@
 #include <stdlib.h>	// exit()
 #include <arpa/inet.h>	// htonl()
 
+#define LOAD_ADDR 0x4001000
+
 /*
  * Header prepended to each a.out file.
  */
@@ -60,7 +62,7 @@ int main(int argc, char**argv) {
 	// FIXME: should be 0x4000000 (first DIMM slot address) + the kernel image offset in the ld linker script.
 	// Get it from the objdump? or from the linker script?
 	// m68k-linux-gnu-objdump -D vmlinux|grep "<_stext>:"|cut -f1 -d' '
-	unsigned int entrypoint = 0x4001000;
+	unsigned int entrypoint = LOAD_ADDR;
 	struct exec aout_header = {
 		.a_machtype = machine_type,
 		.a_magic = OMAGIC,

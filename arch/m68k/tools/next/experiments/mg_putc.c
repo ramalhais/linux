@@ -1,5 +1,5 @@
-#define MG_PUTC_OFFSET			734
-
+#define MG_PUTC_OFFSET	734
+#define PREVIOUS_DEBUG	0x0200f004
 
 void mr_putl(unsigned long val);
 void puts(char *s);
@@ -9,9 +9,9 @@ void main2();
 void main3();
 
 void _start() {
-    // main();
+    main();
 //    main2();
-    main3();
+//    main3();
 
     while(1) {
     }
@@ -39,9 +39,9 @@ void main2() {
 }
 
 void main3() {
-    // void *mr315 = (void *)0x02106000+0x15; // explodes qemu in assert
-    unsigned long *mr315 = (unsigned long *)0x2004200;
-
+    //unsigned long *mr315 = (unsigned long *)0x02106000+0x15; // explodes qemu in assert
+    //unsigned long *mr315 = (unsigned long *)0x2004200;
+    unsigned long *mr315 = (unsigned long *)PREVIOUS_DEBUG;
     *mr315 = 0x77;
 
     // netbsd
@@ -114,7 +114,7 @@ typedef int (*putcptr)(int);
 // Must be first function implementation, so that entrypoint matches
 void main() {
     // void *mr315 = (void *)0x02106000+0x15; // explodes qemu in assert
-    unsigned long *mr315 = (unsigned long *)0x2004200;
+    unsigned long *mr315 = (unsigned long *)PREVIOUS_DEBUG;
 
     *mr315 = 0x77;
 
@@ -168,7 +168,7 @@ typedef int (*putcptr)(int);
     while(*c) {
         *mr315 = *c;
         // mr_putl(*c);
-    	(void *)*mg_putc(*c);
+    	mg_putc(*c);
 //        MON(putcptr,MG_PUTC_OFFSET)(*c);
         c++;
     }
@@ -189,7 +189,7 @@ void mr_putl(unsigned long val) {
 }
 
 void puts(char *s) {
-    unsigned long *mr315 = (unsigned long *)0x2004200;
+    unsigned long *mr315 = (unsigned long *)PREVIOUS_DEBUG;
 
     *mr315 = 0x78;
 
