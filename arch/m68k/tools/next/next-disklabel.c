@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <arpa/inet.h>
 
 #define	NEXT68K_LABEL_MAXPARTITIONS	8	/* number of partitions in next68k_disklabel */
 #define	NEXT68K_LABEL_CPULBLLEN		24
@@ -77,61 +78,61 @@ struct __attribute__ ((packed)) next68k_disklabel {
 #define	NEXT68K_LABEL_CD_V1		0x4e655854 /* version #1: "NeXT" */
 #define	NEXT68K_LABEL_CD_V2		0x646c5632 /* version #2: "dlV2" */
 #define	NEXT68K_LABEL_CD_V3		0x646c5633 /* version #3: "dlV3" */
-#define	NEXT68K_LABEL_DEFAULTFRONTPORCH	(160 * 2)
+#define	NEXT68K_LABEL_DEFAULTFRONTPORCH	(160 * 2) // 160*2*512byte based. it's *2 to match 1024 blocksize. a bit crazy.
 #define	NEXT68K_LABEL_DEFAULTBOOT0_1	(32 * 2)
 #define	NEXT68K_LABEL_DEFAULTBOOT0_2	(96 * 2)
 
 void print_part(struct next68k_partition *part) {
-	printf("cp_offset\t\t0x%x (%d)\n",	part->cp_offset, part->cp_offset);
-	printf("cp_size\t\t0x%x (%d)\n",	part->cp_size, part->cp_size);
-	printf("cp_bsize\t\t0x%x (%hd)\n",	part->cp_bsize, part->cp_bsize);
-	printf("cp_fsize\t\t0x%x (%hd)\n",	part->cp_fsize, part->cp_fsize);
+	printf("cp_offset\t\t0x%x (%d)\n",	ntohl(part->cp_offset), ntohl(part->cp_offset));
+	printf("cp_size\t\t0x%x (%d)\n",	ntohl(part->cp_size), ntohl(part->cp_size));
+	printf("cp_bsize\t\t0x%x (%hd)\n",	ntohs(part->cp_bsize), ntohs(part->cp_bsize));
+	printf("cp_fsize\t\t0x%x (%hd)\n",	ntohs(part->cp_fsize), ntohs(part->cp_fsize));
 	printf("cp_opt\t\t%c\n",		part->cp_opt);
 	printf("cp_pad1\t\t%c\n",		part->cp_pad1);
-	printf("cp_cpg\t\t0x%x (%hd)\n",	part->cp_cpg, part->cp_cpg);
-	printf("cp_density\t\t0x%x (%hd)\n",	part->cp_density, part->cp_density);
-	printf("cp_minfree\t\t0x%x (%d)\n",	part->cp_minfree, part->cp_minfree);
-	printf("cp_newfs\t\t0x%x (%d)\n",	part->cp_newfs, part->cp_newfs);
+	printf("cp_cpg\t\t0x%x (%hd)\n",	ntohs(part->cp_cpg), ntohs(part->cp_cpg));
+	printf("cp_density\t\t0x%x (%hd)\n",	ntohs(part->cp_density), ntohs(part->cp_density));
+	printf("cp_minfree\t\t0x%x (%hhd)\n",	part->cp_minfree, part->cp_minfree);
+	printf("cp_newfs\t\t0x%x (%hhd)\n",	part->cp_newfs, part->cp_newfs);
 	printf("cp_mountpt\t\t%s\n",		part->cp_mountpt);
-	printf("cp_automnt\t\t0x%x (%d)\n",	part->cp_automnt, part->cp_automnt);
+	printf("cp_automnt\t\t0x%x (%hhd)\n",	part->cp_automnt, part->cp_automnt);
 	printf("cp_type\t\t%s\n",		part->cp_type);
 	printf("cp_pad2\t\t%c\n",		part->cp_pad2);
 }
 
 void print_dl(struct next68k_disklabel *dl) {
-	printf("cd_version\t\t0x%x (%d)\t%c%c%c%c\n",	dl->cd_version, dl->cd_version, dl->cd_version&0xff, dl->cd_version>>8&0xff, dl->cd_version>>16&0xff, dl->cd_version>>24&0xff);
-	printf("cd_label_blkno\t\t0x%x (%d)\n",		dl->cd_label_blkno, dl->cd_label_blkno);
-	printf("cd_size\t\t0x%x (%d)\n",		dl->cd_size, dl->cd_size);
+	printf("cd_version\t\t0x%x (%d)\t%c%c%c%c\n",	ntohl(dl->cd_version), ntohl(dl->cd_version), dl->cd_version&0xff, dl->cd_version>>8&0xff, dl->cd_version>>16&0xff, dl->cd_version>>24&0xff);
+	printf("cd_label_blkno\t\t0x%x (%d)\n",		ntohl(dl->cd_label_blkno), ntohl(dl->cd_label_blkno));
+	printf("cd_size\t\t0x%x (%d)\n",		ntohl(dl->cd_size), ntohl(dl->cd_size));
 	printf("cd_label\t\t%s\n",			dl->cd_label);
-	printf("cd_flags\t\t0x%x (%u)\n",		dl->cd_flags, dl->cd_flags);
-	printf("cd_tag\t\t0x%x (%u)\n",			dl->cd_tag, dl->cd_tag);
+	printf("cd_flags\t\t0x%x (%u)\n",		ntohl(dl->cd_flags), ntohl(dl->cd_flags));
+	printf("cd_tag\t\t0x%x (%u)\n",			ntohl(dl->cd_tag), ntohl(dl->cd_tag));
 	printf("cd_name\t\t%s\n",			dl->cd_name);
 	printf("cd_type\t\t%s\n",			dl->cd_type);
-	printf("cd_secsize\t\t0x%x (%d)\n",		dl->cd_secsize, dl->cd_secsize);
-	printf("cd_ntracks\t\t0x%x (%d)\n",		dl->cd_ntracks, dl->cd_ntracks);
-	printf("cd_nsectors\t\t0x%x (%d)\n",		dl->cd_nsectors, dl->cd_nsectors);
-	printf("cd_ncylinders\t\t0x%x (%d)\n",		dl->cd_ncylinders, dl->cd_ncylinders);
-	printf("cd_rpm\t\t0x%x (%d)\n",			dl->cd_rpm, dl->cd_rpm);
-	printf("cd_front\t\t0x%x (%hd)\n",		dl->cd_front, dl->cd_front);
-	printf("cd_back\t\t0x%x (%hd)\n",		dl->cd_back, dl->cd_back);
-	printf("cd_ngroups\t\t0x%x (%hd)\n",		dl->cd_ngroups, dl->cd_ngroups);
-	printf("cd_ag_size\t\t0x%x (%hd)\n",		dl->cd_ag_size, dl->cd_ag_size);
-	printf("cd_ag_alts\t\t0x%x (%hd)\n",		dl->cd_ag_alts, dl->cd_ag_alts);
-	printf("cd_ag_off\t\t0x%x (%hd)\n",		dl->cd_ag_off, dl->cd_ag_off);
-	printf("cd_boot_blkno[0]\t\t0x%x (%d)\n",	dl->cd_boot_blkno[0], dl->cd_boot_blkno[0]);
-	printf("cd_boot_blkno[1]\t\t0x%x (%d)\n",	dl->cd_boot_blkno[1], dl->cd_boot_blkno[1]);
+	printf("cd_secsize\t\t0x%x (%d)\n",		ntohl(dl->cd_secsize), ntohl(dl->cd_secsize));
+	printf("cd_ntracks\t\t0x%x (%d)\n",		ntohl(dl->cd_ntracks), ntohl(dl->cd_ntracks));
+	printf("cd_nsectors\t\t0x%x (%d)\n",		ntohl(dl->cd_nsectors), ntohl(dl->cd_nsectors));
+	printf("cd_ncylinders\t\t0x%x (%d)\n",		ntohl(dl->cd_ncylinders), ntohl(dl->cd_ncylinders));
+	printf("cd_rpm\t\t0x%x (%d)\n",			ntohl(dl->cd_rpm), ntohl(dl->cd_rpm));
+	printf("cd_front\t\t0x%x (%hd)\n",		ntohs(dl->cd_front), ntohs(dl->cd_front));
+	printf("cd_back\t\t0x%x (%hd)\n",		ntohs(dl->cd_back), ntohs(dl->cd_back));
+	printf("cd_ngroups\t\t0x%x (%hd)\n",		ntohs(dl->cd_ngroups), ntohs(dl->cd_ngroups));
+	printf("cd_ag_size\t\t0x%x (%hd)\n",		ntohs(dl->cd_ag_size), ntohs(dl->cd_ag_size));
+	printf("cd_ag_alts\t\t0x%x (%hd)\n",		ntohs(dl->cd_ag_alts), ntohs(dl->cd_ag_alts));
+	printf("cd_ag_off\t\t0x%x (%hd)\n",		ntohs(dl->cd_ag_off), ntohs(dl->cd_ag_off));
+	printf("cd_boot_blkno[0]\t\t0x%x (%d)\n",	ntohl(dl->cd_boot_blkno[0]), ntohl(dl->cd_boot_blkno[0]));
+	printf("cd_boot_blkno[1]\t\t0x%x (%d)\n",	ntohl(dl->cd_boot_blkno[1]), ntohl(dl->cd_boot_blkno[1]));
 	printf("cd_kernel\t\t%s\n",			dl->cd_kernel);
 	printf("cd_hostname\t\t%s\n",			dl->cd_hostname);
 	printf("cd_rootpartition\t\t%c\n",		dl->cd_rootpartition);
 	printf("cd_rwpartition\t\t%c\n",		dl->cd_rwpartition);
 	printf("\n");
-	printf("CD_v3_checksum\t\t0x%x (%hu)\n",	dl->cd_un.CD_v3_checksum, dl->cd_un.CD_v3_checksum);
-	printf("cd_checksum\t\t0x%x (%hu)\n",		dl->cd_checksum, dl->cd_checksum);
+	printf("CD_v3_checksum\t\t0x%x (%hu)\n",	ntohs(dl->cd_un.CD_v3_checksum), ntohs(dl->cd_un.CD_v3_checksum));
+	printf("cd_checksum\t\t0x%x (%hu)\n",		ntohs(dl->cd_checksum), ntohs(dl->cd_checksum));
 
 	for (int part = 0; part < NEXT68K_LABEL_MAXPARTITIONS; part++) {
 		if (dl->cd_partitions[part].cp_offset == -1) {
 			printf("\n### Skipping Partition %d ###\n", part);
-			print_part(&dl->cd_partitions[part]);
+			// print_part(&dl->cd_partitions[part]);
 			continue;
 		}
 		printf("\n### Partition %d ###\n", part);
