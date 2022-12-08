@@ -150,7 +150,7 @@ int main(int argc, char**argv) {
 		while (bytes_written < text_size) {
 			char buf[512];
 			int rbytes = read(fd_binary, &buf, 512);
-			if (rbytes<=0) {
+			if (rbytes <= 0) {
 				printf("Warning: read() returned no data.\n");
 				break;
 			}
