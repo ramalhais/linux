@@ -45,6 +45,9 @@
 #ifdef CONFIG_SUN3X
 #include <asm/dvma.h>
 #endif
+#ifdef CONFIG_NEXT
+#include <asm/nexthw.h>
+#endif
 #include <asm/macintosh.h>
 #include <asm/natfeat.h>
 #include <asm/config.h>
@@ -312,6 +315,13 @@ void __init setup_arch(char **cmdline_p)
 #ifdef CONFIG_NEXT
 	case MACH_NEXT:
 		config_next();
+		// This should be above (before config_next()), but we don't have access to the whole RAM before config_next()
+		pr_info("prom_info.bootarg_ptr=0x%x\n", (prom_info.bootarg_ptr-0x4000000));
+		if (strlen(m68k_command_line))
+			strncpy(m68k_command_line+strlen(m68k_command_line), " ", 1);
+		// strncpy(m68k_command_line+strlen(m68k_command_line), (char *)(prom_info.bootarg_ptr-0x4000000), CL_SIZE-strlen(m68k_command_line));
+		strncpy(m68k_command_line+strlen(m68k_command_line), (char *)prom_info.inputline, CL_SIZE-strlen(m68k_command_line));
+		memcpy(boot_command_line, *cmdline_p, CL_SIZE);
 		break;
 #endif
 #ifdef CONFIG_COLDFIRE
