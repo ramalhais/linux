@@ -37,16 +37,17 @@ char *next_machine_names[] = {
 };
 
 void next_get_model(char *model) {
-       strcpy(model, next_machine_names[prom_info.mach_type]);
+#define MODEL_MAX 80
+       strncpy(model, next_machine_names[prom_info.mach_type], MODEL_MAX-1);
 }
 
 void __init next_meminit(void) {
 	int i;
 	unsigned int len;
 
-	m68k_num_memory=0;
-	for(i=0;i<4;i++){
-		if(prom_info.simm_info[i].start==0) {
+	m68k_num_memory = 0;
+	for(i = 0; i < 4; i++) {
+		if (prom_info.simm_info[i].start == 0) {
 			printk("SIMM bank %d: Empty", i);
 			continue;
 		}
@@ -61,9 +62,10 @@ void __init next_meminit(void) {
 		// It's OK, we can reuse it, as long as we don't expect vbr and monitor global to be there.
 		// The amount of memory lost would be very low, 1024+960 page aligned, sooooo, 8KB page as setup by PROM.
 
-		len=prom_info.simm_info[i].end-prom_info.simm_info[i].start;
-		if(len&0xfffff) len+=0x100000-(len&0xfffff); /* silly */
-		m68k_memory[m68k_num_memory].size=len;
+		len = prom_info.simm_info[i].end-prom_info.simm_info[i].start;
+		if (len&0xfffff)
+			len += 0x100000 - (len&0xfffff); /* silly */
+		m68k_memory[m68k_num_memory].size = len;
 
 		printk("SIMM bank %d: %d MB at 0x%0lx\n",
 			i,
@@ -95,6 +97,7 @@ void __init config_next(void)
 	mach_get_model	= next_get_model;
 	mach_get_hardware_list = next_get_hardware_list;
 	mach_hwclk	= next_hwclk;
+	// FIXME: Currently not working
 	// mach_halt		= next_poweroff;
 	// mach_reset		= next_poweroff;
 	// register_platform_power_off(next_poweroff);
