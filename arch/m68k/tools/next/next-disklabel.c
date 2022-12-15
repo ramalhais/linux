@@ -1,4 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0
+
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
@@ -13,7 +16,7 @@
 #define	NEXT68K_LABEL_MAXFSTLEN		8
 #define	NEXT68K_LABEL_NBAD		1670	/* sized to make label ~= 8KB */
 
-struct __attribute__ ((packed)) next68k_partition {
+struct __attribute__((packed)) next68k_partition {
 	int32_t	cp_offset;		/* starting sector */
 	int32_t	cp_size;		/* number of sectors in partition */
 	int16_t	cp_bsize;		/* block size in bytes */
@@ -32,7 +35,7 @@ struct __attribute__ ((packed)) next68k_partition {
 };
 
 /* The disklabel the way it is on the disk */
-struct __attribute__ ((packed)) next68k_disklabel {
+struct __attribute__((packed)) next68k_disklabel {
 	int32_t	cd_version;		/* label version */
 	int32_t	cd_label_blkno;		/* block # of this label */
 	int32_t	cd_size;		/* size of media area (sectors) */
@@ -82,7 +85,8 @@ struct __attribute__ ((packed)) next68k_disklabel {
 #define	NEXT68K_LABEL_DEFAULTBOOT0_1	(32 * 2)
 #define	NEXT68K_LABEL_DEFAULTBOOT0_2	(96 * 2)
 
-void print_part(struct next68k_partition *part) {
+void print_part(struct next68k_partition *part)
+{
 	printf("cp_offset\t\t0x%x (%d)\n",	ntohl(part->cp_offset), ntohl(part->cp_offset));
 	printf("cp_size\t\t0x%x (%d)\n",	ntohl(part->cp_size), ntohl(part->cp_size));
 	printf("cp_bsize\t\t0x%x (%hd)\n",	ntohs(part->cp_bsize), ntohs(part->cp_bsize));
@@ -99,7 +103,8 @@ void print_part(struct next68k_partition *part) {
 	printf("cp_pad2\t\t%c\n",		part->cp_pad2);
 }
 
-void print_dl(struct next68k_disklabel *dl) {
+void print_dl(struct next68k_disklabel *dl)
+{
 	printf("cd_version\t\t0x%x (%d)\t%c%c%c%c\n",	ntohl(dl->cd_version), ntohl(dl->cd_version), dl->cd_version&0xff, dl->cd_version>>8&0xff, dl->cd_version>>16&0xff, dl->cd_version>>24&0xff);
 	printf("cd_label_blkno\t\t0x%x (%d)\n",		ntohl(dl->cd_label_blkno), ntohl(dl->cd_label_blkno));
 	printf("cd_size\t\t0x%x (%d)\n",		ntohl(dl->cd_size), ntohl(dl->cd_size));
@@ -128,19 +133,35 @@ void print_dl(struct next68k_disklabel *dl) {
 	printf("\n");
 	printf("CD_v3_checksum\t\t0x%x (%hu)\n",	ntohs(dl->cd_un.CD_v3_checksum), ntohs(dl->cd_un.CD_v3_checksum));
 	printf("cd_checksum\t\t0x%x (%hu)\n",		ntohs(dl->cd_checksum), ntohs(dl->cd_checksum));
-
-	for (int part = 0; part < NEXT68K_LABEL_MAXPARTITIONS; part++) {
-		if (dl->cd_partitions[part].cp_offset == -1) {
-			printf("\n### Skipping Partition %d ###\n", part);
-			// print_part(&dl->cd_partitions[part]);
-			continue;
-		}
-		printf("\n### Partition %d ###\n", part);
-		print_part(&dl->cd_partitions[part]);
-	}
 }
 
-int main(int argc, char **argv) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+static uint16_t checksum(struct next68k_disklabel *dl, bool validate)
+{
+	uint16_t *buf = (uint16_t *)dl;
+	uint16_t *csump;
+	uint32_t sum = 0;
+
+	if (ntohl(dl->cd_version) == NEXT68K_LABEL_CD_V3)
+		csump = &dl->cd_un.CD_v3_checksum;
+	else
+		csump = &dl->cd_checksum;
+
+	while (buf < csump)
+		sum += ntohs(*buf++);
+
+	sum = (sum + (sum >> 16)) & 0xffff;
+
+	if (validate)
+		return ntohs(*csump) - sum;
+	else
+		return sum;
+}
+#pragma GCC diagnostic pop
+
+int main(int argc, char **argv)
+{
 	if (argc <= 1) {
 		printf("Usage:\n\t%s DISK_FILE\n", argv[0]);
 		printf("Example:\n\t%s /dev/sdc\n", argv[0]);
@@ -148,15 +169,34 @@ int main(int argc, char **argv) {
 	}
 
 	struct next68k_disklabel dl;
+	uint16_t csumv;
+	FILE *f = fopen(argv[1], "r");
+
 	printf("sizeof(struct next68k_disklabel)=%ld\n", sizeof(struct next68k_disklabel));
 
-	FILE *f = fopen(argv[1], "r");
 	if (fread(&dl, sizeof(dl), 1, f) != 1) {
 		printf("Error: Unable to read NeXT disklabel");
 		exit(2);
 	};
 
 	print_dl(&dl);
+
+
+	csumv = checksum(&dl, true);
+	if (csumv != 0) {
+		printf("\nFailed Checksum: %d %d. Exiting.\n", csumv,checksum(&dl, false));
+		exit(3);
+	}
+
+	for (int part = 0; part < NEXT68K_LABEL_MAXPARTITIONS; part++) {
+		if (dl.cd_partitions[part].cp_offset == -1) {
+			printf("\n### Skipping Partition %d ###\n", part);
+			// print_part(&dl.cd_partitions[part]);
+			continue;
+		}
+		printf("\n### Partition %d ###\n", part);
+		print_part(&dl.cd_partitions[part]);
+	}
 
 	printf("\n");
 	printf("Run the following command to mount the first partition:\n");
