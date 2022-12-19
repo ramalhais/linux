@@ -4,7 +4,7 @@
  *
  *  based on ultrix.c
  *
- *  2022-11-07 Pedro Ramalhais <pedro@ramalhais.com>
+ *  2022-11-07 Pedro Ramalhais <ramalhais@gmail.com>
  */
 
 #include "check.h"
