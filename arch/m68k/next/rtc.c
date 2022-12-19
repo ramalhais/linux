@@ -58,10 +58,10 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 
 	local_irq_save(flags);
 
-	if (!next_irq_pending(NEXT_IRQ_TIMER)) {
-		local_irq_restore(flags);
-		return IRQ_NONE;
-	}
+	// if (!next_irq_pending(NEXT_IRQ_TIMER)) {
+	// 	local_irq_restore(flags);
+	// 	return IRQ_NONE;
+	// }
 
 	// write_timer_ticks(TIMER_HZ/HZ); // atempt to set the ticks back
 	set_timer_csr_bits(TIM_RESTART); // retrigger timer
@@ -90,11 +90,18 @@ void next_sched_init(void)
 	clocktype = (rtc_read(RTC_STATUS) & RTC_IS_NEW) ? N_C_NEW : N_C_OLD;
 	pr_info("RTC: %s\n", rtcs[clocktype].chipname);
 
-	if (request_irq(IRQ_AUTO_6, next_tick, IRQF_TIMER|IRQF_SHARED, "NeXT timer tick", next_tick)) {
-		pr_err("Failed to register NeXT timer tick interrupt\n");
-	}
+// #define NEXT_DEBUG(val) *(volatile unsigned long *)(0xff00f004)=val
+// NEXT_DEBUG(0x20);
 
-	next_intmask_enable(NEXT_IRQ_TIMER-NEXT_IRQ_BASE);
+	if (request_irq(NEXT_IRQ_TIMER, next_tick, IRQF_TIMER, "Timer", next_tick)) {
+// NEXT_DEBUG(0x21);
+		pr_err("Failed to register NeXT timer interrupt\n");
+	}
+	// if (request_irq(IRQ_AUTO_6, next_tick, IRQF_TIMER|IRQF_SHARED, "NeXT timer tick", next_tick)) {
+	// 	pr_err("Failed to register NeXT timer tick interrupt\n");
+	// }
+
+	// next_intmask_enable(NEXT_IRQ_TIMER-NEXT_IRQ_BASE);
 
 	if (__timer_csr) {	// Reading CSR clears the interrupt
 		set_timer_csr(0);
@@ -191,7 +198,7 @@ void next_poweroff(void)
 
 	pr_info("Powering down..");
 	local_irq_disable();
-	for (;;) // called from do_ints so ints should be masked, kinda
+	for (;;)
 		;
 }
 
