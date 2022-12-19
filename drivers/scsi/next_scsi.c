@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only
-/* next_scsi.c: ESP front-end for NeXT Computer/cube/station.
- * based on jazz_esp.c: Copyright (C) 2007 Thomas Bogendörfer (tsbogend@alpha.frankende)
- *
- * Copyright (C) 2022 Pedro Ramalhais (pedro@ramalhais.com)
- */
+
+// next_scsi.c: ESP front-end for NeXT Computer/cube/station.
+// based on jazz_esp.c: Copyright (C) 2007 Thomas Bogendörfer (tsbogend@alpha.frankende)
+// 2022 Pedro Ramalhais <ramalhais@gmail.com>
 
 #include <linux/kernel.h>
 #include <linux/gfp.h>
@@ -20,8 +19,6 @@
 
 #include <asm/nexthw.h>
 #include <asm/nextints.h>
-// #include <asm/jazz.h>
-// #include <asm/jazzdma.h>
 
 #include <scsi/scsi_host.h>
 
@@ -148,10 +145,10 @@ irqreturn_t next_scsi_dma_intr(int irq, void *dev_id)
 	u32 csr;
 
 	spin_lock_irqsave(esp->host->host_lock, flags);
-	ret = IRQ_NONE;
+	// ret = IRQ_NONE;
 
-	if (!next_irq_pending(NEXT_IRQ_SCSI_DMA))
-		goto done;
+	// if (!next_irq_pending(NEXT_IRQ_SCSI_DMA))
+	// 	goto done;
 
 	ret = IRQ_HANDLED;
 	csr = scsi_dma->csr;
@@ -167,7 +164,7 @@ irqreturn_t next_scsi_dma_intr(int irq, void *dev_id)
 	}
 	// data_len = scsi_dma->start - scsi_dma->next_start - 4;
 
-done:
+// done:
 	spin_unlock_irqrestore(esp->host->host_lock, flags);
 	return ret;
 }
@@ -215,19 +212,22 @@ static int next_scsi_probe(struct platform_device *dev)
 	if (!esp->command_block)
 		goto fail_unmap_regs;
 
-	host->irq = IRQ_AUTO_3;//err = platform_get_irq(dev, 0);
+	host->irq = NEXT_IRQ_SCSI;//err = platform_get_irq(dev, 0);
+	// host->irq = IRQ_AUTO_3;//err = platform_get_irq(dev, 0);
 	// if (err < 0)
 	// 	goto fail_unmap_command_block;
-	err = request_irq(host->irq, scsi_esp_intr, IRQF_SHARED, DRV_MODULE_NAME, esp);
+	err = request_irq(host->irq, scsi_esp_intr, 0, DRV_MODULE_NAME, esp);
+	// err = request_irq(host->irq, scsi_esp_intr, IRQF_SHARED, DRV_MODULE_NAME, esp);
 	if (err < 0)
 		goto fail_unmap_command_block;
 
-	err = request_irq(IRQ_AUTO_6, next_scsi_dma_intr, IRQF_SHARED, DRV_MODULE_NAME " DMA", esp);
+	err = request_irq(NEXT_IRQ_SCSI_DMA, next_scsi_dma_intr, 0, DRV_MODULE_NAME " DMA", esp);
+	// err = request_irq(IRQ_AUTO_6, next_scsi_dma_intr, IRQF_SHARED, DRV_MODULE_NAME " DMA", esp);
 	if (err < 0)
 		goto fail_free_irq;
 
-	next_intmask_enable(NEXT_IRQ_SCSI-NEXT_IRQ_BASE);
-	next_intmask_enable(NEXT_IRQ_SCSI_DMA-NEXT_IRQ_BASE);
+	// next_intmask_enable(NEXT_IRQ_SCSI-NEXT_IRQ_BASE);
+	// next_intmask_enable(NEXT_IRQ_SCSI_DMA-NEXT_IRQ_BASE);
 
 	esp->scsi_id = NEXT_SCSI_ID;
 	esp->host->this_id = esp->scsi_id;
@@ -262,10 +262,12 @@ static int next_scsi_remove(struct platform_device *dev)
 
 	scsi_esp_unregister(esp);
 
-	next_intmask_disable(NEXT_IRQ_SCSI-NEXT_IRQ_BASE);
-	next_intmask_disable(NEXT_IRQ_SCSI_DMA-NEXT_IRQ_BASE);
+	// next_intmask_disable(NEXT_IRQ_SCSI-NEXT_IRQ_BASE);
+	// next_intmask_disable(NEXT_IRQ_SCSI_DMA-NEXT_IRQ_BASE);
+	// free_irq(irq, esp);
+	// free_irq(IRQ_AUTO_6, esp);
 	free_irq(irq, esp);
-	free_irq(IRQ_AUTO_6, esp);
+	free_irq(NEXT_IRQ_SCSI_DMA, esp);
 
 	dma_free_coherent(esp->dev, 16,
 			  esp->command_block,
@@ -310,5 +312,5 @@ static int next_scsi_init(void)
 module_init(next_scsi_init);
 
 MODULE_DESCRIPTION("NeXT ESP SCSI driver");
-MODULE_AUTHOR("Pedro Ramalhais <pedro@ramalhais.com>");
+MODULE_AUTHOR("Pedro Ramalhais <ramalhais@gmail.com>");
 MODULE_LICENSE("GPL");
