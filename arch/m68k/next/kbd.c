@@ -173,10 +173,10 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 
 	local_irq_save(flags);
 
-	if (!next_irq_pending(NEXT_IRQ_KYBD_MOUSE)) {
-		local_irq_restore(flags);
-		return IRQ_NONE;
-	}
+	// if (!next_irq_pending(NEXT_IRQ_KYBD_MOUSE)) {
+	// 	local_irq_restore(flags);
+	// 	return IRQ_NONE;
+	// }
 
 	// ack the int
 	// This is not right, at leat in Previous emulator
@@ -329,12 +329,13 @@ static int next_kbd_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	if (request_irq(IRQ_AUTO_3, next_kbd_int, IRQF_SHARED, "NeXT Keyboard and Mouse", next_kbd)) {
+	// if (request_irq(IRQ_AUTO_3, next_kbd_int, IRQF_SHARED, "NeXT Keyboard and Mouse", next_kbd)) {
+	if (request_irq(NEXT_IRQ_KYBD_MOUSE, next_kbd_int, 0, "Keyboard and Mouse", next_kbd)) {
 		pr_err("Failed to register NeXT Keyboard and Mouse interrupt\n");
 		return -ENOMEM;
 	}
 
-	next_intmask_enable(NEXT_IRQ_KYBD_MOUSE-NEXT_IRQ_BASE);
+	// next_intmask_enable(NEXT_IRQ_KYBD_MOUSE-NEXT_IRQ_BASE);
 
 	return 0;
 }

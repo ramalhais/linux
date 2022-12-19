@@ -10,12 +10,14 @@
 #define _ASM_NEXTINTS_H_
 
 #include <linux/types.h>
+#include <asm/irq.h>
 #include <asm/nexthw.h>
 
 #define NEXT_INTSTAT (NEXT_IO_BASE+0x7000)
 #define NEXT_INTMASK (NEXT_IO_BASE+0x7800)
 
-#define NEXT_IRQ_BASE 8
+#define NEXT_IRQ_BASE	IRQ_USER
+#define NEXT_NRINTS	32
 
 #define next_intmask_ptr ((volatile u_int *)NEXT_INTMASK)
 #define next_intmask (*next_intmask_ptr)
@@ -72,20 +74,11 @@
 #define NEXT_IRQ_KYBD_MOUSE	(NEXT_IRQ_BASE+3)
 #define NEXT_IRQ_POWER		(NEXT_IRQ_BASE+2)
 #define NEXT_IPL_3MIN		2
-#define NEXT_IPL_3NUM		12
+#define NEXT_IPL_3NUM		13
 
 #define NEXT_IRQ_SOFTINT1	(NEXT_IRQ_BASE+1)
 #define NEXT_IRQ_SOFTINT0	(NEXT_IRQ_BASE+0)
 
 extern void next_init_IRQ(void);
-extern void next_process_int(int, struct pt_regs *);
-extern void (*next_default_handlers[])(int, void *, struct pt_regs *);
-extern int next_request_irq (unsigned int irq, void (*handler)(int, void *, struct pt_regs *),
-	unsigned long flags, const char *devname, void *dev_id);
-extern void next_free_irq (unsigned int irq, void *dev_id);
-extern void next_disable_irq (unsigned int irq);
-extern void next_enable_irq (unsigned int irq);
-extern void next_turnon_irq (unsigned int irq);
-extern void next_turnoff_irq (unsigned int irq);
 
 #endif // _ASM_NEXTINTS_H_

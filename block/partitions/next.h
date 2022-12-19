@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 
 // fs/partitions/next.h
-// 2022-11-07 Pedro Ramalhais <pedro@ramalhais.com>
+// 2022-11-07 Pedro Ramalhais <ramalhais@gmail.com>
 
 #define	NEXT_LABEL_MAXPARTITIONS	8
 #define	NEXT_LABEL_CPULBLLEN		24
