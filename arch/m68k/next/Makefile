@@ -3,4 +3,4 @@
 # Makefile for Linux arch/m68k/next source directory
 #
 
-obj-y		:= config.o rtc.o kbd.o #ints.o
+obj-y := config.o ints.o rtc.o kbd.o

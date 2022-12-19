@@ -31,9 +31,7 @@
 // - handle first packet if we miss the first chain int
 // - keep full statistics, byte counters, etc
 
-// Probably compatible with AT&T chip T7213 on NeXT Turbos. Register layout
-// seems similar at 0x02006000 but DMA seems to be at a different address
-
+// PR
 // Send:
 // linux -> start_xmit -> setup packet in memory buffer (DMA) and notify adapter
 // adapter reads from memory buffer (DMA), sends packet out and triggers IRQ to notify driver it is sent -> txdmaint
@@ -132,13 +130,8 @@ struct mb8795regs {
 // #define MAX_DMASIZE 4096
 // #define	DMA_ENDALIGNMENT	16	// DMA must start(Previous) and end on quad longword //default
 // #define ENDMA_ENDALIGNMENT	32	// Ethernet DMA is very special //TX
-// #define	DMA_ENDALIGN(type, addr)	\
-//	((type)(((unsigned)(addr)+DMA_ENDALIGNMENT-1) \
-//		&~(DMA_ENDALIGNMENT-1))) // default
-
-// #define	ENDMA_ENDALIGN(type, addr)	\
-//	((type)((((unsigned)(addr)+ENDMA_ENDALIGNMENT-1) \
-//		 &~(DMA_ENDALIGNMENT-1))|0x80000000)) // TX with end of packet bit?
+// #define	DMA_ENDALIGN(type, addr) ((type)(((unsigned)(addr)+DMA_ENDALIGNMENT-1)&~(DMA_ENDALIGNMENT-1))) // default
+// #define	ENDMA_ENDALIGN(type, addr) ((type)((((unsigned)(addr)+ENDMA_ENDALIGNMENT-1)&~(DMA_ENDALIGNMENT-1))|0x80000000)) // TX with end of packet bit?
 
 struct mb8795_private {
 	struct platform_device *pdev;
@@ -252,10 +245,10 @@ static irqreturn_t mb8795_rxint(int irq, void *dev_id)
 
 	local_irq_save(flags);
 
-	if (!next_irq_pending(NEXT_IRQ_ENETR)) {
-		local_irq_restore(flags);
-		return IRQ_NONE;
-	}
+	// if (!next_irq_pending(NEXT_IRQ_ENETR)) {
+	// 	local_irq_restore(flags);
+	// 	return IRQ_NONE;
+	// }
 
 #ifdef DEBUGME_RX
 	pr_info("\nRX int: rxstat=0x%x", mb->rxstat);
@@ -319,10 +312,10 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 
 	local_irq_save(flags);
 
-	if (!next_irq_pending(NEXT_IRQ_ENETR_DMA)) {
-		local_irq_restore(flags);
-		return IRQ_NONE;
-	}
+	// if (!next_irq_pending(NEXT_IRQ_ENETR_DMA)) {
+	// 	local_irq_restore(flags);
+	// 	return IRQ_NONE;
+	// }
 
 #ifdef DEBUGME_RX
 	pr_info("\nRX DMA int: rxstat=0x%x ", priv->mb->rxstat);
@@ -408,10 +401,10 @@ static irqreturn_t mb8795_txint(int irq, void *dev_id)
 
 	local_irq_save(flags);
 
-	if (!next_irq_pending(NEXT_IRQ_ENETX)) {
-		local_irq_restore(flags);
-		return IRQ_NONE;
-	}
+	// if (!next_irq_pending(NEXT_IRQ_ENETX)) {
+	// 	local_irq_restore(flags);
+	// 	return IRQ_NONE;
+	// }
 
 #ifdef DEBUGME_TX
 	pr_info("\nTX int: txstat=0x%x", priv->mb->txstat);
@@ -437,10 +430,10 @@ static irqreturn_t mb8795_txdmaint(int irq, void *dev_id)
 
 	local_irq_save(flags);
 
-	if (!next_irq_pending(NEXT_IRQ_ENETX_DMA)) {
-		local_irq_restore(flags);
-		return IRQ_NONE;
-	}
+	// if (!next_irq_pending(NEXT_IRQ_ENETX_DMA)) {
+	// 	local_irq_restore(flags);
+	// 	return IRQ_NONE;
+	// }
 
 #ifdef DEBUGME_TX
 	pr_info("TX DMA int: txstat=0x%x ", priv->mb->txstat);
@@ -619,15 +612,19 @@ static int mb8795_stop(struct net_device *ndev)
 
 	mb8795_reset(ndev);
 
-	next_intmask_disable(NEXT_IRQ_ENETR_DMA-NEXT_IRQ_BASE);
-	next_intmask_disable(NEXT_IRQ_ENETX_DMA-NEXT_IRQ_BASE);
-	next_intmask_disable(NEXT_IRQ_ENETR-NEXT_IRQ_BASE);
-	next_intmask_disable(NEXT_IRQ_ENETX-NEXT_IRQ_BASE);
+	// next_intmask_disable(NEXT_IRQ_ENETR_DMA-NEXT_IRQ_BASE);
+	// next_intmask_disable(NEXT_IRQ_ENETX_DMA-NEXT_IRQ_BASE);
+	// next_intmask_disable(NEXT_IRQ_ENETR-NEXT_IRQ_BASE);
+	// next_intmask_disable(NEXT_IRQ_ENETX-NEXT_IRQ_BASE);
 
-	free_irq(IRQ_AUTO_6, priv->irq_rx_dma);
-	free_irq(IRQ_AUTO_6, priv->irq_tx_dma);
-	free_irq(IRQ_AUTO_3, priv->irq_rx);
-	free_irq(IRQ_AUTO_3, priv->irq_tx);
+	free_irq(NEXT_IRQ_ENETR_DMA, priv->irq_rx_dma);
+	free_irq(NEXT_IRQ_ENETX_DMA, priv->irq_tx_dma);
+	free_irq(NEXT_IRQ_ENETR, priv->irq_rx);
+	free_irq(NEXT_IRQ_ENETX, priv->irq_tx);
+	// free_irq(IRQ_AUTO_6, priv->irq_rx_dma);
+	// free_irq(IRQ_AUTO_6, priv->irq_tx_dma);
+	// free_irq(IRQ_AUTO_3, priv->irq_rx);
+	// free_irq(IRQ_AUTO_3, priv->irq_tx);
 
 	return 0;
 }
@@ -662,26 +659,30 @@ static int mb8795_open(struct net_device *ndev)
 	priv->irq_rx_dma = priv;
 	priv->irq_tx_dma = priv;
 
-	if (request_irq(IRQ_AUTO_3, mb8795_rxint, IRQF_SHARED, "NeXT Ethernet Receive", priv->irq_rx)) {
-		pr_err("Failed to register interrupt for NeXT Ethernet Receive\n");
+	// if (request_irq(IRQ_AUTO_3, mb8795_rxint, IRQF_SHARED, "NeXT Ethernet Receive", priv->irq_rx)) {
+	if (request_irq(NEXT_IRQ_ENETR, mb8795_rxint, 0, "Ethernet RX", priv->irq_rx)) {
+		pr_err("Failed to register interrupt for NeXT Ethernet RX\n");
 		goto err_out_irq_rx;
 	}
-	if (request_irq(IRQ_AUTO_3, mb8795_txint, IRQF_SHARED, "NeXT Ethernet Transmit", priv->irq_tx)) {
-		pr_err("Failed to register interrupt for NeXT Ethernet Transmit\n");
+	// if (request_irq(IRQ_AUTO_3, mb8795_txint, IRQF_SHARED, "NeXT Ethernet Transmit", priv->irq_tx)) {
+	if (request_irq(NEXT_IRQ_ENETX, mb8795_txint, 0, "Ethernet TX", priv->irq_tx)) {
+		pr_err("Failed to register interrupt for NeXT Ethernet TX\n");
 		goto err_out_irq_tx;
 	}
-	if (request_irq(IRQ_AUTO_6, mb8795_rxdmaint, IRQF_SHARED, "NeXT Ethernet DMA Receive", priv->irq_rx_dma)) {
-		pr_err("Failed to register interrupt for NeXT Ethernet DMA Receive\n");
+	// if (request_irq(IRQ_AUTO_6, mb8795_rxdmaint, IRQF_SHARED, "NeXT Ethernet DMA Receive", priv->irq_rx_dma)) {
+	if (request_irq(NEXT_IRQ_ENETR_DMA, mb8795_rxdmaint, 0, "Ethernet RX DMA", priv->irq_rx_dma)) {
+		pr_err("Failed to register interrupt for NeXT Ethernet RX DMA\n");
 		goto err_out_irq_rx_dma;
 	}
-	if (request_irq(IRQ_AUTO_6, mb8795_txdmaint, IRQF_SHARED, "NeXT Ethernet DMA Transmit", priv->irq_tx_dma)) {
-		pr_err("Failed to register interrupt for NeXT Ethernet DMA Transmit\n");
+	// if (request_irq(IRQ_AUTO_6, mb8795_txdmaint, IRQF_SHARED, "NeXT Ethernet DMA Transmit", priv->irq_tx_dma)) {
+	if (request_irq(NEXT_IRQ_ENETX_DMA, mb8795_txdmaint, 0, "Ethernet TX DMA", priv->irq_tx_dma)) {
+		pr_err("Failed to register interrupt for NeXT Ethernet TX DMA\n");
 		goto err_out_irq_tx_dma;
 	}
-	next_intmask_enable(NEXT_IRQ_ENETR-NEXT_IRQ_BASE);
-	next_intmask_enable(NEXT_IRQ_ENETX-NEXT_IRQ_BASE);
-	next_intmask_enable(NEXT_IRQ_ENETR_DMA-NEXT_IRQ_BASE);
-	next_intmask_enable(NEXT_IRQ_ENETX_DMA-NEXT_IRQ_BASE);
+	// next_intmask_enable(NEXT_IRQ_ENETR-NEXT_IRQ_BASE);
+	// next_intmask_enable(NEXT_IRQ_ENETX-NEXT_IRQ_BASE);
+	// next_intmask_enable(NEXT_IRQ_ENETR_DMA-NEXT_IRQ_BASE);
+	// next_intmask_enable(NEXT_IRQ_ENETX_DMA-NEXT_IRQ_BASE);
 
 	// enable interrupts
 	// I couldn't get the chip to stop giving us tons of errors,
@@ -711,11 +712,14 @@ static int mb8795_open(struct net_device *ndev)
 	return 0;
 
 err_out_irq_tx_dma:
-	free_irq(IRQ_AUTO_3, priv->irq_tx_dma);
+	// free_irq(IRQ_AUTO_3, priv->irq_tx_dma);
+	free_irq(NEXT_IRQ_ENETX_DMA, priv->irq_tx_dma);
 err_out_irq_rx_dma:
-	free_irq(IRQ_AUTO_6, priv->irq_rx_dma);
+	// free_irq(IRQ_AUTO_6, priv->irq_rx_dma);
+	free_irq(NEXT_IRQ_ENETR_DMA, priv->irq_rx_dma);
 err_out_irq_tx:
-	free_irq(IRQ_AUTO_6, priv->irq_tx);
+	// free_irq(IRQ_AUTO_6, priv->irq_tx);
+	free_irq(NEXT_IRQ_ENETX, priv->irq_tx);
 err_out_irq_rx:
 	return -EAGAIN;
 }
