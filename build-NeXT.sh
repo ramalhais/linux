@@ -1,6 +1,11 @@
 #!/bin/bash -x
 
-export ARCH=m68k CROSS_COMPILE=m68k-linux-gnu- GCC_SUFFIX=-12
+GCC_SUFFIX=-12
+if (grep fedora /etc/os-release); then
+  GCC_SUFFIX=""
+fi
+
+export ARCH=m68k CROSS_COMPILE=m68k-linux-gnu- GCC_SUFFIX=$GCC_SUFFIX
 export _MODULES_DIR=~/next/modules
 export _BUILDROOT_DIR=~/git/buildroot
 export _BUILDROOT_OVERLAY_DIR=$_BUILDROOT_DIR/linux-modules/
@@ -74,16 +79,18 @@ m68k-linux-gnu-objcopy --output-target=binary vmlinux vmlinux.binary_$DATE
 make -C arch/m68k/tools/next/
 
 # Wrap kernel binary code in Mach-O header (bigger than aout (COFF?) header)
-#./arch/m68k/tools/next/simpkern vmlinux.binary_$DATE vmlinux.macho_$DATE
-#./arch/m68k/tools/next/macho vmlinux.binary_$DATE vmlinux.macho_$DATE
+#./arch/m68k/tools/next/simpkern vmlinux.binary_$DATE vmlinux.simpk_$DATE
+./arch/m68k/tools/next/macho vmlinux.binary_$DATE vmlinux.macho_$DATE
 #sudo cp vmlinux.macho_$DATE /srv/tftp/
 #sudo ln -sf vmlinux.macho_$DATE /srv/tftp/boot
+#ln -sf ~/next/linux/vmlinux.simpk_$DATE ~/next/tftp/private/tftpboot/boot
+ln -sf ~/next/linux/vmlinux.macho_$DATE ~/next/tftp/private/tftpboot/boot
 
 # Wrap kernel binary code in aout header (old UNIX COFF format?)
-./arch/m68k/tools/next/aout vmlinux.binary_$DATE vmlinux.aout_$DATE
-#sudo cp vmlinux.aout_$DATE /srv/tftp/
-#sudo ln -sf vmlinux.aout_$DATE /srv/tftp/boot
-ln -sf ~/next/linux/vmlinux.aout_$DATE ~/next/tftp/private/tftpboot/boot
+#./arch/m68k/tools/next/aout vmlinux.binary_$DATE vmlinux.netimg_aout_$DATE
+#sudo cp vmlinux.netimg_aout_$DATE /srv/tftp/
+#sudo ln -sf vmlinux.netimg_aout_$DATE /srv/tftp/boot
+#ln -sf ~/next/linux/vmlinux.netimg_aout_$DATE ~/next/tftp/private/tftpboot/boot
 
 ### Save patch
 git diff master > ../linux-NeXT-$DATE.patch
