@@ -15,4 +15,6 @@ m68k-linux-gnu-objcopy --output-target=binary vmlinux vmlinux.binary
 ### Compile NeXT tools
 make -C arch/m68k/tools/next/
 
-./arch/m68k/tools/next/aout vmlinux.binary vmlinux-NeXT
+./arch/m68k/tools/next/aout vmlinux.binary vmlinux-NeXT.aout
+./arch/m68k/tools/next/simpkern vmlinux.binary vmlinux-NeXT.macho-simpkern
+./arch/m68k/tools/next/macho vmlinux.binary vmlinux-NeXT.macho
