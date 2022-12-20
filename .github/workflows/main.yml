@@ -54,15 +54,37 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Kernel to Release
+      - name: Upload aout Kernel to Release
         id: upload-release-asset-kernel
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./vmlinux-NeXT
-          asset_name: vmlinux-NeXT-${{ env.KERNELVER }}
+          asset_path: ./vmlinux-NeXT.aout
+          asset_name: vmlinux-NeXT-${{ env.KERNELVER }}.aout
+          asset_content_type: application/octet-stream
+
+      - name: Upload macho Kernel to Release
+        id: upload-release-asset-kernel
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./vmlinux-NeXT.macho
+          asset_name: vmlinux-NeXT-${{ env.KERNELVER }}.macho
+          asset_content_type: application/octet-stream
+
+      - name: Upload macho simpkern Kernel to Release
+        id: upload-release-asset-kernel
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./vmlinux-NeXT.macho-simpkern
+          asset_name: vmlinux-NeXT-${{ env.KERNELVER }}.macho-simpkern
           asset_content_type: application/octet-stream
 
       - name: Upload .config to Release
