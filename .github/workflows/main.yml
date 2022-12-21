@@ -87,6 +87,17 @@ jobs:
           asset_name: vmlinux-NeXT-${{ env.KERNELVER }}.macho-simpkern
           asset_content_type: application/octet-stream
 
+      - name: Upload elf32 Kernel to Release
+        id: upload-release-asset-kernel4
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./vmlinux
+          asset_name: vmlinux-NeXT-${{ env.KERNELVER }}.elf32
+          asset_content_type: application/octet-stream
+
       - name: Upload .config to Release
         id: upload-release-asset-config
         uses: actions/upload-release-asset@v1
