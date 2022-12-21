@@ -10,6 +10,7 @@
 #include <linux/types.h>
 #include <linux/bcd.h>
 #include <linux/rtc.h>
+// #include <linux/delay.h>
 
 #include <asm/irq.h>
 #include <asm/nexthw.h>
@@ -193,13 +194,15 @@ void next_poweroff(void)
 	while (seconds == rtc_read(reg))
 		;
 
+	// mdelay(850);
+
 	rtc_write(rtcs[clocktype].powerreg,
 		 rtc_read(rtcs[clocktype].powerreg)|(RTC_POFF));
 
-	pr_info("Powering down..");
-	local_irq_disable();
-	for (;;)
-		;
+	// pr_info("Powering down........");
+	// local_irq_disable();
+	// for (;;)
+	// 	;
 }
 
 // i have no idea if this will be the required 1us or not
