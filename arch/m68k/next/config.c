@@ -82,6 +82,20 @@ void next_get_hardware_list(struct seq_file *m)
 	seq_printf(m, "Interrupt Status: 0x%x\n", next_intstat);
 }
 
+void next_halt(void) {
+	// FIXME: bad kernel trap
+	char command[] = "-h";
+
+	asm("movl %0, %d0" : : "r" (command[0]));
+	asm("trap #13");
+}
+
+void next_reset(void) {
+	// FIXME: bad kernel trap
+	asm("movl #0, %d0");
+	asm("trap #13");
+}
+
 void __init config_next(void)
 {
 	next_meminit();
@@ -91,10 +105,9 @@ void __init config_next(void)
 	mach_get_model	= next_get_model;
 	mach_get_hardware_list = next_get_hardware_list;
 	mach_hwclk	= next_hwclk;
-	// FIXME: Currently not working
-	// mach_halt		= next_poweroff;
-	// mach_reset		= next_poweroff;
-	// register_platform_power_off(next_poweroff);
+	mach_halt		= next_halt;
+	mach_reset		= next_reset;
+	register_platform_power_off(next_poweroff);
 
 //#ifdef CONFIG_HEARTBEAT // Example: LED as heartbeat
 //void (*mach_heartbeat) (int); // Check in PROM code or NetBSD if we can control any LED
