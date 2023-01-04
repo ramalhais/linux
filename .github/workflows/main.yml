@@ -62,7 +62,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./vmlinux-NeXT.aout
-          asset_name: vmlinux-NeXT-${{ env.KERNELVER }}.aout
+          asset_name: vmlinux-NeXT.aout
           asset_content_type: application/octet-stream
 
       - name: Upload macho Kernel to Release
@@ -73,7 +73,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./vmlinux-NeXT.macho
-          asset_name: vmlinux-NeXT-${{ env.KERNELVER }}.macho
+          asset_name: vmlinux-NeXT.macho
           asset_content_type: application/octet-stream
 
       - name: Upload macho simpkern Kernel to Release
@@ -84,7 +84,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./vmlinux-NeXT.macho-simpkern
-          asset_name: vmlinux-NeXT-${{ env.KERNELVER }}.macho-simpkern
+          asset_name: vmlinux-NeXT.macho-simpkern
           asset_content_type: application/octet-stream
 
       - name: Upload elf32 Kernel to Release
@@ -95,7 +95,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./vmlinux
-          asset_name: vmlinux-NeXT-${{ env.KERNELVER }}.elf32
+          asset_name: vmlinux-NeXT.elf32
           asset_content_type: application/octet-stream
 
       - name: Upload .config to Release
