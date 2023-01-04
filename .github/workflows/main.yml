@@ -130,3 +130,14 @@ jobs:
           asset_path: ./arch/m68k/tools/next/macho
           asset_name: macho
           asset_content_type: application/octet-stream
+
+      - name: Upload next-disklabel to Release
+        id: upload-release-asset-next-disklabel
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./arch/m68k/tools/next/next-disklabel
+          asset_name: next-disklabel
+          asset_content_type: application/octet-stream
