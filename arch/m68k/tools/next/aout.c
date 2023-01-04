@@ -16,6 +16,7 @@
 #include <arpa/inet.h>	// htonl()
 
 #define LOAD_ADDR 0x4001000
+// #define LOAD_ADDR 0x4380000
 
 /*
  * Header prepended to each a.out file.
@@ -46,12 +47,12 @@ int main(int argc, char**argv) {
 	if (argc<2) {
 		printf("Error: Missing binary file parameter\n");
 		printf("Usage:\n");
-		printf("\t%s bare.bin [output.aout]\n", argv[0]);
+		printf("\t%s bare.bin output.aout [entrypoint address]\n", argv[0]);
 		exit(1);
 	}
 
 	int fd_binary = open(argv[1], O_RDONLY);
-	unsigned int text_size=get_file_size(fd_binary);
+	unsigned int text_size = get_file_size(fd_binary);
 	if (text_size == 0) {
 		printf("Error: Empty or missing binary file\n");
 		exit(2);
@@ -63,6 +64,12 @@ int main(int argc, char**argv) {
 	// Get it from the objdump? or from the linker script?
 	// m68k-linux-gnu-objdump -D vmlinux|grep "<_stext>:"|cut -f1 -d' '
 	unsigned int entrypoint = LOAD_ADDR;
+	if (argc == 4) {
+		entrypoint = (unsigned int)strtol(argv[3], NULL, 0);
+	}
+
+	printf("Entrypoint Address is 0x%x\n", entrypoint);
+
 	struct exec aout_header = {
 		.a_machtype = machine_type,
 		.a_magic = OMAGIC,
@@ -71,7 +78,7 @@ int main(int argc, char**argv) {
 		.a_entry = htonl(entrypoint)
 	};
 
-	if (argc == 3) {
+	if (argc >= 3) {
 		int fd_aout = open(argv[2], O_CREAT|O_TRUNC|O_WRONLY|O_DSYNC, 0644);
 		if (fd_aout < 0) {
 			printf("Error: Unable to open output file for writing\n");
@@ -112,6 +119,8 @@ int main(int argc, char**argv) {
 			}
 		}
 		close(fd_aout);
+	} else {
+		printf("Error: Missing output file\n");
 	}
 	close(fd_binary);
 	return 0;

@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <arpa/inet.h>
 
 #define	NEXT68K_LABEL_MAXPARTITIONS	8	/* number of partitions in next68k_disklabel */
@@ -160,24 +161,107 @@ static uint16_t checksum(struct next68k_disklabel *dl, bool validate)
 }
 #pragma GCC diagnostic pop
 
+int write_dl(FILE *disk) {
+	return -1;
+}
+
+#define	MAX_BOOT_SECTORS	64
+#define MAX_BOOT_FILES		2
+int write_boot(FILE *diskf, char *boot) {
+	FILE *bootf = fopen(boot, "r");
+	char *buf;
+	struct next68k_disklabel dl;
+	uint32_t secsize;
+	int boot_offset[MAX_BOOT_FILES];
+
+	if (bootf == NULL) {
+		printf("Error: Unable to read boot binary");
+		return -1;
+	}
+
+	rewind(diskf);
+	if (fread(&dl, sizeof(dl), 1, diskf) != 1) {
+		printf("Error: Unable to read NeXT disklabel/boot");
+		return -2;
+	}
+
+	secsize = ntohl(dl.cd_secsize);
+	buf = malloc(secsize);
+	int bytes = 0;
+	int total_bytes = 0;
+
+	for (int boot_nr = 0; boot_nr <= 1; boot_nr++) {
+		boot_offset[boot_nr] = ntohl(dl.cd_boot_blkno[boot_nr]);
+		if (boot_offset[boot_nr] <= 0) {
+			printf("Error: missing boot sector pointer[%d]=%d\n", boot_nr, boot_offset[boot_nr]);
+			return -3;
+		}
+		boot_offset[boot_nr] *= secsize;	// Convert offset to bytes
+		printf("boot[%d] offset=0x%x (%d)\n", boot_nr, boot_offset[boot_nr], boot_offset[boot_nr]);
+	}
+
+	while (total_bytes < MAX_BOOT_SECTORS * secsize && (bytes = fread(buf, 1, secsize, bootf)) > 0) {
+		for (int boot_nr = 0; boot_nr <= 1; boot_nr++) {
+			fseek(diskf, boot_offset[boot_nr] + total_bytes, SEEK_SET);
+			int wbytes = fwrite(buf, 1, bytes, diskf);
+			if (bytes != wbytes) {
+				printf("Error: Writing boot[%d]: Read bytes (%d) != (%d) Written bytes\n", boot_nr, bytes, wbytes);
+				return -4;
+			} else {
+				printf("Wrote boot[%d]: bytes=%d offset=%d -> %ld\n", boot_nr, bytes, boot_offset[boot_nr] + total_bytes, ftell(diskf));
+			}
+		}
+		total_bytes += bytes;
+	}
+
+	free(buf);
+	return total_bytes;
+}
+
 int main(int argc, char **argv)
 {
-	if (argc <= 1) {
-		printf("Usage:\n\t%s DISK_FILE\n", argv[0]);
+	if (argc <= 1 || !strcmp("--help",argv[1])) {
+		printf("Usage:\n\t%s DISK_FILE [-c | -b bootfile]\n", argv[0]);
 		printf("Example:\n\t%s /dev/sdc\n", argv[0]);
 		exit(1);
 	}
 
 	struct next68k_disklabel dl;
 	uint16_t csumv;
-	FILE *f = fopen(argv[1], "r");
+	char *disk = argv[1];
+	FILE *diskf = fopen(disk, "r+"); // use w+ for create
+	char *boot;
 
-	printf("sizeof(struct next68k_disklabel)=%ld\n", sizeof(struct next68k_disklabel));
-
-	if (fread(&dl, sizeof(dl), 1, f) != 1) {
-		printf("Error: Unable to read NeXT disklabel");
+	if (diskf == NULL) {
+		printf("Error: Unable to open disk %s\n", disk);
 		exit(2);
-	};
+	}
+
+	if (argc > 2 && !strcmp("-c", argv[2])) {
+		if (write_dl(diskf)) {
+			printf("Error: Unable to write disklabel\n");
+			exit(3);
+		}
+	} else if (argc > 3 && !strcmp("-b", argv[2])) {
+		boot = argv[3];
+		int ret = 0;
+		if ((ret = write_boot(diskf, boot)) <= 0) {
+			printf("Error: Unable to write boot blocks. ret=%d\n", ret);
+			exit(4);
+		} else {
+			printf("Wrote %d bytes to boot blocks\n", ret);
+		}
+	} else {
+		printf("No recognized options. Just print disklabel.\n");
+	}
+
+	printf("\n\nsizeof(struct next68k_disklabel)=%ld\n", sizeof(struct next68k_disklabel));
+
+	rewind(diskf);
+	if (fread(&dl, sizeof(dl), 1, diskf) != 1) {
+		printf("Error: Unable to read NeXT disklabel\n");
+		exit(5);
+	}
 
 	print_dl(&dl);
 
@@ -185,12 +269,12 @@ int main(int argc, char **argv)
 	csumv = checksum(&dl, true);
 	if (csumv != 0) {
 		printf("\nFailed Checksum: %d %d. Exiting.\n", csumv,checksum(&dl, false));
-		exit(3);
+		exit(6);
 	}
 
 	for (int part = 0; part < NEXT68K_LABEL_MAXPARTITIONS; part++) {
-		if (dl.cd_partitions[part].cp_offset == -1) {
-			printf("\n### Skipping Partition %d ###\n", part);
+		if (ntohl(dl.cd_partitions[part].cp_offset) == -1) {
+			// printf("\n### Skipping Partition %d ###\n", part);
 			// print_part(&dl.cd_partitions[part]);
 			continue;
 		}
@@ -200,7 +284,9 @@ int main(int argc, char **argv)
 
 	printf("\n");
 	printf("Run the following command to mount the first partition:\n");
-	printf("LOOPDEV=$(losetup -f | head -1); losetup --offset=$((8*1024)) $LOOPDEV %s; umount /mnt/bla; mkdir -p /mnt/bla; mount -t ufs -o ufstype=nextstep $LOOPDEV /mnt/bla\n", argv[1]);
+	printf("\tLOOPDEV=$(sudo losetup -f | head -1); sudo losetup --offset=$((160*1024)) $LOOPDEV %s; sudo umount /mnt/bla; sudo mkdir -p /mnt/bla; sudo mount -t ufs -o ufstype=nextstep $LOOPDEV /mnt/bla\n", disk);
+	printf("\nTo unmount and free the loop device:\n");
+	printf("\tsudo umount /mnt/bla; sudo losetup -d $LOOPDEV\n");
 
 	exit(0);
 }
