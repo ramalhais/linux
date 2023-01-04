@@ -1,6 +1,11 @@
 #!/bin/bash -x
 
-GCC_SUFFIX=-12
+GCC_SUFFIX="-12"
+
+# If not defined here, we'll generate the entrypoint address from the compiled kernel by adding 0x4000000 (NeXT first memory slot address)
+#KERN_LOADADDR="4001000" # linux m68k default: 0x4000000(memory address base first slot) + 4k stack/heap?
+#KERN_LOADADDR="4390000" # 0x4380000 (netbsd standalone boot) + 64k boot sector
+
 if (grep fedora /etc/os-release); then
   GCC_SUFFIX=""
 fi
@@ -78,19 +83,29 @@ m68k-linux-gnu-objcopy --output-target=binary vmlinux vmlinux.binary_$DATE
 # Compile NeXT tools
 make -C arch/m68k/tools/next/
 
+if [ -z $KERN_LOADADDR ]; then
+	MEM_BASE=4000000
+	KERN_LOADADDR=$(m68k-linux-gnu-objdump -D vmlinux|grep '<_stext>:'|cut -f1 -d' ')
+
+	IS_OFFSET=$(echo "ibase=16; ${KERN_LOADADDR} < ${MEM_BASE}" | bc)
+	if [ $IS_OFFSET -eq 1 ]; then
+		KERN_LOADADDR=$(echo "obase=16; ibase=16; ${MEM_BASE}+${KERN_LOADADDR}" | bc)
+	fi
+fi
+
 # Wrap kernel binary code in Mach-O header (bigger than aout (COFF?) header)
 #./arch/m68k/tools/next/simpkern vmlinux.binary_$DATE vmlinux.simpk_$DATE
-./arch/m68k/tools/next/macho vmlinux.binary_$DATE vmlinux.macho_$DATE
+./arch/m68k/tools/next/macho vmlinux.binary_$DATE vmlinux.macho_$DATE 0x${KERN_LOADADDR}
 #sudo cp vmlinux.macho_$DATE /srv/tftp/
 #sudo ln -sf vmlinux.macho_$DATE /srv/tftp/boot
 #ln -sf ~/next/linux/vmlinux.simpk_$DATE ~/next/tftp/private/tftpboot/boot
 ln -sf ~/next/linux/vmlinux.macho_$DATE ~/next/tftp/private/tftpboot/boot
 
 # Wrap kernel binary code in aout header (old UNIX COFF format?)
-#./arch/m68k/tools/next/aout vmlinux.binary_$DATE vmlinux.netimg_aout_$DATE
-#sudo cp vmlinux.netimg_aout_$DATE /srv/tftp/
-#sudo ln -sf vmlinux.netimg_aout_$DATE /srv/tftp/boot
-#ln -sf ~/next/linux/vmlinux.netimg_aout_$DATE ~/next/tftp/private/tftpboot/boot
+./arch/m68k/tools/next/aout vmlinux.binary_$DATE vmlinux.aout_$DATE 0x${KERN_LOADADDR}
+#sudo cp vmlinux.aout_$DATE /srv/tftp/
+#sudo ln -sf vmlinux.aout_$DATE /srv/tftp/boot
+#ln -sf ~/next/linux/vmlinux.aout_$DATE ~/next/tftp/private/tftpboot/boot
 
 ### Save patch
 git diff master > ../linux-NeXT-$DATE.patch
