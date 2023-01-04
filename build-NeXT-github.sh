@@ -1,4 +1,5 @@
-#!/bin/bash -x -e
+#!/bin/bash -x
+set -e
 
 export ARCH=m68k
 export CROSS_COMPILE=m68k-linux-gnu-
