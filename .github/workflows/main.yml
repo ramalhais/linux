@@ -108,3 +108,25 @@ jobs:
           asset_path: ./.config
           asset_name: config-NeXT-${{ env.KERNELVER }}
           asset_content_type: text/plain
+
+      - name: Upload aout to Release
+        id: upload-release-asset-aout
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./arch/m68k/tools/next/aout
+          asset_name: aout
+          asset_content_type: application/octet-stream
+
+      - name: Upload macho to Release
+        id: upload-release-asset-macho
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./arch/m68k/tools/next/macho
+          asset_name: macho
+          asset_content_type: application/octet-stream
