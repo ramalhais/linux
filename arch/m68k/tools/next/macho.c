@@ -15,6 +15,7 @@
 #include <arpa/inet.h>	// htonl()
 
 #define LOAD_ADDR 0x4001000
+// #define LOAD_ADDR 0x4380000
 
 struct mach_header {
         uint32_t	magic;          /* mach magic number identifier */
@@ -85,7 +86,7 @@ int main(int argc, char**argv) {
 	if (argc<2) {
 		printf("Error: Missing binary file parameter\n");
 		printf("Usage:\n");
-		printf("\t%s bare.bin [output.macho]\n", argv[0]);
+		printf("\t%s bare.bin [output.macho] [entrypoint address]\n", argv[0]);
 		exit(1);
 	}
 
@@ -100,10 +101,16 @@ int main(int argc, char**argv) {
 		.cmd = htonl(0),
 		.cmdsize = htonl(sizeof(struct segment_command))
 	};
+
+	unsigned int entrypoint = LOAD_ADDR;
+	if (argc == 4) {
+		entrypoint = (unsigned int)strtol(argv[3], NULL, 0);
+	}
+
 	struct segment_command sc1 = {
 		.cmd = htonl(LC_SEGMENT),
 		.cmdsize = htonl(sizeof(struct segment_command)),
-		.vmaddr = htonl(LOAD_ADDR),
+		.vmaddr = htonl(entrypoint),
 		.fileoff = htonl(sizeof(struct mach_header) + sizeof(sc1) + sizeof(sc2)), // offset from start of payload (mach-o header)
 		.filesize = htonl(text_size)
 	};
@@ -117,7 +124,8 @@ int main(int argc, char**argv) {
 		.flags = htonl(MH_NOUNDEFS)
 	};
 
-	if (argc == 3) {
+	printf("Entrypoint Address is 0x%x\n", entrypoint);
+	if (argc >= 3) {
 		int fd_aout = open(argv[2], O_CREAT|O_TRUNC|O_WRONLY|O_DSYNC, 0644);
 		if (fd_aout < 0) {
 			printf("Error: Unable to open output file for writing\n");
