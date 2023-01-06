@@ -2,7 +2,9 @@
 
 GCC_SUFFIX="-12"
 
-ADD_OFFSET=0 # Not needed. netbsd bootloader adds 0x4000000 to the entrypoint if lower than 0x4000000
+# Needed for network boot, because PROM uses the addr on the aout or macho header.
+# Not needed for the netbsd bootloader because it adds 0x4000000 to the entrypoint if lower than 0x4000000
+ADD_OFFSET=1
 
 # If not defined here, we'll generate the entrypoint address from the compiled kernel by adding 0x4000000 (NeXT first memory slot address)
 # WARNING: this doesn't seem to work. Maybe head.S needs to be fixed to use relative addressing?
@@ -98,19 +100,25 @@ if [ -z $KERN_LOADADDR ]; then
 	fi
 fi
 
-# Wrap kernel binary code in Mach-O header (bigger than aout (COFF?) header)
+# NOTE:
+# - NeXT PROM can boot aout and macho executables from network.
+# - NeXT PROM boots the bootloader from the disk at 32k(copy at 96k)
+# - NeXT disk bootloader supports macho only?
+# - NetBSD disk bootloader supports aout and elf32 (and elf64 and ecoff)
+
+# Wrap kernel binary code in Mach-O header (bigger than aout header)
 #./arch/m68k/tools/next/simpkern vmlinux.binary_$DATE vmlinux.simpk_$DATE
 ./arch/m68k/tools/next/macho vmlinux.binary_$DATE vmlinux.macho_$DATE 0x${KERN_LOADADDR}
 #sudo cp vmlinux.macho_$DATE /srv/tftp/
 #sudo ln -sf vmlinux.macho_$DATE /srv/tftp/boot
 #ln -sf ~/next/linux/vmlinux.simpk_$DATE ~/next/tftp/private/tftpboot/boot
-ln -sf ~/next/linux/vmlinux.macho_$DATE ~/next/tftp/private/tftpboot/boot
+#ln -sf ~/next/linux/vmlinux.macho_$DATE ~/next/tftp/private/tftpboot/boot
 
 # Wrap kernel binary code in aout header (old UNIX COFF format?)
 ./arch/m68k/tools/next/aout vmlinux.binary_$DATE vmlinux.aout_$DATE 0x${KERN_LOADADDR}
 #sudo cp vmlinux.aout_$DATE /srv/tftp/
 #sudo ln -sf vmlinux.aout_$DATE /srv/tftp/boot
-#ln -sf ~/next/linux/vmlinux.aout_$DATE ~/next/tftp/private/tftpboot/boot
+ln -sf ~/next/linux/vmlinux.aout_$DATE ~/next/tftp/private/tftpboot/boot
 
 ### Save patch
 git diff master > ../linux-NeXT-$DATE.patch
