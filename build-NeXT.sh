@@ -2,9 +2,14 @@
 
 GCC_SUFFIX="-12"
 
+ADD_OFFSET=0 # Not needed. netbsd bootloader adds 0x4000000 to the entrypoint if lower than 0x4000000
+
 # If not defined here, we'll generate the entrypoint address from the compiled kernel by adding 0x4000000 (NeXT first memory slot address)
+# WARNING: this doesn't seem to work. Maybe head.S needs to be fixed to use relative addressing?
 #KERN_LOADADDR="4001000" # linux m68k default: 0x4000000(memory address base first slot) + 4k stack/heap?
 #KERN_LOADADDR="4390000" # 0x4380000 (netbsd standalone boot) + 64k boot sector
+#KERN_LOADADDR="4020000" # 0x4000000 + 2*64k boot sector.
+#KERN_LOADADDR="4013000" # This seems to be the minimum address that works with the netbsd bootloader
 
 if (grep fedora /etc/os-release); then
   GCC_SUFFIX=""
@@ -88,7 +93,7 @@ if [ -z $KERN_LOADADDR ]; then
 	KERN_LOADADDR=$(m68k-linux-gnu-objdump -D vmlinux|grep '<_stext>:'|cut -f1 -d' ')
 
 	IS_OFFSET=$(echo "ibase=16; ${KERN_LOADADDR} < ${MEM_BASE}" | bc)
-	if [ $IS_OFFSET -eq 1 ]; then
+	if [ $IS_OFFSET -eq 1 ] && [ $ADD_OFFSET -eq 1 ]; then
 		KERN_LOADADDR=$(echo "obase=16; ibase=16; ${MEM_BASE}+${KERN_LOADADDR}" | bc)
 	fi
 fi
