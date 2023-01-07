@@ -173,10 +173,12 @@ sphinx_*/
 
 # NeXT tools
 *.rej
+arch/m68k/tools/next/*.m68k
 arch/m68k/tools/next/aout
+arch/m68k/tools/next/macho
 arch/m68k/tools/next/next-disklabel
 arch/m68k/tools/next/simpkern
-arch/m68k/tools/next/macho
+arch/m68k/tools/next/netbsd-boot-next.aout
 arch/m68k/tools/next/experiments/mg_putc
 arch/m68k/tools/next/experiments/mg_putc.bin*
 vmlinux?*

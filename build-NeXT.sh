@@ -73,6 +73,12 @@ rm -f $_BUILDROOT_DIR/output/build/host-gcc-final-*/.stamp_host_installed
 make -C $_BUILDROOT_DIR
 fi
 
+# Compile NeXT tools for m68k
+#make CC=${CROSS_COMPILE}gcc${GCC_SUFFIX} -j$NPROCS -C arch/m68k/tools/next/
+#for BIN in aout macho simpkern next-disklabel; do
+#        mv arch/m68k/tools/next/$BIN arch/m68k/tools/next/$BIN.m68k
+#done
+
 # Compile NeXT tools
 make -C arch/m68k/tools/next/
 
