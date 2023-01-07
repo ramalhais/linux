@@ -40,10 +40,12 @@ m68k-linux-gnu-objcopy --output-target=binary vmlinux vmlinux.binary
 dd if=/dev/zero of=linux-next-2gb-sparse.disk bs=2G count=1 conv=sparse
 LOOPDEV=$(sudo losetup -f | head -1)
 sudo losetup --offset=$((160*1024)) $LOOPDEV linux-next-2gb-sparse.disk
+arch/m68k/tools/next/next-disklabel linux-next-2gb-sparse.disk -c
+arch/m68k/tools/next/next-disklabel linux-next-2gb-sparse.disk -b arch/m68k/tools/next/netbsd-boot-next.aout
 sudo mkfs.ext2 -m0 -Lroot -r0 $LOOPDEV
 sudo mkdir -p /mnt/bla
 sudo mount $LOOPDEV /mnt/bla
-sudo cp vmlinux.stripped /mnt/bla/
-sudo umount /mnt/bla; sudo losetup -d $LOOPDEV
-arch/m68k/tools/next/next-disklabel linux-next-2gb-sparse.disk -b arch/m68k/tools/next/netbsd-boot-next.aout
+sudo cp vmlinux.stripped /mnt/bla/vmlinux
+sudo umount /mnt/bla
+sudo losetup -d $LOOPDEV
 tar zcvf linux-next-2gb-sparse.disk.tar.gz --sparse linux-next-2gb-sparse.disk 
