@@ -1,9 +1,6 @@
 #!/bin/bash -x
 set -e
 
-ls -la /dev/loop0
-sudo ls -la
-
 export ARCH=m68k
 export CROSS_COMPILE=m68k-linux-gnu-
 export GCC_SUFFIX=-10
@@ -12,7 +9,7 @@ NPROCS=$[$(nproc)*2]
 
 # Compile NeXT tools for m68k
 make CC=$CROSS_COMPILE-$GCC_SUFFIX -j$NPROCS -C arch/m68k/tools/next/
-for i in aout macho next-disklabel; do
+for BIN in aout macho next-disklabel; do
 	cp arch/m68k/tools/next/$BIN arch/m68k/tools/next/$BIN.m68k
 done
 
