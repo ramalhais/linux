@@ -1,6 +1,7 @@
 #!/bin/bash -x
 set -e
 
+ls -la /dev/loop0
 sudo ls -la
 
 export ARCH=m68k
