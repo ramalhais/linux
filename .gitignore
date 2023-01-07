@@ -179,7 +179,4 @@ arch/m68k/tools/next/simpkern
 arch/m68k/tools/next/macho
 arch/m68k/tools/next/experiments/mg_putc
 arch/m68k/tools/next/experiments/mg_putc.bin*
-vmlinux.binary*
-vmlinux.macho*
-vmlinux.simpk*
-vmlinux.aout*
+vmlinux?*
