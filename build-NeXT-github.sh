@@ -10,7 +10,13 @@ export GCC_SUFFIX=-10
 
 NPROCS=$[$(nproc)*2]
 
-# Compile NeXT tools
+# Compile NeXT tools for m68k
+make CC=$CROSS_COMPILE-$GCC_SUFFIX -j$NPROCS -C arch/m68k/tools/next/
+for i in aout macho next-disklabel; do
+	cp arch/m68k/tools/next/$BIN arch/m68k/tools/next/$BIN.m68k
+done
+
+# Compile NeXT tools for amd64
 make -j$NPROCS -C arch/m68k/tools/next/
 
 # Get netbsd bootloader
