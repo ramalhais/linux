@@ -8,4 +8,5 @@ mount -t devtmpfs none /dev
 mount -t proc none /proc
 mount -t sysfs none /sys
 #cat /etc/next-ascii.ans
-setsid sh -c 'exec sh </dev/tty1 >/dev/tty1 2>&1'
+mount LABEL=root /mnt
+switch_root /mnt /init.sh
