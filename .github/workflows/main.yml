@@ -152,3 +152,36 @@ jobs:
           asset_path: ./arch/m68k/tools/next/next-disklabel
           asset_name: next-disklabel
           asset_content_type: application/octet-stream
+
+      - name: Upload aout.m68k to Release
+        id: upload-release-asset-aout-m68k
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./arch/m68k/tools/next/aout.m68k
+          asset_name: aout.m68k
+          asset_content_type: application/octet-stream
+
+      - name: Upload macho.m68k to Release
+        id: upload-release-asset-macho-m68k
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./arch/m68k/tools/next/macho.m68k
+          asset_name: macho.m68k
+          asset_content_type: application/octet-stream
+
+      - name: Upload next-disklabel.m68k to Release
+        id: upload-release-asset-next-disklabel-m68k
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./arch/m68k/tools/next/next-disklabel.m68k
+          asset_name: next-disklabel.m68k
+          asset_content_type: application/octet-stream
