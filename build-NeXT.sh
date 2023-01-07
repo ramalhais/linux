@@ -73,6 +73,12 @@ rm -f $_BUILDROOT_DIR/output/build/host-gcc-final-*/.stamp_host_installed
 make -C $_BUILDROOT_DIR
 fi
 
+# Compile NeXT tools
+make -C arch/m68k/tools/next/
+
+# Copy netbsd bootloader
+cp ~/next/netbsd-obj/netbsd-boot-next.aout arch/m68k/tools/next/
+
 #
 # Kernel image
 #
@@ -84,11 +90,11 @@ DATE=$(date +%F-%H.%M.%S)
 KERNEL_VERSION=$(make kernelversion)
 KERNEL_RELEASE=$(make kernelrelease)
 
-# Extract binary from ELF kernel image
-m68k-linux-gnu-objcopy --output-target=binary vmlinux vmlinux.binary_$DATE
+# Strip symbols
+m68k-linux-gnu-strip --strip-unneeded vmlinux -o vmlinux.stripped
 
-# Compile NeXT tools
-make -C arch/m68k/tools/next/
+# Extract binary from ELF kernel image
+m68k-linux-gnu-objcopy --strip-unneeded --output-target=binary vmlinux vmlinux.binary_$DATE
 
 if [ -z $KERN_LOADADDR ]; then
 	MEM_BASE=4000000
