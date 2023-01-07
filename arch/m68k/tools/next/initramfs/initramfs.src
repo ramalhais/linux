@@ -22,9 +22,10 @@ file /config_net.sh arch/m68k/tools/next/initramfs/config_net.sh 755 0 0
 file /config_nfs.sh arch/m68k/tools/next/initramfs/config_nfs.sh 755 0 0
 file /config_iscsi.sh arch/m68k/tools/next/initramfs/config_iscsi.sh 755 0 0
 file /test_download.sh arch/m68k/tools/next/initramfs/test_download.sh 755 0 0
+file /bin/next-disklabel arch/m68k/tools/next/next-disklabel 755 0 0
+file /netbsd-boot-next.aout arch/m68k/tools/next/netbsd-boot-next.aout 755 0 0
 
 #file /bin/tcpdump arch/m68k/tools/next/initramfs/tcpdump 755 0 0
-
 #file /bin/lolcat arch/m68k/tools/next/initramfs/lolcat 755 0 0
 #file /etc/next-ascii.ans arch/m68k/tools/next/initramfs/next-ascii.ans 644 0 0
 #file /bin/print256colours.sh arch/m68k/tools/next/initramfs/print256colours.sh 755 0 0
