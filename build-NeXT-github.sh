@@ -11,6 +11,7 @@ NPROCS=$[$(nproc)*2]
 make CC=${CROSS_COMPILE}gcc${GCC_SUFFIX} -j$NPROCS -C arch/m68k/tools/next/
 for BIN in aout macho next-disklabel; do
 	cp arch/m68k/tools/next/$BIN arch/m68k/tools/next/$BIN.m68k
+	rm arch/m68k/tools/next/$BIN
 done
 
 # Compile NeXT tools for amd64
