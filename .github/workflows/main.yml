@@ -55,7 +55,7 @@ jobs:
           prerelease: false
 
       - name: Upload aout Kernel to Release
-        id: upload-release-asset-kernel1
+        id: upload-release-asset-kernel-aout
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -66,7 +66,7 @@ jobs:
           asset_content_type: application/octet-stream
 
       - name: Upload macho Kernel to Release
-        id: upload-release-asset-kernel2
+        id: upload-release-asset-kernel-macho
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,7 +77,7 @@ jobs:
           asset_content_type: application/octet-stream
 
       - name: Upload macho simpkern Kernel to Release
-        id: upload-release-asset-kernel3
+        id: upload-release-asset-kernel-macho-simpkern
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -88,7 +88,7 @@ jobs:
           asset_content_type: application/octet-stream
 
       - name: Upload elf32 Kernel to Release
-        id: upload-release-asset-kernel4
+        id: upload-release-asset-kernel-elf32
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -96,6 +96,17 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./vmlinux
           asset_name: vmlinux-NeXT.elf32
+          asset_content_type: application/octet-stream
+
+      - name: Upload elf32 stripped Kernel to Release
+        id: upload-release-asset-kernel-elf32-stripped
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./vmlinux.stripped
+          asset_name: vmlinux-NeXT.elf32-stripped
           asset_content_type: application/octet-stream
 
       - name: Upload .config to Release

@@ -6,6 +6,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
+
+// #define DEBUG
+
+#ifdef DEBUG
+#define dprintf printf
+#else
+#define dprintf(fmt, ...)
+#endif // DEBUG
 
 #define	NEXT68K_LABEL_MAXPARTITIONS	8	/* number of partitions in next68k_disklabel */
 #define	NEXT68K_LABEL_CPULBLLEN		24
@@ -16,6 +25,9 @@
 #define	NEXT68K_LABEL_MAXMPTLEN		16
 #define	NEXT68K_LABEL_MAXFSTLEN		8
 #define	NEXT68K_LABEL_NBAD		1670	/* sized to make label ~= 8KB */
+
+#define	MAX_BOOT_SECTORS	64
+#define MAX_BOOT_FILES		2
 
 struct __attribute__((packed)) next68k_partition {
 	int32_t	cp_offset;		/* starting sector */
@@ -56,7 +68,7 @@ struct __attribute__((packed)) next68k_disklabel {
 	int16_t	cd_ag_size;		/* alt group size (sectors) */
 	int16_t	cd_ag_alts;		/* alternate sectors / alt group */
 	int16_t	cd_ag_off;		/* sector offset to first alternate */
-	int32_t	cd_boot_blkno[2];	/* boot program locations */
+	int32_t	cd_boot_blkno[MAX_BOOT_FILES];	/* boot program locations */
 	char	cd_kernel[NEXT68K_LABEL_MAXBFLEN]; /* default kernel name */
 	char	cd_hostname[NEXT68K_LABEL_MAXHNLEN];
 				/* host name (usu. where disk was labeled) */
@@ -86,16 +98,26 @@ struct __attribute__((packed)) next68k_disklabel {
 #define	NEXT68K_LABEL_DEFAULTBOOT0_1	(32 * 2)
 #define	NEXT68K_LABEL_DEFAULTBOOT0_2	(96 * 2)
 
+void p_32(char *name, uint32_t value) {
+	printf("%-17s 0x%-8x (%d)\n", name, ntohl(value), ntohl(value));
+}
+void p_16(char *name, uint16_t value) {
+	printf("%-17s 0x%-8x (%d)\n", name, ntohs(value), ntohs(value));
+}
+void p_c(char *name, char value) {
+	printf("%-17s %-10c 0x%-2x (%d)\n", name, value, value, value);
+}
+
 void print_part(struct next68k_partition *part)
 {
-	printf("cp_offset\t\t0x%x (%d)\n",	ntohl(part->cp_offset), ntohl(part->cp_offset));
-	printf("cp_size\t\t0x%x (%d)\n",	ntohl(part->cp_size), ntohl(part->cp_size));
-	printf("cp_bsize\t\t0x%x (%hd)\n",	ntohs(part->cp_bsize), ntohs(part->cp_bsize));
-	printf("cp_fsize\t\t0x%x (%hd)\n",	ntohs(part->cp_fsize), ntohs(part->cp_fsize));
-	printf("cp_opt\t\t%c\n",		part->cp_opt);
-	printf("cp_pad1\t\t%c\n",		part->cp_pad1);
-	printf("cp_cpg\t\t0x%x (%hd)\n",	ntohs(part->cp_cpg), ntohs(part->cp_cpg));
-	printf("cp_density\t\t0x%x (%hd)\n",	ntohs(part->cp_density), ntohs(part->cp_density));
+	p_32("cp_offset", part->cp_offset);
+	p_32("cp_size", part->cp_size);
+	p_16("cp_bsize", part->cp_bsize);
+	p_16("cp_fsize", part->cp_fsize);
+	p_c("cp_opt", part->cp_opt);
+	p_c("cp_pad1", part->cp_pad1);
+	p_16("cp_cpg", part->cp_cpg);
+	p_16("cp_density", part->cp_density);
 	printf("cp_minfree\t\t0x%x (%hhd)\n",	part->cp_minfree, part->cp_minfree);
 	printf("cp_newfs\t\t0x%x (%hhd)\n",	part->cp_newfs, part->cp_newfs);
 	printf("cp_mountpt\t\t%s\n",		part->cp_mountpt);
@@ -161,12 +183,91 @@ static uint16_t checksum(struct next68k_disklabel *dl, bool validate)
 }
 #pragma GCC diagnostic pop
 
-int write_dl(FILE *disk) {
-	return -1;
+int write_dl(struct next68k_disklabel *dl, FILE *diskf) {
+	long disk_fd = fileno(diskf);
+	struct stat buffer;
+	fstat(disk_fd, &buffer);
+	off_t disk_size = buffer.st_size;
+	printf("Disk size is %ld\n", disk_size);
+
+	bzero(dl->cd_label, NEXT68K_LABEL_CPULBLLEN);
+	strncpy(dl->cd_label, "New Disk", NEXT68K_LABEL_CPULBLLEN-1);
+
+	dl->cd_version = *(uint32_t *)"dlV3";
+	// dl->cd_version = htonl(NEXT68K_LABEL_CD_V3);
+	dl->cd_label_blkno = htonl(0);
+	dl->cd_size = htonl(0); // FIXME: how to calculate this?
+	dl->cd_flags = htonl(0);
+	dl->cd_tag = htonl(2779529865); // FIXME: how to calculate this?
+
+	bzero(dl->cd_name, NEXT68K_LABEL_MAXDNMLEN);
+	strncpy(dl->cd_name, "VendorModel-512", NEXT68K_LABEL_MAXDNMLEN-1);
+
+	bzero(dl->cd_type, NEXT68K_LABEL_MAXTYPLEN);
+	strncpy(dl->cd_type, "fixed_rw_scsi", NEXT68K_LABEL_MAXTYPLEN-1);
+
+	dl->cd_secsize = htonl(1024);
+	dl->cd_ntracks = htonl(4); // FIXME: how to calculate this?
+	dl->cd_nsectors = htonl(32); // FIXME: how to calculate this?
+	dl->cd_ncylinders = htonl(disk_size/(ntohl(dl->cd_secsize)*ntohl(dl->cd_nsectors)*ntohl(dl->cd_ntracks))); // FIXME: how to calculate this?
+	dl->cd_rpm = htonl(3600);
+
+	dl->cd_front = htons(160);
+	dl->cd_back = htons(0);
+
+	dl->cd_ngroups = htons(0);
+	dl->cd_ag_size = htons(0);
+	dl->cd_ag_alts = htons(0);
+	dl->cd_ag_off = htons(0);
+
+	dl->cd_boot_blkno[0] = htonl(32);
+	dl->cd_boot_blkno[1] = htonl(96);
+
+	bzero(dl->cd_kernel, NEXT68K_LABEL_MAXBFLEN);
+	strncpy(dl->cd_kernel, "vmlinux", NEXT68K_LABEL_MAXBFLEN-1);
+
+	bzero(dl->cd_hostname, NEXT68K_LABEL_MAXHNLEN);
+	strncpy(dl->cd_hostname, "localhost", NEXT68K_LABEL_MAXHNLEN-1);
+
+	dl->cd_rootpartition = 'a';
+	dl->cd_rwpartition = 'b';
+
+	for (int part = 0; part < NEXT68K_LABEL_MAXPARTITIONS; part++) {
+		dl->cd_partitions[part].cp_offset = htonl(-1);
+	}
+
+	dl->cd_partitions[0].cp_offset = htonl(0);
+	// dl->cd_partitions[0].cp_size = htonl(ntohl(dl->cd_ntracks)*ntohl(dl->cd_nsectors)*ntohl(dl->cd_ncylinders)-ntohs(dl->cd_front));
+	dl->cd_partitions[0].cp_size = htonl(disk_size/ntohl(dl->cd_secsize)-ntohs(dl->cd_front));
+	dl->cd_partitions[0].cp_bsize = htons(8192); // ignore?
+	dl->cd_partitions[0].cp_fsize = htons(1024); // ignore?
+	dl->cd_partitions[0].cp_opt = 't'; // 't'ime or 's'pace optimization. ignore?
+	dl->cd_partitions[0].cp_pad1 = 0;
+	dl->cd_partitions[0].cp_cpg = htons(16); // ignore?
+	dl->cd_partitions[0].cp_density = htons(4096); // ignore?
+	dl->cd_partitions[0].cp_minfree = 0; // ignore?
+	dl->cd_partitions[0].cp_newfs = 0; // avoid auto-formatting in NeXTstep
+
+	bzero(dl->cd_partitions[0].cp_mountpt, NEXT68K_LABEL_MAXMPTLEN);
+	strncpy(dl->cd_partitions[0].cp_mountpt, "/", NEXT68K_LABEL_MAXMPTLEN-1); // ignore?
+
+	dl->cd_partitions[0].cp_automnt = 0; // avoid auto-mounting in NeXTstep
+
+	bzero(dl->cd_partitions[0].cp_type, NEXT68K_LABEL_MAXFSTLEN);
+	strncpy(dl->cd_partitions[0].cp_type, "ext2", NEXT68K_LABEL_MAXFSTLEN-1); // ignore?
+
+	dl->cd_partitions[0].cp_pad2 = 0;
+
+	if (ntohl(dl->cd_version) == NEXT68K_LABEL_CD_V3)
+		dl->cd_un.CD_v3_checksum = htons(checksum(dl, false));
+	else
+		dl->cd_checksum = htons(checksum(dl, false));
+
+	int wbytes = fwrite(dl, 1, sizeof(*dl), diskf);
+
+	return wbytes != sizeof(*dl);
 }
 
-#define	MAX_BOOT_SECTORS	64
-#define MAX_BOOT_FILES		2
 int write_boot(FILE *diskf, char *boot) {
 	FILE *bootf = fopen(boot, "r");
 	char *buf;
@@ -190,7 +291,7 @@ int write_boot(FILE *diskf, char *boot) {
 	int bytes = 0;
 	int total_bytes = 0;
 
-	for (int boot_nr = 0; boot_nr <= 1; boot_nr++) {
+	for (int boot_nr = 0; boot_nr < MAX_BOOT_FILES; boot_nr++) {
 		boot_offset[boot_nr] = ntohl(dl.cd_boot_blkno[boot_nr]);
 		if (boot_offset[boot_nr] <= 0) {
 			printf("Error: missing boot sector pointer[%d]=%d\n", boot_nr, boot_offset[boot_nr]);
@@ -201,14 +302,14 @@ int write_boot(FILE *diskf, char *boot) {
 	}
 
 	while (total_bytes < MAX_BOOT_SECTORS * secsize && (bytes = fread(buf, 1, secsize, bootf)) > 0) {
-		for (int boot_nr = 0; boot_nr <= 1; boot_nr++) {
+		for (int boot_nr = 0; boot_nr < MAX_BOOT_FILES; boot_nr++) {
 			fseek(diskf, boot_offset[boot_nr] + total_bytes, SEEK_SET);
 			int wbytes = fwrite(buf, 1, bytes, diskf);
 			if (bytes != wbytes) {
 				printf("Error: Writing boot[%d]: Read bytes (%d) != (%d) Written bytes\n", boot_nr, bytes, wbytes);
 				return -4;
 			} else {
-				printf("Wrote boot[%d]: bytes=%d offset=%d -> %ld\n", boot_nr, bytes, boot_offset[boot_nr] + total_bytes, ftell(diskf));
+				dprintf("Wrote boot[%d]: bytes=%d offset=%d -> %ld\n", boot_nr, bytes, boot_offset[boot_nr] + total_bytes, ftell(diskf));
 			}
 		}
 		total_bytes += bytes;
@@ -221,8 +322,14 @@ int write_boot(FILE *diskf, char *boot) {
 int main(int argc, char **argv)
 {
 	if (argc <= 1 || !strcmp("--help",argv[1])) {
-		printf("Usage:\n\t%s DISK_FILE [-c | -b bootfile]\n", argv[0]);
+		printf("\n");
+		printf("Before running this tool you can create an empty disk file:\n");
+		printf("dd if=/dev/zero of=~/next/2gb.disktmp bs=2000000000 count=1 conv=sparse\n");
+		printf("\n");
+		printf("Usage:\n\t%s DISK_FILE [ -c | -b bootfile ]\n", argv[0]);
 		printf("Example:\n\t%s /dev/sdc\n", argv[0]);
+		printf("Example:\n\t%s /dev/sdc -c\n", argv[0]);
+		printf("Example:\n\t%s /dev/sdc -b bootloader.macho\n", argv[0]);
 		exit(1);
 	}
 
@@ -238,10 +345,12 @@ int main(int argc, char **argv)
 	}
 
 	if (argc > 2 && !strcmp("-c", argv[2])) {
-		if (write_dl(diskf)) {
+		if (write_dl(&dl, diskf)) {
 			printf("Error: Unable to write disklabel\n");
 			exit(3);
 		}
+		printf("Wrote NeXT disklabel %s\n", dl.cd_label);
+		// memset(&dl, 0, sizeof(dl));
 	} else if (argc > 3 && !strcmp("-b", argv[2])) {
 		boot = argv[3];
 		int ret = 0;
@@ -249,32 +358,32 @@ int main(int argc, char **argv)
 			printf("Error: Unable to write boot blocks. ret=%d\n", ret);
 			exit(4);
 		} else {
-			printf("Wrote %d bytes to boot blocks\n", ret);
+			printf("Wrote %s (%d bytes) to boot blocks\n", boot, ret);
 		}
 	} else {
 		printf("No recognized options. Just print disklabel.\n");
 	}
 
-	printf("\n\nsizeof(struct next68k_disklabel)=%ld\n", sizeof(struct next68k_disklabel));
+	printf("\nsizeof(struct next68k_disklabel)=%ld\n", sizeof(struct next68k_disklabel));
 
 	rewind(diskf);
 	if (fread(&dl, sizeof(dl), 1, diskf) != 1) {
 		printf("Error: Unable to read NeXT disklabel\n");
 		exit(5);
 	}
-
 	print_dl(&dl);
 
 
 	csumv = checksum(&dl, true);
 	if (csumv != 0) {
-		printf("\nFailed Checksum: %d %d. Exiting.\n", csumv,checksum(&dl, false));
+		uint16_t csum = checksum(&dl, false);
+		printf("\nFailed Checksum: diff=%d csum=%d (0x%x). Exiting.\n", csumv, csum, csum);
 		exit(6);
 	}
 
 	for (int part = 0; part < NEXT68K_LABEL_MAXPARTITIONS; part++) {
 		if (ntohl(dl.cd_partitions[part].cp_offset) == -1) {
-			// printf("\n### Skipping Partition %d ###\n", part);
+			dprintf("\n### Skipping Partition %d ###\n", part);
 			// print_part(&dl.cd_partitions[part]);
 			continue;
 		}
@@ -283,7 +392,23 @@ int main(int argc, char **argv)
 	}
 
 	printf("\n");
-	printf("Run the following command to mount the first partition:\n");
+	printf("After running this tool, run the following command to format and mount the first partition:\n");
+	printf("\tLOOPDEV=$(udisksctl loop-setup -f ~/next/2gb.disktmp -o $[160*1024] | cut -d' ' -f5 | tr -d '.')\n");
+	printf("\tsudo mkfs.ext2 -m0 -L/ -r0 $LOOPDEV\n");
+	printf("\n");
+	printf("You can install a bootloader onto the bootsectors:\n");
+	printf("\t~/next/linux/arch/m68k/tools/next/next-disklabel ~/next/2gb.disktmp -b ~/next/netbsd-obj/netbsd-boot-next.aout\n");
+	printf("\n");
+	printf("$LOOPDEV should have been auto-mounted in /run/media/USER/EXT2_LABEL. If not run:\n");
+	printf("\tudisksctl mount -b $LOOPDEV\n");
+	printf("\n");
+	printf("To unmount and free the loop device:\n");
+	printf("\tudisksctl unmount -b $LOOPDEV\n");
+	printf("\n");
+	printf("If you just need to free the loop device:\n");
+	printf("\tudisksctl loop-delete -b $LOOPDEV\n");
+	printf("\n");
+	printf("Alternative:\n");
 	printf("\tLOOPDEV=$(sudo losetup -f | head -1); sudo losetup --offset=$((160*1024)) $LOOPDEV %s; sudo umount /mnt/bla; sudo mkdir -p /mnt/bla; sudo mount -t ufs -o ufstype=nextstep $LOOPDEV /mnt/bla\n", disk);
 	printf("\nTo unmount and free the loop device:\n");
 	printf("\tsudo umount /mnt/bla; sudo losetup -d $LOOPDEV\n");
