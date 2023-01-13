@@ -65,7 +65,30 @@ sudo cp vmlinux.stripped $MOUNTP/vmlinux
 
 sudo debootstrap --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
 sudo cp $(which qemu-m68k-static ) $MOUNTP
-sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -c '/debootstrap/debootstrap --second-stage; echo "none /proc proc defaults 0 0" >> /etc/fstab; echo "none /sys sysfs defaults 0 0" >> /etc/fstab'
+export _USER=user
+export _PASSWORD=jobssucks
+export _HOST=next
+sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
+
+/debootstrap/debootstrap --second-stage
+echo "none /proc proc defaults 0 0" >> /etc/fstab
+echo "none /sys sysfs defaults 0 0" >> /etc/fstab
+dpkg-reconfigure tzdata
+apt install locales
+dpkg-reconfigure locales
+echo $_HOST > /etc/hostname
+echo $_PASSWORD | passwd --stdin root
+apt install openssh-server
+useradd -m $_USER
+echo $_PASSWORD | passwd --stdin $_USER
+apt install sudo
+usermod -aG sudo $_USER
+tasksel install standard
+apt install console-setup console-setup-linux
+dpkg-reconfigure keyboard-configuration
+systemctl restart console-setup
+
+EOF
 
 sudo umount $MOUNTP
 sudo losetup -d $LOOPDEV
