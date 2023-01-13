@@ -78,6 +78,8 @@ fi
 #for BIN in aout macho simpkern next-disklabel; do
 #        mv arch/m68k/tools/next/$BIN arch/m68k/tools/next/$BIN.m68k
 #done
+touch arch/m68k/tools/next/aout.m68k
+touch arch/m68k/tools/next/macho.m68k
 
 # Compile NeXT tools
 make -C arch/m68k/tools/next/

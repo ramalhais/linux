@@ -29,7 +29,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install -y gcc-10-m68k-linux-gnu make gcc flex bison && echo CPUS=$(nproc)
+          sudo apt install -y gcc-10-m68k-linux-gnu make gcc flex bison qemu-user-static && echo CPUS=$(nproc)
 
       - name: Build Kernel
         run: |
@@ -197,4 +197,14 @@ jobs:
           asset_name: linux-next-2gb-sparse.disk.tar.gz
           asset_content_type: application/octet-stream
 
+      - name: Upload debian disk image to Release
+        id: upload-release-asset-disk-image-debian
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: linux-next-2gb-debian-sparse.disk.tar.gz
+          asset_name: linux-next-2gb-debian-sparse.disk.tar.gz
+          asset_content_type: application/octet-stream
 
