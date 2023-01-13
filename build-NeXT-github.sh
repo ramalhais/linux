@@ -63,9 +63,9 @@ sudo mkdir -p $MOUNTP
 sudo mount $LOOPDEV $MOUNTP
 sudo cp vmlinux.stripped $MOUNTP/vmlinux
 
-debootstrap --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
-cp $(which qemu-m68k-static ) $MOUNTP
-chroot /mnt /qemu-m68k-static /bin/sh -c '/debootstrap/debootstrap --second-stage; echo "none /proc proc defaults 0 0" >> /etc/fstab; echo "none /sys sysfs defaults 0 0" >> /etc/fstab'
+sudo debootstrap --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
+sudo cp $(which qemu-m68k-static ) $MOUNTP
+sudo chroot /mnt /qemu-m68k-static /bin/sh -c '/debootstrap/debootstrap --second-stage; echo "none /proc proc defaults 0 0" >> /etc/fstab; echo "none /sys sysfs defaults 0 0" >> /etc/fstab'
 
 sudo umount $MOUNTP
 sudo losetup -d $LOOPDEV
