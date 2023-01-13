@@ -28,7 +28,7 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Install Dependencies
         run: |
-          sudo sed -i 's/azure\.//' /etc/apt/sources.list
+#          sudo sed -i 's/azure\.//' /etc/apt/sources.list
           sudo apt update
           sudo apt install -y gcc-10-m68k-linux-gnu make gcc flex bison debootstrap qemu-user-static && echo CPUS=$(nproc)
 
