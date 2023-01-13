@@ -80,10 +80,10 @@ dpkg-reconfigure tzdata
 apt install locales
 dpkg-reconfigure locales
 echo $_HOST > /etc/hostname
-echo $_PASSWORD | passwd --stdin root
+echo -e "$_PASSWORD\n$_PASSWORD\n" | passwd
 apt install openssh-server
 useradd -m $_USER
-echo $_PASSWORD | passwd --stdin $_USER
+echo -e "$_PASSWORD\n$_PASSWORD\n" | passwd $_USER
 apt install sudo
 usermod -aG sudo $_USER
 tasksel install standard
