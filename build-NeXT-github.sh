@@ -70,9 +70,12 @@ export _PASSWORD=jobssucks
 export _HOST=next
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 
-/debootstrap/debootstrap --second-stage
 echo "none /proc proc defaults 0 0" >> /etc/fstab
+echo "none /dev devtmpfs defaults 0 0" >> /etc/fstab
 echo "none /sys sysfs defaults 0 0" >> /etc/fstab
+mount -a
+/debootstrap/debootstrap --second-stage
+apt --fix-broken install
 dpkg-reconfigure tzdata
 apt install locales
 dpkg-reconfigure locales
@@ -86,7 +89,6 @@ usermod -aG sudo $_USER
 tasksel install standard
 apt install console-setup console-setup-linux
 dpkg-reconfigure keyboard-configuration
-systemctl restart console-setup
 
 EOF
 
