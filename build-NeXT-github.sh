@@ -1,4 +1,5 @@
 #!/bin/bash -x
+
 set -e
 
 export ARCH=m68k
