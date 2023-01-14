@@ -100,10 +100,10 @@ apt -y install console-setup console-setup-linux
 
 EOF
 
-sudo umount $MOUNTP/proc
-sudo umount $MOUNTP/sys
-sudo umount $MOUNTP/dev
 sudo umount $MOUNTP/run
+sudo umount $MOUNTP/dev
+sudo umount $MOUNTP/sys
+sudo umount $MOUNTP/proc
 
 sudo umount $MOUNTP
 sudo losetup -d $LOOPDEV
