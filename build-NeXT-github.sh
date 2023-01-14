@@ -108,4 +108,3 @@ sudo umount $MOUNTP/run
 sudo umount $MOUNTP
 sudo losetup -d $LOOPDEV
 tar zcvf $DISK.tar.gz --sparse $DISK
-
