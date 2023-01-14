@@ -72,10 +72,10 @@ export _USER=user
 export _PASSWORD=jobssucks
 export _HOST=next
 
-sudo mount --make-rslave --rbind /proc $MOUNTP/proc
-sudo mount --make-rslave --rbind /sys $MOUNTP/sys
-sudo mount --make-rslave --rbind /dev $MOUNTP/dev
-sudo mount --make-rslave --rbind /run $MOUNTP/run
+#sudo mount --make-rslave --rbind /proc $MOUNTP/proc
+#sudo mount --make-rslave --rbind /sys $MOUNTP/sys
+#sudo mount --make-rslave --rbind /dev $MOUNTP/dev
+#sudo mount --make-rslave --rbind /run $MOUNTP/run
 
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 
@@ -100,10 +100,10 @@ apt -y install console-setup console-setup-linux
 
 EOF
 
-sudo umount $MOUNTP/run
-sudo umount $MOUNTP/dev
-sudo umount $MOUNTP/sys
-sudo umount $MOUNTP/proc
+#sudo umount $MOUNTP/run
+#sudo umount $MOUNTP/dev
+#sudo umount $MOUNTP/sys
+#sudo umount $MOUNTP/proc
 
 sudo umount $MOUNTP
 sudo losetup -d $LOOPDEV
