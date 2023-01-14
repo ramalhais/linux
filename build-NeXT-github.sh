@@ -66,7 +66,8 @@ sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK
 sudo mkdir -p $MOUNTP
 sudo mount $LOOPDEV $MOUNTP
 
-sudo debootstrap --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
+sudo debootstrap --variant=minbase --include sysvinit-core --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
+sed -i -e 's/systemd systemd-sysv //g' $MOUNTP/debootstrap/required
 sudo cp $(which qemu-m68k-static ) $MOUNTP
 
 export _USER=user
@@ -83,19 +84,25 @@ sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 echo "none /proc proc defaults 0 0" >> /etc/fstab
 echo "none /dev devtmpfs defaults 0 0" >> /etc/fstab
 echo "none /sys sysfs defaults 0 0" >> /etc/fstab
+
 /debootstrap/debootstrap --second-stage
+apt-get update
 apt --fix-broken -y install
-apt -y install locales
-echo $_HOST > /etc/hostname
-echo -e "${_PASSWORD}\n${_PASSWORD}\n" | passwd
 apt -y install openssh-server
+apt-get dist-upgrade
+
+echo $_HOST > /etc/hostname
+echo -e "${_PASSWORD}$(sleep 1)\n${_PASSWORD}\n" | passwd
+
 useradd -m $_USER
-echo -e "${_PASSWORD}\n${_PASSWORD}\n" | passwd $_USER
+echo -e "${_PASSWORD}\n$(sleep 1)${_PASSWORD}\n" | passwd $_USER
 apt -y install sudo
 usermod -aG sudo $_USER
-apt -y install console-setup console-setup-linux
+
+#apt -y install console-setup console-setup-linux
 #tasksel install standard
 #dpkg-reconfigure tzdata
+#apt -y install locales
 #dpkg-reconfigure locales
 #dpkg-reconfigure keyboard-configuration
 
