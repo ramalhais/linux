@@ -36,59 +36,67 @@ m68k-linux-gnu-objcopy --output-target=binary vmlinux vmlinux.binary
 ./arch/m68k/tools/next/simpkern vmlinux.binary vmlinux-NeXT.macho-simpkern
 ./arch/m68k/tools/next/macho vmlinux.binary vmlinux-NeXT.macho
 
-# Build disk image
-dd if=/dev/zero of=linux-next-2gb-sparse.disk bs=2G count=1 conv=sparse
-LOOPDEV=$(sudo losetup -f | head -1)
-sudo losetup --offset=$((160*1024)) $LOOPDEV linux-next-2gb-sparse.disk
-arch/m68k/tools/next/next-disklabel linux-next-2gb-sparse.disk -c
-arch/m68k/tools/next/next-disklabel linux-next-2gb-sparse.disk -b arch/m68k/tools/next/netbsd-boot-next.aout
-sudo mkfs.ext2 -m0 -L/ -r0 $LOOPDEV
-sudo mkdir -p /mnt/bla
-sudo mount $LOOPDEV /mnt/bla
-sudo cp vmlinux.stripped /mnt/bla/vmlinux
-sudo umount /mnt/bla
-sudo losetup -d $LOOPDEV
-tar zcvf linux-next-2gb-sparse.disk.tar.gz --sparse linux-next-2gb-sparse.disk 
+MOUNTP=/mnt/target
+FS_LABEL=/
 
-# Build debian disk image
-DISK=linux-next-2gb-debian-sparse.disk
-MOUNTP=/mnt/bla
+# Build empty bootable disk image
+DISK=linux-next-2gb-sparse.disk
+
 dd if=/dev/zero of=$DISK bs=2G count=1 conv=sparse
 LOOPDEV=$(sudo losetup -f | head -1)
 sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK
 arch/m68k/tools/next/next-disklabel $DISK -c
 arch/m68k/tools/next/next-disklabel $DISK -b arch/m68k/tools/next/netbsd-boot-next.aout
-sudo mkfs.ext2 -m0 -L/ -r0 $LOOPDEV
+sudo mkfs.ext2 -m0 -L$FS_LABEL -r0 $LOOPDEV
 sudo mkdir -p $MOUNTP
 sudo mount $LOOPDEV $MOUNTP
 sudo cp vmlinux.stripped $MOUNTP/vmlinux
+sudo umount $MOUNTP
+sudo losetup -d $LOOPDEV
+tar zcvf $DISK.tar.gz --sparse $DISK
+
+# Build debian disk image
+ORIG_DISK=$DISK
+DISK=linux-next-2gb-debian-sparse.disk
+cp $ORIG_DISK $DISK
+
+LOOPDEV=$(sudo losetup -f | head -1)
+sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK
+sudo mkdir -p $MOUNTP
+sudo mount $LOOPDEV $MOUNTP
 
 sudo debootstrap --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
 sudo cp $(which qemu-m68k-static ) $MOUNTP
+
 export _USER=user
 export _PASSWORD=jobssucks
 export _HOST=next
+
+mount --make-rslave --rbind /proc $MOUNTP/proc
+mount --make-rslave --rbind /sys $MOUNTP/sys
+mount --make-rslave --rbind /dev $MOUNTP/dev
+mount --make-rslave --rbind /run $MOUNTP/run
+
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 
 echo "none /proc proc defaults 0 0" >> /etc/fstab
 echo "none /dev devtmpfs defaults 0 0" >> /etc/fstab
 echo "none /sys sysfs defaults 0 0" >> /etc/fstab
-mount -a
 /debootstrap/debootstrap --second-stage
-apt --fix-broken install
-dpkg-reconfigure tzdata
-apt install locales
-dpkg-reconfigure locales
+apt --fix-broken -y install
+apt -y install locales
 echo $_HOST > /etc/hostname
 echo -e "$_PASSWORD\n$_PASSWORD\n" | passwd
-apt install openssh-server
+apt -y install openssh-server
 useradd -m $_USER
 echo -e "$_PASSWORD\n$_PASSWORD\n" | passwd $_USER
-apt install sudo
+apt -y install sudo
 usermod -aG sudo $_USER
-tasksel install standard
-apt install console-setup console-setup-linux
-dpkg-reconfigure keyboard-configuration
+apt -y install console-setup console-setup-linux
+#tasksel install standard
+#dpkg-reconfigure tzdata
+#dpkg-reconfigure locales
+#dpkg-reconfigure keyboard-configuration
 
 EOF
 
