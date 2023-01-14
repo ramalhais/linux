@@ -72,10 +72,10 @@ export _USER=user
 export _PASSWORD=jobssucks
 export _HOST=next
 
-mount --make-rslave --rbind /proc $MOUNTP/proc
-mount --make-rslave --rbind /sys $MOUNTP/sys
-mount --make-rslave --rbind /dev $MOUNTP/dev
-mount --make-rslave --rbind /run $MOUNTP/run
+sudo mount --make-rslave --rbind /proc $MOUNTP/proc
+sudo mount --make-rslave --rbind /sys $MOUNTP/sys
+sudo mount --make-rslave --rbind /dev $MOUNTP/dev
+sudo mount --make-rslave --rbind /run $MOUNTP/run
 
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 
