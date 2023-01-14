@@ -86,16 +86,23 @@ echo "none /dev devtmpfs defaults 0 0" >> /etc/fstab
 echo "none /sys sysfs defaults 0 0" >> /etc/fstab
 
 /debootstrap/debootstrap --second-stage
-apt-get update
 apt --fix-broken -y install
 apt -y install openssh-server
-apt-get dist-upgrade
+#apt-get update
+#apt-get dist-upgrade
 
 echo $_HOST > /etc/hostname
-echo -e "${_PASSWORD}$(sleep 1)\n${_PASSWORD}\n" | passwd
+passwd <<EOF2
+${_PASSWORD}
+${_PASSWORD}
+EOF2
 
 useradd -m $_USER
-echo -e "${_PASSWORD}\n$(sleep 1)${_PASSWORD}\n" | passwd $_USER
+passwd $_USER <<EOF2
+${_PASSWORD}
+${_PASSWORD}
+EOF2
+
 apt -y install sudo
 usermod -aG sudo $_USER
 
