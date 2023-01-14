@@ -87,7 +87,7 @@ echo "none /sys sysfs defaults 0 0" >> /etc/fstab
 
 /debootstrap/debootstrap --second-stage
 apt --fix-broken -y install
-apt -y install openssh-server
+#apt -y install openssh-server
 #apt-get update
 #apt-get dist-upgrade
 
