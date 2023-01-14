@@ -86,10 +86,10 @@ echo "none /sys sysfs defaults 0 0" >> /etc/fstab
 apt --fix-broken -y install
 apt -y install locales
 echo $_HOST > /etc/hostname
-echo -e "$_PASSWORD\n$_PASSWORD\n" | passwd
+echo -e "${_PASSWORD}\n${_PASSWORD}\n" | passwd
 apt -y install openssh-server
 useradd -m $_USER
-echo -e "$_PASSWORD\n$_PASSWORD\n" | passwd $_USER
+echo -e "${_PASSWORD}\n${_PASSWORD}\n" | passwd $_USER
 apt -y install sudo
 usermod -aG sudo $_USER
 apt -y install console-setup console-setup-linux
@@ -99,6 +99,11 @@ apt -y install console-setup console-setup-linux
 #dpkg-reconfigure keyboard-configuration
 
 EOF
+
+sudo umount $MOUNTP/proc
+sudo umount $MOUNTP/sys
+sudo umount $MOUNTP/dev
+sudo umount $MOUNTP/run
 
 sudo umount $MOUNTP
 sudo losetup -d $LOOPDEV
