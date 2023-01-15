@@ -66,7 +66,7 @@ sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK
 sudo mkdir -p $MOUNTP
 sudo mount $LOOPDEV $MOUNTP
 
-sudo debootstrap --variant=minbase --include sysvinit-core --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
+sudo debootstrap --variant=minbase --include sysvinit-core,libpam-elogind --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
 sudo sed -i -e 's/systemd systemd-sysv //g' $MOUNTP/debootstrap/required
 sudo cp $(which qemu-m68k-static ) $MOUNTP
 
@@ -81,9 +81,9 @@ export _HOST=next
 
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 
-echo "none /proc proc defaults 0 0" >> /etc/fstab
-echo "none /dev devtmpfs defaults 0 0" >> /etc/fstab
-echo "none /sys sysfs defaults 0 0" >> /etc/fstab
+echo "proc /proc proc defaults 0 0" >> /etc/fstab
+echo "devtmpfs /dev devtmpfs defaults 0 0" >> /etc/fstab
+echo "sysfs /sys sysfs defaults 0 0" >> /etc/fstab
 
 /debootstrap/debootstrap --second-stage
 apt --fix-broken -y install
