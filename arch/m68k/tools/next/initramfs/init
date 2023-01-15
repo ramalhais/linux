@@ -1,4 +1,5 @@
 #!/bin/sh
+
 ALT_ROOTS="LABEL=/ LABEL=root /dev/sda1"
 ALT_INITS="/sbin/init /usr/sbin/init /init"
 
