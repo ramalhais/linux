@@ -66,8 +66,9 @@ sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK
 sudo mkdir -p $MOUNTP
 sudo mount $LOOPDEV $MOUNTP
 
-sudo debootstrap --variant=minbase --include sysvinit-core,libpam-elogind --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
-sudo sed -i -e 's/systemd systemd-sysv //g' $MOUNTP/debootstrap/required
+#sudo debootstrap --variant=minbase --include sysvinit-core,libpam-elogind --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
+#sudo sed -i -e 's/systemd systemd-sysv //g' $MOUNTP/debootstrap/required
+sudo debootstrap --include debian-ports-archive-keyring --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
 sudo cp $(which qemu-m68k-static ) $MOUNTP
 
 export _USER=user
@@ -87,9 +88,9 @@ echo "sysfs /sys sysfs defaults 0 0" >> /etc/fstab
 
 /debootstrap/debootstrap --second-stage
 apt --fix-broken -y install
-#apt -y install openssh-server
-#apt-get update
-#apt-get dist-upgrade
+apt-get update
+apt-get dist-upgrade
+apt -y install openssh-server
 
 echo $_HOST > /etc/hostname
 passwd <<EOF2
