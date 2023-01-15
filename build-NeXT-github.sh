@@ -21,7 +21,7 @@ make -j$NPROCS -C arch/m68k/tools/next/
 curl -v -L -o arch/m68k/tools/next/netbsd-boot-next.aout https://github.com/ramalhais/netbsd-src/releases/latest/download/netbsd-boot-next.aout
 
 # Compile Kernel
-make next_fb_net_nfs_iscsi_fs_scsi_part_fpuemu_defconfig
+make next_fb_net_nfs_iscsi_fs_scsi_part_defconfig
 make -j$NPROCS
 
 # DATE=$(date +%F-%H.%M.%S)
