@@ -1,6 +1,6 @@
 #!/bin/sh
 ALT_ROOTS="LABEL=/ LABEL=root /dev/sda1"
-ALT_INITS="/sbin/init /init"
+ALT_INITS="/sbin/init /usr/sbin/init /init"
 
 echo "Running from initramfs: $0 with kernel parameters: $*"
 
@@ -15,9 +15,9 @@ for ALIAS in $(busybox --list); do
 	fi
 done
 
-mount -t devtmpfs none /dev
-mount -t proc none /proc
-mount -t sysfs none /sys
+mount -t devtmpfs devtmpfs /dev
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
 
 if echo $1 | grep "root="; then
 	ROOTP=$(echo $1 | sed -e "s/(^|.+ )root=\([^ ]+\)( .+|$)/\1/g")
@@ -39,7 +39,7 @@ done
 if [ $MOUNTOK -eq 1 ]; then
 	for I in $INIT $ALT_INITS; do
 		echo "Trying switch_root with INIT=$I"
-		readlink /mnt$I &> /dev/null && exec switch_root /mnt $I $* || INIT=$I && continue
+		readlink -f /mnt$I &> /dev/null && exec switch_root /mnt $I $* || INIT=$I && continue
 	done
 fi
 
