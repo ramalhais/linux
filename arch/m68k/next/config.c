@@ -105,8 +105,8 @@ void __init config_next(void)
 	mach_get_model	= next_get_model;
 	mach_get_hardware_list = next_get_hardware_list;
 	mach_hwclk	= next_hwclk;
-	mach_halt		= next_halt;
-	mach_reset		= next_reset;
+	mach_halt	= next_halt;
+	mach_reset	= next_reset;
 	register_platform_power_off(next_poweroff);
 
 //#ifdef CONFIG_HEARTBEAT // Example: LED as heartbeat
