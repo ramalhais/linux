@@ -40,7 +40,7 @@ done
 if [ $MOUNTOK -eq 1 ]; then
 	for I in $INIT $ALT_INITS; do
 		echo "Trying switch_root with INIT=$I"
-		readlink -f /mnt$I &> /dev/null && exec switch_root /mnt $I $* || INIT=$I && continue
+		[ -e /mnt$I ] && exec switch_root /mnt $I $* || INIT=$I && continue
 	done
 fi
 
