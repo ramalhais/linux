@@ -88,8 +88,9 @@ echo "sysfs /sys sysfs defaults 0 0" >> /etc/fstab
 /debootstrap/debootstrap --second-stage
 apt --fix-broken -y install
 apt-get update
-apt-get dist-upgrade
-apt -y install openssh-server
+apt-get -y upgrade
+#apt-get dist-upgrade
+#apt -y install openssh-server
 
 echo $_HOST > /etc/hostname
 passwd <<EOF2
