@@ -4,11 +4,12 @@ ALT_ROOTS="LABEL=/ LABEL=root /dev/sda1"
 ALT_INITS="/sbin/init /usr/sbin/init /init"
 
 echo "Running from initramfs: $0 with kernel parameters: $*"
+echo "To run a rescue shell, add parameter initrescue in the boot command line"
 
-if echo $* | busybox grep -E "(^| )rescue( |$)" &> /dev/null; then
-	echo "Switching to rescue shell"
-	exec /init-rescue.sh
-fi
+function initrescue() {
+	echo "Starting rescue shell"
+	exec setsid sh -c 'exec sh </dev/tty1 >/dev/tty1 2>&1'
+}
 
 for ALIAS in $(busybox --list); do
 	if [ "$ALIAS" != "busybox" ] && [ "$ALIAS" != "sh" ]; then
@@ -20,12 +21,16 @@ mount -t devtmpfs devtmpfs /dev
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 
-if echo $1 | grep "root="; then
+if echo $* | busybox grep -E "(^| )initrescue( |$)" &> /dev/null; then
+	initrescue
+fi
+
+if echo $1 | grep "root=" &> /dev/null; then
 	ROOTP=$(echo $1 | sed -e "s/(^|.+ )root=\([^ ]+\)( .+|$)/\1/g")
 	echo "Kernel Parameter root=$ROOTP"
 fi
 
-if echo $1 | grep "init="; then
+if echo $1 | grep "init=" &> /dev/null; then
 	INITP=$(echo $1 | sed -e "s/(^|.+ )init=\([^ ]+\)( .+|$)/\1/g")
 	echo "Kernel Parameter init=$INITP"
 fi
@@ -40,10 +45,10 @@ done
 if [ $MOUNTOK -eq 1 ]; then
 	for I in $INIT $ALT_INITS; do
 		echo "Trying switch_root with INIT=$I"
-		[ -e /mnt$I ] && exec switch_root /mnt $I $* || INIT=$I && continue
+		[ -f /mnt$I ] || [ -L /mnt$I ] && exec switch_root /mnt $I $* || INIT=$I && continue
 	done
 fi
 
 # If we reach this, fallback to sh (busybox)
-echo "Failed switching to root $ROOT with init $INIT. Falling back to shell"
-exec setsid sh -c 'exec sh </dev/tty1 >/dev/tty1 2>&1'
+echo "Failed switching to root $ROOT with init $INIT."
+initrescue
