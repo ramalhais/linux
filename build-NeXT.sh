@@ -35,10 +35,6 @@ export _BUILDROOT_OVERLAY_DIR=$_BUILDROOT_DIR/linux-modules/
 
 ### Setup NeXT config
 #make next_defconfig
-#make next_fb_defconfig
-#make next_fb_net_defconfig
-#make next_fb_net_nfs_defconfig
-#make next_fb_net_nfs_iscsi_fs_scsi_part_defconfig
 
 #
 # Kernel Modules
