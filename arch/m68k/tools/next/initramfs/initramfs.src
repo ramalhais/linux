@@ -16,7 +16,6 @@ dir /etc 755 0 0
 dir /etc/udhcpc 755 0 0
 
 file /init arch/m68k/tools/next/initramfs/init 755 0 0
-file /init-rescue.sh arch/m68k/tools/next/initramfs/init-rescue.sh 755 0 0
 
 file /etc/udhcpc/default.script arch/m68k/tools/next/initramfs/udhcpc-default.script 755 0 0
 file /config_net.sh arch/m68k/tools/next/initramfs/config_net.sh 755 0 0
