@@ -90,7 +90,6 @@ apt --fix-broken -y install
 apt-get update
 apt-get -y upgrade
 #apt-get dist-upgrade
-#apt -y install openssh-server
 
 echo $_HOST > /etc/hostname
 passwd <<EOF2
@@ -107,6 +106,8 @@ EOF2
 apt -y install sudo
 usermod -aG sudo $_USER
 
+apt -y install strace wget curl locales
+#apt -y install openssh-server
 #apt -y install console-setup console-setup-linux
 #tasksel install standard
 #dpkg-reconfigure tzdata
