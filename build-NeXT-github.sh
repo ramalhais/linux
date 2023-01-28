@@ -106,7 +106,7 @@ EOF2
 apt -y install sudo
 usermod -aG sudo $_USER
 
-apt -y install strace wget curl locales xserver-xorg-video-fbdev xfonts-100dpi xfont-75dpi xfonts-scalable
+apt -y install strace wget curl locales xserver-xorg-video-fbdev xfonts-100dpi xfonts-75dpi xfonts-scalable
 #apt -y install openssh-server
 #apt -y install console-setup console-setup-linux
 #tasksel install standard
