@@ -106,7 +106,7 @@ EOF2
 apt -y install sudo
 usermod -aG sudo $_USER
 
-apt -y install strace wget curl locales xserver-xorg
+apt -y install strace wget curl locales xserver-xorg desktop-base wmaker wmaker-data wmaker-utils xterm mesa-utils alacritty
 #apt -y install openssh-server
 #apt -y install console-setup console-setup-linux
 #tasksel install standard
