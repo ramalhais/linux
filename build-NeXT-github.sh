@@ -57,7 +57,7 @@ tar zcvf $DISK.tar.gz --sparse $DISK
 
 # Build debian disk image
 ORIG_DISK=$DISK
-DISK=linux-next-2gb-debian-sparse.disk
+DISK=linux-next-2gb-debian-systemd.disk
 cp $ORIG_DISK $DISK
 
 LOOPDEV=$(sudo losetup -f | head -1)
@@ -121,6 +121,23 @@ EOF
 #sudo umount $MOUNTP/dev
 #sudo umount $MOUNTP/sys
 #sudo umount $MOUNTP/proc
+
+sudo umount $MOUNTP
+sudo losetup -d $LOOPDEV
+tar zcvf $DISK.tar.gz --sparse $DISK
+
+ORIG_DISK=$DISK
+DISK=linux-next-2gb-debian-sysvinit.disk
+cp $ORIG_DISK $DISK
+
+LOOPDEV=$(sudo losetup -f | head -1)
+sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK
+sudo mkdir -p $MOUNTP
+sudo mount $LOOPDEV $MOUNTP
+
+sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
+apt -y install sysvinit-core libpam-elogind
+EOF
 
 sudo umount $MOUNTP
 sudo losetup -d $LOOPDEV
