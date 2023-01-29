@@ -115,6 +115,8 @@ apt -y install strace wget curl locales xserver-xorg xserver-xorg-input-evdev xi
 #dpkg-reconfigure locales
 #dpkg-reconfigure keyboard-configuration
 
+sed -i 's/pam_unix.so nullok/pam_debug.so creds=success/g' /etc/pam.d/common-auth
+
 cat > /root/.xinitrc <<EOF2
 xterm &
 exec wmaker
