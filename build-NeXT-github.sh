@@ -106,7 +106,7 @@ EOF2
 apt -y install sudo
 usermod -aG sudo $_USER
 
-apt -y install strace wget curl locales xserver-xorg xserver-xorg-input-evdev xinit wmaker wmaker-data wmaker-utils xterm mesa-utils
+apt -y install strace wget curl locales xserver-xorg xserver-xorg-input-evdev x11-utils xinit wmaker wmaker-data wmaker-utils xterm mesa-utils
 #apt -y install openssh-server
 #apt -y install console-setup console-setup-linux
 #tasksel install standard
@@ -119,6 +119,7 @@ sed -i 's/pam_unix.so nullok/pam_debug.so creds=success/g' /etc/pam.d/common-aut
 
 cat > /root/.xinitrc <<EOF2
 xterm &
+xev &
 exec wmaker
 EOF2
 
