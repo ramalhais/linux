@@ -106,7 +106,7 @@ EOF2
 apt -y install sudo
 usermod -aG sudo $_USER
 
-apt -y install strace wget curl locales xserver-xorg xinit wmaker wmaker-data wmaker-utils xterm mesa-utils
+apt -y install strace wget curl locales xserver-xorg xserver-xorg-input-evdev xinit wmaker wmaker-data wmaker-utils xterm mesa-utils
 #apt -y install openssh-server
 #apt -y install console-setup console-setup-linux
 #tasksel install standard
@@ -114,6 +114,11 @@ apt -y install strace wget curl locales xserver-xorg xinit wmaker wmaker-data wm
 #apt -y install locales
 #dpkg-reconfigure locales
 #dpkg-reconfigure keyboard-configuration
+
+cat > /root/.xinitrc <<EOF2
+xterm &
+exec wmaker
+EOF2
 
 EOF
 
