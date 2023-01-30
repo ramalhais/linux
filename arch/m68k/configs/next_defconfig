@@ -15,7 +15,6 @@ CONFIG_INITRAMFS_SOURCE="arch/m68k/tools/next/initramfs/initramfs.src"
 # CONFIG_RD_LZO is not set
 # CONFIG_RD_LZ4 is not set
 # CONFIG_INITRAMFS_PRESERVE_MTIME is not set
-CONFIG_CC_OPTIMIZE_FOR_SIZE=y
 # CONFIG_SGETMASK_SYSCALL is not set
 # CONFIG_SYSFS_SYSCALL is not set
 # CONFIG_FHANDLE is not set
