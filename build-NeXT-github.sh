@@ -144,7 +144,14 @@ sudo mkdir -p $MOUNTP
 sudo mount $LOOPDEV $MOUNTP
 
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
-apt -y install sysvinit-core libpam-elogind
+apt -y install sysvinit-core libpam-elogind openssh-server rsyslog
+cp /etc/pam.d/common-auth /etc/pam.d/common-auth.ORIG
+cat > /etc/pam.d/common-auth <<EOF2
+auth [success=1 default=ignore] pam_debug.so creds=success
+auth requisite pam_deny.so
+auth required pam_permit.so
+EOF2
+
 EOF
 
 sudo umount $MOUNTP
