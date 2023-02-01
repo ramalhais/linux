@@ -115,12 +115,11 @@ apt -y install strace wget curl locales xserver-xorg xserver-xorg-input-evdev x1
 #dpkg-reconfigure locales
 #dpkg-reconfigure keyboard-configuration
 
+cp /etc/pam.d/common-auth /etc/pam.d/common-auth.ORIG
 sed -i 's/pam_unix.so nullok/pam_debug.so creds=success/g' /etc/pam.d/common-auth
 
 cat > /root/.xinitrc <<EOF2
-xterm &
 xev &
-exec wmaker
 EOF2
 
 EOF
@@ -145,12 +144,6 @@ sudo mount $LOOPDEV $MOUNTP
 
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 apt -y install sysvinit-core libpam-elogind openssh-server rsyslog
-cp /etc/pam.d/common-auth /etc/pam.d/common-auth.ORIG
-cat > /etc/pam.d/common-auth <<EOF2
-auth [success=1 default=ignore] pam_debug.so creds=success
-auth requisite pam_deny.so
-auth required pam_permit.so
-EOF2
 
 EOF
 
