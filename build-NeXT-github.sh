@@ -92,31 +92,48 @@ apt-get -y upgrade
 #apt-get dist-upgrade
 
 echo $_HOST > /etc/hostname
+
 passwd <<EOF2
 ${_PASSWORD}
 ${_PASSWORD}
 EOF2
 
-useradd -m $_USER
+useradd --create-home --shell /bin/bash $_USER
 passwd $_USER <<EOF2
 ${_PASSWORD}
 ${_PASSWORD}
 EOF2
 
 apt -y install sudo
-usermod -aG sudo $_USER
+usermod --append --groups sudo $_USER
 
-apt -y install strace wget curl locales xserver-xorg xserver-xorg-input-evdev x11-utils xinit wmaker wmaker-data wmaker-utils xterm mesa-utils
-#apt -y install openssh-server
+apt -y install \
+wget \
+curl \
+locales \
+xserver-xorg \
+x11-utils xinit xterm mesa-utils \
+wmaker wmaker-data wmaker-utils \
+openssh-server \
+strace \
+netcat
+
+#xserver-xorg-input-evdev
+
 #apt -y install console-setup console-setup-linux
 #tasksel install standard
 #dpkg-reconfigure tzdata
-#apt -y install locales
 #dpkg-reconfigure locales
 #dpkg-reconfigure keyboard-configuration
 
 cp /etc/pam.d/common-auth /etc/pam.d/common-auth.ORIG
 sed -i 's/pam_unix.so nullok/pam_debug.so creds=success/g' /etc/pam.d/common-auth
+
+cat > /etc/network/interfaces.d/eth0 <<EOF2
+auto eth0
+iface eth0 inet dhcp
+#hwaddress ether 00:00:0f:12:34:56
+EOF2
 
 cat > /root/.xinitrc <<EOF2
 xev &
