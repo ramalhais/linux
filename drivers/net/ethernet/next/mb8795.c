@@ -640,8 +640,7 @@ static int mb8795_open(struct net_device *ndev)
 
 	mb8795_reset(ndev);
 
-	// set the hw addr on net device
-	ether_addr_copy((u8 *)ndev->dev_addr, (u8 *)mb->eaddr);
+	ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
 
 	// dev->tbusy = 0;
 	// dev->interrupt = 0;
@@ -749,7 +748,7 @@ static int mb8795_probe(struct platform_device *pdev)
 	int err;
 	int i;
 
-	dev_info(&pdev->dev, "Probing\n");
+	// dev_info(&pdev->dev, "Probing\n");
 
 	ndev = alloc_etherdev(sizeof(struct mb8795_private));
 	if (!ndev) {
@@ -770,14 +769,16 @@ static int mb8795_probe(struct platform_device *pdev)
 	// dev_info(&pdev->dev, "rxdma->csr=0x%x rxdma->turbo_rx_saved_start=0x%x rxdma->start=0x%x txdma->csr=0x%x txdma->start=0x%x\n", &priv->rxdma->csr, &priv->rxdma->turbo_rx_saved_start, &priv->rxdma->start, &priv->txdma->csr, &priv->txdma->start);
 	if (eprom_info.eaddr[0]|eprom_info.eaddr[1]|eprom_info.eaddr[2]|eprom_info.eaddr[3]|eprom_info.eaddr[4]|eprom_info.eaddr[5]) {
 		eth_hw_addr_set(ndev, eprom_info.eaddr);
-		dev_info(&pdev->dev, "Using PROM Ethernet MAC Address: %pM\n", ndev->dev_addr);
+		dev_info(&pdev->dev, "Using PROM Ethernet MAC Address\n");
 	} else if (priv->mb->eaddr[0]|priv->mb->eaddr[1]|priv->mb->eaddr[2]|priv->mb->eaddr[3]|priv->mb->eaddr[4]|priv->mb->eaddr[5]) {
 		eth_hw_addr_set(ndev, (const u8 *)priv->mb->eaddr);
-		dev_info(&pdev->dev, "Using Chip Ethernet MAC Address: %pM\n", ndev->dev_addr);
+		dev_info(&pdev->dev, "Using Chip Ethernet MAC Address\n");
 	} else {
 		eth_hw_addr_random(ndev);
-		dev_info(&pdev->dev, "Missing PROM or chip Ethernet MAC address. Assigning: %pM\n", ndev->dev_addr);
+		dev_info(&pdev->dev, "Missing PROM or chip Ethernet MAC address\n");
 	}
+	ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
+	dev_info(&pdev->dev, "MAC Address: %pM\n", ndev->dev_addr);
 
 	// spin_lock_init(&bp->lock);
 
@@ -829,7 +830,7 @@ static int mb8795_probe(struct platform_device *pdev)
 
 	mb8795_reset(ndev);
 
-	dev_info(&pdev->dev, "Finished probing\n");
+	// dev_info(&pdev->dev, "Finished probing\n");
 
 	return 0;
 
