@@ -231,10 +231,12 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 		}
 	} else if ((data & KD_ADDRMASK) == KD_MADDR) {
 		// Mouse
-		input_report_rel(mouse, REL_X, data&NEXT_MOUSE_DX_MASK);
-		input_report_rel(mouse, REL_Y, (data&NEXT_MOUSE_DY_MASK)>>8);
-		input_report_key(mouse, BTN_LEFT, data&NEXT_MOUSE_LEFT_MASK);
-		input_report_key(mouse, BTN_RIGHT, data&NEXT_MOUSE_RIGHT_MASK);
+		if (data&NEXT_MOUSE_DX_MASK)
+			input_report_rel(mouse, REL_X, (data&NEXT_MOUSE_DX_MASK) > 0x0f ? 1 : -1);
+		if ((data&NEXT_MOUSE_DY_MASK)>>8)
+			input_report_rel(mouse, REL_Y, ((data&NEXT_MOUSE_DY_MASK)>>8) > 0x0f ? 1 : -1);
+		input_report_key(mouse, BTN_LEFT, !(data&NEXT_MOUSE_LEFT_MASK));
+		input_report_key(mouse, BTN_RIGHT, !(data&NEXT_MOUSE_RIGHT_MASK));
 		input_sync(mouse);
 	}
 
