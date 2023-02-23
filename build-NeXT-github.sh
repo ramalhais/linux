@@ -108,17 +108,22 @@ apt -y install sudo
 usermod --append --groups sudo $_USER
 
 apt -y install \
+ntpdate \
 wget \
 curl \
 locales \
 xserver-xorg \
-x11-utils xinit xterm mesa-utils \
-wmaker wmaker-data wmaker-utils \
+x11-utils xinit xterm \
+twm \
 openssh-server \
 strace \
-netcat
+netcat-traditional \
+gpm \
+evtest
 
 #xserver-xorg-input-evdev
+#mesa-utils \
+#wmaker wmaker-data wmaker-utils \
 
 #apt -y install console-setup console-setup-linux
 #tasksel install standard
