@@ -76,12 +76,14 @@ fi
 #done
 touch arch/m68k/tools/next/aout.m68k
 touch arch/m68k/tools/next/macho.m68k
+touch arch/m68k/tools/next/simpkern.m68k
+touch arch/m68k/tools/next/next-disklabel.m68k
 
 # Compile NeXT tools
 make -C arch/m68k/tools/next/
 
 # Copy netbsd bootloader
-cp ~/next/netbsd-obj/netbsd-boot-next.aout arch/m68k/tools/next/
+cp ~/next/netbsd-obj/netbsd-boot-next.aout arch/m68k/tools/next/ || touch arch/m68k/tools/next/netbsd-boot-next.aout
 
 #
 # Kernel image
