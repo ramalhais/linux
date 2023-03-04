@@ -23,6 +23,7 @@ arp -s 192.168.111.12 00:00:0f:00:30:90
 arp -s 192.168.111.13 00:00:0f:00:f3:02
 arp -s 192.168.111.14 00:00:0f:12:34:56
 arp -s 192.168.111.15 00:00:0f:00:b5:fc
+arp -s 192.168.111.16 00:00:0f:00:cd:81
 
 # Restart TFTPd and DHCPd
 systemctl restart tftpd-hpa
