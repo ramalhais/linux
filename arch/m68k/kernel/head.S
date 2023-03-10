@@ -713,7 +713,7 @@ L(detected_040):
 	jra		L(detect_done)
 
 L(detected_020):
- 	// There's no 020 NeXT, but i'll leave it here so that other machines can use it.
+	// There's no 020 NeXT, but i'll leave it here so that other machines can use it.
 	lea	%pc@(m68k_cputype),%a1
 	movel   &CPU_68020,%a1@
 
@@ -761,7 +761,7 @@ L(detect_done):
 	get_bi_record	BI_FPUTYPE
 	movel	%a0@,%a1@
 
- 	lea	%pc@(m68k_mmutype),%a1
+	lea	%pc@(m68k_mmutype),%a1
 	get_bi_record	BI_MMUTYPE
 	movel	%a0@,%a1@
 
@@ -1115,7 +1115,7 @@ L(eprom_040):
 
 1:
 	moveb   %a0@+,%a1@+
-	dbra    %d1,1b  
+	dbra    %d1,1b
 
 L(eprom_done):
 
@@ -1159,7 +1159,7 @@ L(nocon):
 #endif
 
 	puts	"\nStarting Linux...\n"
-	
+
 	leds	0x2
 	// Why are all these empty on 030? 030 has cputype=0, and 020/030 don't have cachemode (0)
 	dputn	%pc@(L(cputype))
@@ -3736,7 +3736,7 @@ func_start	serial_putc,%d0/%d1/%a0/%a1
 	// call mg_putc function
 	movel 	%pc@(L(mg_putc)),%a1
 
- 	// copy argument from d0 to stack and decrement stack pointer, as argument for mg_putc
+	// copy argument from d0 to stack and decrement stack pointer, as argument for mg_putc
 	movel	%d0,%sp@-
 
 	jsr		%a1@

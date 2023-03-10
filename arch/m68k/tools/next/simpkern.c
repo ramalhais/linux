@@ -13,7 +13,7 @@ tacks a valid mach-o header in front of
 it and outputs to <outfile>
 */
 
-/* 
+/*
  * April 20, 1998: Little patch to compile on NeXT --Antonio
  */
 
@@ -148,7 +148,7 @@ int main(int argc, char *argv[]){
 	head.cpusubtype=CPU_TYPE_MC68040;
 	head.filetype=MH_PRELOAD;
 	head.ncmds=1;
-	head.sizeofcmds=CMDSIZE; 
+	head.sizeofcmds=CMDSIZE;
 	head.flags=MH_NOUNDEFS;
 
 	texseg.cmd=LC_SEGMENT;
@@ -160,21 +160,21 @@ int main(int argc, char *argv[]){
 	texseg.filesize=rnd(real_code_size,8192);
 	texseg.maxprot=VM_PROT_DEFAULT;
 	texseg.initprot=VM_PROT_DEFAULT;
-	texseg.nsects=1; 
-	texseg.flags=0; 
+	texseg.nsects=1;
+	texseg.flags=0;
 
 	strcpy(texsec.sectname, SECT_TEXT);
 	strcpy(texsec.segname, SEG_TEXT);
 	texsec.addr=LOADADDR;
 	texsec.size=real_code_size;
 	texsec.offset=HEADSIZE;
-	texsec.align=2; 
+	texsec.align=2;
 	texsec.reloff=0;
 	texsec.nreloc=0;
 	texsec.flags=0;
 	texsec.reserved1=0;
 	texsec.reserved2=0;
-	
+
 	machi=fopen(infile,"r");
 	macho=fopen(outfile,"w");
 
@@ -190,7 +190,7 @@ int main(int argc, char *argv[]){
 	/* Fill in the final 8K page with NULLs */
 	for(i=0;i<(8192-(real_code_size%8192));i++)
 		fputc(0,macho);
-	
+
 	fclose(macho);
 
 	exit(0);

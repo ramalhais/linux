@@ -61,7 +61,7 @@ void main3() {
 
     // save vbr. it contains:
     // mg(monitor global) long at byte 4
-    // vector for trap #13 long at byte 180 
+    // vector for trap #13 long at byte 180
     // vector for int 7 long at byte 124
     void *vbr;
     *mr315 = 1;
@@ -90,11 +90,11 @@ typedef int (*putcptr)(int);
     *mr315 = 6;
 
     while(*c) {
-        *mr315 = *c;
-        // mr_putl(*c);
-    	mg_putc(*c);
+	*mr315 = *c;
+	// mr_putl(*c);
+	mg_putc(*c);
 //        MON(putcptr,MG_PUTC_OFFSET)(*c);
-        c++;
+	c++;
     }
 
     *mr315 = 7;
@@ -135,7 +135,7 @@ void main() {
 
     // save vbr. it contains:
     // mg(monitor global) long at byte 4
-    // vector for trap #13 long at byte 180 
+    // vector for trap #13 long at byte 180
     // vector for int 7 long at byte 124
     void *vbr;
     *mr315 = 1;
@@ -166,11 +166,11 @@ typedef int (*putcptr)(int);
     *mr315 = 7;
 
     while(*c) {
-        *mr315 = *c;
-        // mr_putl(*c);
-    	mg_putc(*c);
-//        MON(putcptr,MG_PUTC_OFFSET)(*c);
-        c++;
+		*mr315 = *c;
+		// mr_putl(*c);
+		mg_putc(*c);
+//		MON(putcptr,MG_PUTC_OFFSET)(*c);
+		c++;
     }
 
     *mr315 = 8;
@@ -197,11 +197,11 @@ void puts(char *s) {
     mg_putc_global(*c);
     *mr315 = 0x79;
     while(*c) {
-        *mr315 = *c;
-        // mr_putl(*c);
-    	mg_putc_global(*c);
-//        MON(putcptr,MG_PUTC_OFFSET)(*c);
-        c++;
+		*mr315 = *c;
+		// mr_putl(*c);
+		mg_putc_global(*c);
+//		MON(putcptr,MG_PUTC_OFFSET)(*c);
+		c++;
     }
 
     *mr315 = 0x80;

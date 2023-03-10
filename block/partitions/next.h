@@ -53,7 +53,7 @@ struct __attribute__ ((packed)) next_disklabel {
 	__be32	boot_blkno[2];	// boot programs' offset in sectors
 	char	kernel[NEXT_LABEL_MAXBFLEN];	// default kernel to load? ex: sdmach
 	char	hostname[NEXT_LABEL_MAXHNLEN];	// host name (written at format time?). ex: localhost
-				
+
 	char	rootpartition;	// root partition letter. ex: a
 	char	rwpartition;	// r/w partition letter. ex: b
 	struct next_partition partitions[NEXT_LABEL_MAXPARTITIONS];
