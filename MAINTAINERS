@@ -7911,6 +7911,7 @@ F:	include/trace/events/fs_dax.h
 
 FILESYSTEMS (VFS and infrastructure)
 M:	Alexander Viro <viro@zeniv.linux.org.uk>
+M:	Christian Brauner <brauner@kernel.org>
 L:	linux-fsdevel@vger.kernel.org
 S:	Maintained
 F:	fs/*
@@ -9789,13 +9790,6 @@ R:	Thomas Falcon <tlfalcon@linux.ibm.com>
 L:	netdev@vger.kernel.org
 S:	Supported
 F:	drivers/net/ethernet/ibm/ibmvnic.*
-
-IBM Power Virtual Accelerator Switchboard
-L:	linuxppc-dev@lists.ozlabs.org
-S:	Supported
-F:	arch/powerpc/include/asm/vas.h
-F:	arch/powerpc/platforms/powernv/copy-paste.h
-F:	arch/powerpc/platforms/powernv/vas*
 
 IBM Power Virtual Ethernet Device Driver
 M:	Nick Child <nnac123@linux.ibm.com>
