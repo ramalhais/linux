@@ -24,6 +24,9 @@
 // new rtc registers, anyone have docs? - Z
 #define SCR2_RTC_ENABLE	0x00000100
 
+// RTC register addresses
+#define RTC_RAM		0x00
+
 // 32bit second counter
 #define RTC_COUNTER0	0x20
 #define RTC_COUNTER1	0x21
@@ -32,7 +35,6 @@
 
 #define RTC_STATUS	0x30
 #define RTC_CTL		0x31
-
 #define RTC_INTERRUPTCTL 0x32
 // old rtc specific regs
 

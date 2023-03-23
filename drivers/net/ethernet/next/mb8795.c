@@ -640,7 +640,8 @@ static int mb8795_open(struct net_device *ndev)
 
 	mb8795_reset(ndev);
 
-	ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
+	// ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
+	ether_addr_copy((u8 *)ndev->dev_addr, (u8 *)priv->mb->eaddr);
 
 	// dev->tbusy = 0;
 	// dev->interrupt = 0;
@@ -745,10 +746,11 @@ static int mb8795_probe(struct platform_device *pdev)
 {
 	struct net_device *ndev;
 	struct mb8795_private *priv;
+	volatile struct bmap_chip *bmap = (void __iomem *)NEXT_BMAP;
 	int err;
 	int i;
 
-	// dev_info(&pdev->dev, "Probing\n");
+	dev_info(&pdev->dev, "Probing\n");
 
 	ndev = alloc_etherdev(sizeof(struct mb8795_private));
 	if (!ndev) {
@@ -762,23 +764,49 @@ static int mb8795_probe(struct platform_device *pdev)
 	priv->ndev = ndev;
 	priv->is_turbo = NEXT_IS_TURBO;
 
-	priv->mb = (struct mb8795regs *)NEXT_ETHER_BASE;
+	// Kick BMAP
+	// if (machine_type == NeXT_X15) // cube040?
+	dev_info(&pdev->dev, "Kicking BMAP\n");
+	bmap->bm_lo = 0;
+	dev_info(&pdev->dev, "BMAP kicked\n");
+
+	// priv->mb = (void __iomem *)NEXT_ETHER;
+	priv->mb = ioremap(0x2000000+0x6000, sizeof(struct mb8795regs));
+	// priv->mb = __iomem ioremap(0x02000000+0x00100000+0x00006000, sizeof(struct mb8795regs));
+	// work-around bug?
+	priv->mb->txmode = TXM_LOOP_DISABLE;
+	mdelay(10);
+	priv->mb->txmode = 0;
+
+	priv->mb->reset = RST_RESET;
+	priv->mb->txmask = 0;
+	priv->mb->rxmask = 0;
+	priv->mb->txstat = TSTAT_CLEAR;
+	priv->mb->rxstat = RSTAT_CLEAR;
+	priv->mb->txmode = priv->is_turbo ? TXM_TURBO : TXM_LOOP_DISABLE;
+	priv->mb->rxmode = RXM_DISABLE;
+
 	priv->rxdma = (struct next_dma_channel *)NEXT_ETHER_RXDMA_BASE;
 	priv->txdma = (struct next_dma_channel *)NEXT_ETHER_TXDMA_BASE;
 
 	// dev_info(&pdev->dev, "rxdma->csr=0x%x rxdma->turbo_rx_saved_start=0x%x rxdma->start=0x%x txdma->csr=0x%x txdma->start=0x%x\n", &priv->rxdma->csr, &priv->rxdma->turbo_rx_saved_start, &priv->rxdma->start, &priv->txdma->csr, &priv->txdma->start);
+
+	dev_info(&pdev->dev, "PROM MAC Address: %pM\n", eprom_info.eaddr);
+	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %pM\n", priv->mb->eaddr);
+
 	if (eprom_info.eaddr[0]|eprom_info.eaddr[1]|eprom_info.eaddr[2]|eprom_info.eaddr[3]|eprom_info.eaddr[4]|eprom_info.eaddr[5]) {
-		eth_hw_addr_set(ndev, eprom_info.eaddr);
-		dev_info(&pdev->dev, "Using PROM Ethernet MAC Address\n");
+		ether_addr_copy((u8 *)eprom_info.eaddr, (u8 *)priv->mb->eaddr);
+		dev_info(&pdev->dev, "Using PROM MAC Address\n");
 	} else if (priv->mb->eaddr[0]|priv->mb->eaddr[1]|priv->mb->eaddr[2]|priv->mb->eaddr[3]|priv->mb->eaddr[4]|priv->mb->eaddr[5]) {
-		eth_hw_addr_set(ndev, (const u8 *)priv->mb->eaddr);
-		dev_info(&pdev->dev, "Using Chip Ethernet MAC Address\n");
+		dev_info(&pdev->dev, "Using Ethernet Chip MAC Address\n");
 	} else {
 		eth_hw_addr_random(ndev);
-		dev_info(&pdev->dev, "Missing PROM or chip Ethernet MAC address\n");
+		ether_addr_copy((u8 *)ndev->dev_addr, (u8 *)priv->mb->eaddr);
+		dev_info(&pdev->dev, "Missing Ethernet Chip and PROM MAC address. Assigning random address\n");
 	}
-	ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
-	dev_info(&pdev->dev, "MAC Address: %pM\n", ndev->dev_addr);
+	// ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
+	eth_hw_addr_set(ndev, (u8 *)priv->mb->eaddr);
+	dev_info(&pdev->dev, "Netdev MAC Address: %pM\n", ndev->dev_addr);
 
 	// spin_lock_init(&bp->lock);
 
@@ -790,6 +818,7 @@ static int mb8795_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, ndev);
 	SET_NETDEV_DEV(ndev, &pdev->dev);
+
 	priv->txbuf = devm_kmalloc(&ndev->dev, TXBUFLEN, GFP_KERNEL);
 
 	// ___GFP_DMA32 linux/kernel/dma/direct.c
