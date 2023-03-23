@@ -1,5 +1,4 @@
 #!/bin/sh
-
 ALT_ROOTS="LABEL=/ LABEL=root /dev/sda1"
 ALT_INITS="/sbin/init /usr/sbin/init /init"
 
@@ -14,6 +13,9 @@ done
 mount -t devtmpfs devtmpfs /dev
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
+
+dmesg | grep -A 20 "RTC NVRAM"
+#sleep 600
 
 function initrescue() {
 	echo "Starting rescue shell"

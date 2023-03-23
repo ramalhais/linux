@@ -29,7 +29,7 @@
 #define	NEXT_SCSI_DMA_ENDALIGNMENT 16
 #define NEXT_SCSI_DMA_REGS_OFFSET 0x20
 #define NEXT_SCSI_ID 7
-#define NEXT_SCSI_HZ 10000000
+#define NEXT_SCSI_HZ 20000000 // 10000000
 
 static void next_scsi_esp_write8(struct esp *esp, u8 val, unsigned long reg)
 {
