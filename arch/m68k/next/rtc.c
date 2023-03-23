@@ -75,6 +75,96 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+uint16_t next_nvram_checksum(struct nvram_settings *nv)
+{
+	uint16_t *nvp = (uint16_t *)nv;
+	uint32_t sum = 0;
+
+	for (int i = 0; i < (sizeof(*nv)-2)>>1; i++) {
+		sum += nvp[i];
+		#define ONEWORD 0x00010000
+		if (sum >= ONEWORD) {	/* wrap carries into low bit */
+			sum -= ONEWORD;
+			sum++;
+		}
+	}
+
+	return (sum & 0xffff);
+}
+
+void next_nvram_print(struct nvram_settings *nv)
+{
+	uint16_t checksum;
+
+	print_hex_dump(KERN_DEBUG, "NeXT RTC NVRAM: ", DUMP_PREFIX_ADDRESS,
+		16, 1, nv, sizeof(*nv), true);
+
+	pr_info("flags[reset=0x%hx alt_cons=0x%hx allow_eject=0x%hx vol_r=0x%hx brightness=0x%hx hw_pwd=0x%hx vol_l=0x%hx spkren=0x%hx lowpass=0x%hx boot_any=0x%hx any_cmd=0x%hx]\n",
+		(nv->flags&NV_RESET) >> 24,
+		(nv->flags&NV_ALT_CONS) >> 24,
+		(nv->flags&NV_ALLOW_EJECT) >> 24,
+		(nv->flags&NV_VOL_R) >> 20,
+		(nv->flags&NV_BRIGHTNESS) >> 12,
+		(nv->flags&NV_HW_PWD) >> 8,
+		(nv->flags&NV_VOL_L) >> 4,
+		nv->flags&NV_SPKREN,
+		nv->flags&NV_LOWPASS,
+		nv->flags&NV_BOOT_ANY,
+		nv->flags&NV_ANY_CMD
+	);
+	pr_info("eaddr=%pM\n", nv->eaddr);
+	pr_info("simm_something=0x%x\n", nv->simm_something);
+	pr_info("adobe=0x%hx 0x%hx\n", nv->adobe[0], nv->adobe[1]);
+	pr_info("pot=0x%hx 0x%hx 0x%hx\n", nv->pot[0], nv->pot[1], nv->pot[2]);
+	pr_info("moreflags[new_clock_chip=0x%hx auto_powerdown=0x%hx use_console_slot=0x%hx console_slot=0x%hx]\n",
+		nv->moreflags&NV_NEW_CLOCK_CHIP,
+		nv->moreflags&NV_AUTO_POWERON,
+		nv->moreflags&NV_USE_CONSOLE_SLOT,
+		nv->moreflags&NV_CONSOLE_SLOT
+	);
+	pr_info("bootcmdline=%s\n", nv->bootcmdline);
+	pr_info("checksum=0x%x\n", nv->checksum);
+	pr_info("checksum_inv=0x%x\n", (~nv->checksum)&0xffff);
+
+	checksum = next_nvram_checksum(nv);
+	pr_info("calculated_checksum=0x%x\n", checksum);
+	pr_info("calculated_checksum_inv=0x%x\n", (~checksum)&0xffff);
+}
+
+void next_nvram_read(int offset, int size, uint8_t *data)
+{
+	for (int i = 0; i < size; i++)
+		data[i] = rtc_read(RTC_RAM+offset+i);
+}
+
+void next_nvram_write(int offset, int size, uint8_t *data)
+{
+	for (int i = 0; i < size; i++)
+		rtc_write(RTC_RAM+offset+i, data[i]);
+}
+
+void next_nvram_fix(void)
+{
+	struct nvram_settings nv;
+
+	next_nvram_read(0, sizeof(nv), (char *)&nv);
+	if (nv.flags&NV_ALT_CONS && !nv.pot[0] && !nv.pot[1] && !nv.pot[2] && !nv.bootcmdline[0])
+		return;
+
+	pr_info("Fixing NeXT RTC NVRAM to enable serial console, disable power-on tests and disable auto-boot\n");
+	next_nvram_print(&nv);
+
+	nv.flags |= NV_ALT_CONS;
+	nv.pot[0] = nv.pot[1] = nv.pot[2] = 0;
+	nv.bootcmdline[0] = 0;
+
+	nv.checksum = ~next_nvram_checksum(&nv);
+	next_nvram_write(0, sizeof(nv), (uint8_t *)&nv);
+
+	next_nvram_read(0, sizeof(nv), (uint8_t *)&nv);
+	next_nvram_print(&nv);
+}
+
 void next_sched_init(void)
 {
 	// Not the best place for this, but if printed on arch/m68k/next/config.c,
@@ -86,6 +176,8 @@ void next_sched_init(void)
 		prom_info.dmachip,
 		prom_info.diskchip
 	);
+
+	next_nvram_fix();
 
 	/* could also get this from the prom i think */
 	clocktype = (rtc_read(RTC_STATUS) & RTC_IS_NEW) ? N_C_NEW : N_C_OLD;
@@ -167,10 +259,10 @@ int next_hwclk_new(int op, struct rtc_time *t)
 		rtc_time64_to_tm(now, t);
 	} else {
 		now = rtc_tm_to_time64(t);
-		rtc_write(R_O_SEC,	now>>24&0xff);
-		rtc_write(R_O_MIN,	now>>16&0xff);
-		rtc_write(R_O_HOUR,	now>>8&0xff);
-		rtc_write(R_O_DAYOFWEEK,now&0xff);
+		rtc_write(R_O_SEC,		now>>24&0xff);
+		rtc_write(R_O_MIN,		now>>16&0xff);
+		rtc_write(R_O_HOUR,		now>>8&0xff);
+		rtc_write(R_O_DAYOFWEEK,	now&0xff);
 	}
 
 	return 0;
@@ -178,11 +270,10 @@ int next_hwclk_new(int op, struct rtc_time *t)
 
 int next_hwclk(int op, struct rtc_time *t)
 {
-	if (clocktype == N_C_OLD) {
+	if (clocktype == N_C_OLD)
 		return next_hwclk_old(op, t);
-	} else {
+	else
 		return next_hwclk_new(op, t);
-	}
 }
 
 void next_poweroff(void)

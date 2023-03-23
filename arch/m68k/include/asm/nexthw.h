@@ -33,29 +33,65 @@ extern char *next_machine_names[];
 
 /* this needs to deal with the bmap on non turbo 040s.. */
 
-// MMU mapped in head.S to physical 0x0200.0000
-#define NEXT_IO_BASE (0xff000000)
+#define NEXT_IO_VIRT	0xff000000 // MMU mapped in head.S to physical 0x0200.0000
+#define NEXT_IO_PHYS	0x02000000
+#define NEXT_IO_BASE	NEXT_IO_VIRT
 
 #define NEXT_SLOT 0x0
 
 #define NEXT_SLOT_BMAP (prom_info.mach_type == NEXT_MACHINE_COMPUTER ? 0x0 : 0x100000)
 
-#define NEXT_SCSI_DMA_BASE	(NEXT_IO_BASE+NEXT_SLOT+0x000010)
-#define NEXT_ETHER_RXDMA_BASE	(NEXT_IO_BASE+NEXT_SLOT+0x000150)
-#define NEXT_ETHER_TXDMA_BASE	(NEXT_IO_BASE+NEXT_SLOT+0x000110)
+// DMA CSR registers
+#define NEXT_CSR_SCSI		(NEXT_IO_BASE + NEXT_SLOT + 0x010)
+#define NEXT_CSR_SOUNDOUT	(NEXT_IO_BASE + NEXT_SLOT + 0x040)	// Speakers
+#define NEXT_CSR_DISK		(NEXT_IO_BASE + NEXT_SLOT + 0x050)	// Optical Disk?
+#define NEXT_CSR_SOUNDIN	(NEXT_IO_BASE + NEXT_SLOT + 0x080)	// Microphone
+#define NEXT_CSR_PRINTER	(NEXT_IO_BASE + NEXT_SLOT + 0x090)
+#define NEXT_CSR_SCC		(NEXT_IO_BASE + NEXT_SLOT + 0x0c0)	// Serial
+#define NEXT_CSR_DSP		(NEXT_IO_BASE + NEXT_SLOT + 0x0d0)
+#define NEXT_CSR_ETHER_TX	(NEXT_IO_BASE + NEXT_SLOT + 0x110)
+#define NEXT_CSR_ETHER_RX	(NEXT_IO_BASE + NEXT_SLOT + 0x150)
+#define NEXT_CSR_VIDEO		(NEXT_IO_BASE + NEXT_SLOT + 0x180)
+#define NEXT_CSR_M2R		(NEXT_IO_BASE + NEXT_SLOT + 0x1d0)	// Generic DMA to Device?
+#define NEXT_CSR_R2M		(NEXT_IO_BASE + NEXT_SLOT + 0x1c0)	// Generic DMA to Memory?
 
-#define NEXT_SCR1_BASE		(NEXT_IO_BASE+NEXT_SLOT+0x00c000)
-#define NEXT_SCR2_BASE		(NEXT_IO_BASE+NEXT_SLOT+0x00d000)
-#define NEXT_MON_BASE		(NEXT_IO_BASE+NEXT_SLOT+0x00e000)
+#define NEXT_SCSI_DMA_BASE	NEXT_CSR_SCSI
+#define NEXT_ETHER_TXDMA_BASE	NEXT_CSR_ETHER_TX
+#define NEXT_ETHER_RXDMA_BASE	NEXT_CSR_ETHER_RX
 
-#define NEXT_ETHER_BASE		(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x006000)
-#define NEXT_SCSI_BASE		(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x014000)
-#define NEXT_TIMER_BASE		(NEXT_IO_BASE+NEXT_SLOT_BMAP+0x016000)
+// Misc registers
+#define NEXT_SCR1		(NEXT_IO_BASE + NEXT_SLOT + 0xc000)
+#define NEXT_SCR2		(NEXT_IO_BASE + NEXT_SLOT + 0xd000)
+#define NEXT_MON		(NEXT_IO_BASE + NEXT_SLOT + 0xe000)
+#define NEXT_PRINTER		(NEXT_IO_BASE + NEXT_SLOT + 0xf000)
+
+#define NEXT_SCR2_BASE	NEXT_SCR2
+#define NEXT_MON_BASE	NEXT_MON
+
+// BMAP register
+#define NEXT_BMAP		(NEXT_IO_BASE + NEXT_SLOT + 0xc0000)
+
+// Device registers
+#define NEXT_ETHER		(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x06000)
+#define NEXT_DSP		(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x08000)
+#define NEXT_DISK		(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x12000)
+#define NEXT_SCSI		(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x14000)
+#define NEXT_FLOPPY		(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x14100)
+#define NEXT_TIMER		(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x16000)
+#define NEXT_TIMER_CSR		(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x16004)
+#define NEXT_SCC		(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x18000)
+#define NEXT_SCC_CLK		(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x18004)
+#define NEXT_P_C16_DAC		(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x18100) // 1 byte for each DAC (4)
+#define NEXT_P_C16_CMD_CSR	(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x18180)
+#define NEXT_EVENTC		(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x1a000)
+
+#define NEXT_SCSI_BASE	NEXT_SCSI
+#define NEXT_TIMER_BASE	NEXT_TIMER
 
 struct next_dma_channel {
 	volatile u32	csr;
 	char		ignore[0x3efc];
-	volatile u32	turbo_rx_saved_start;	// only used on turbos. they don't have saved_* registers mapped
+	volatile u32	turbo_rx_saved_start;	// only used on turbos. they don't have saved_* registers mapped (maybe a Previous bug?)
 	char		ignore2[0xec];
 	volatile u32	saved_start;		// dd_saved_next // save in case of abort?
 	volatile u32	saved_end;		// dd_saved_limit
@@ -67,6 +103,49 @@ struct next_dma_channel {
 	volatile u32	next_end;		// dd_stop
 	char		ignore3[0x1f0];
 	volatile u32	next_initbuf;		// dd_next_initbuf // TX: w_start (write only) phys start and end addrs of dma block
+};
+
+// https://github.com/johnsonjh/NeXTMach/blob/master/mk-108.1/next/bmap.h
+struct bmap_chip {
+	u_int	bm_sid;			/* 0x00: slot ID register for BMAP */
+	u_int	bm_rml : 1,		/* 0x04: ROM control register */
+		bm_lo : 1,
+		: 1,
+		bm_rse : 1,
+		bm_rmt : 4,
+		: 24;
+	u_int	bm_paren : 1,		/* 0x08: bus error register */
+		bm_parck : 1,
+		bm_berr : 1,
+		bm_ovrun : 1,
+		bm_tt : 2,
+		bm_siz : 2,
+		bm_rd : 1,
+		bm_busto : 1,
+		bm_halt : 1,
+		bm_cback : 1,
+		bm_aenc : 2,
+		bm_burst : 1,
+		bm_wait : 1,
+		: 16;
+	u_int	bm_bwe : 1,		/* 0x0c: burst write / DSP int control reg */
+		bm_bwtae : 1,
+		bm_dsp_hreq_int : 1,
+		bm_dsp_txd_int : 1,
+		: 28;
+	u_int	bm_tstatus[2];		/* 0x10,0x14: timing status register */
+	u_int	bm_ast;			/* 0x18: address strobe timing register */
+	u_int	bm_asen : 1,		/* 0x1c: address strobe enable register */
+		bm_tc : 2,
+		bm_scyc : 1,
+		: 28;
+	u_int	bm_ser;			/* 0x20: sample start register */
+	u_int	bm_spare[3];		/* 0x24, 0x28, 0x2c */
+	u_int	bm_ddir;		/* 0x30: GPIO data direction register */
+	u_int	bm_drw;			/* 0x34: GPIO data read/write register */
+	u_int	bm_dma_mask : 4,	/* 0x38: arbitration mask register */
+		bm_nbic_mask : 4,
+		: 24;
 };
 
 #define NEXT_IS_TURBO (prom_info.mach_type >= NEXT_MACHINE_STATION_TURBO)
@@ -142,7 +221,7 @@ struct prom_info {
 		u8	moreflags;
 		#define NV_NEW_CLOCK_CHIP	0x80
 		#define NV_AUTO_POWERON		0x40
-		#define NV_USE_CONSOLE_SLORT	0x20
+		#define NV_USE_CONSOLE_SLOT	0x20
 		#define NV_CONSOLE_SLOT		0x18
 		u8	bootcmdline[12];
 		u16	checksum;
