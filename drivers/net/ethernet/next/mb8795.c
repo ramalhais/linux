@@ -766,12 +766,14 @@ static int mb8795_probe(struct platform_device *pdev)
 
 	// Kick BMAP
 	// if (machine_type == NeXT_X15) // cube040?
-	dev_info(&pdev->dev, "Kicking BMAP\n");
-	bmap->bm_lo = 0;
-	dev_info(&pdev->dev, "BMAP kicked\n");
+	if (!priv->is_turbo){
+		dev_info(&pdev->dev, "Kicking BMAP\n");
+		bmap->bm_lo = 0;
+		dev_info(&pdev->dev, "BMAP kicked\n");
+	}
 
-	// priv->mb = (void __iomem *)NEXT_ETHER;
-	priv->mb = ioremap(0x2000000+0x6000, sizeof(struct mb8795regs));
+	priv->mb = (void __iomem *)NEXT_ETHER;
+	// priv->mb = ioremap(0x2000000+0x6000, sizeof(struct mb8795regs));
 	// priv->mb = __iomem ioremap(0x02000000+0x00100000+0x00006000, sizeof(struct mb8795regs));
 	// work-around bug?
 	priv->mb->txmode = TXM_LOOP_DISABLE;
