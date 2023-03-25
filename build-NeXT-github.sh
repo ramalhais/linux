@@ -32,9 +32,20 @@ m68k-linux-gnu-strip --strip-unneeded vmlinux -o vmlinux.stripped
 ### Extract binary from ELF kernel image
 m68k-linux-gnu-objcopy --output-target=binary vmlinux vmlinux.binary
 
-./arch/m68k/tools/next/aout vmlinux.binary vmlinux-NeXT.aout
+ADD_OFFSET=1
+if [ -z $KERN_LOADADDR ]; then
+        MEM_BASE=4000000
+        KERN_LOADADDR=$(m68k-linux-gnu-objdump -D vmlinux|grep '<_stext>:'|cut -f1 -d' ')
+
+        IS_OFFSET=$(echo "ibase=16; ${KERN_LOADADDR} < ${MEM_BASE}" | bc)
+        if [ $IS_OFFSET -eq 1 ] && [ $ADD_OFFSET -eq 1 ]; then
+                KERN_LOADADDR=$(echo "obase=16; ibase=16; ${MEM_BASE}+${KERN_LOADADDR}" | bc)
+        fi
+fi
+
+./arch/m68k/tools/next/aout vmlinux.binary vmlinux-NeXT.aout 0x${KERN_LOADADDR}
 ./arch/m68k/tools/next/simpkern vmlinux.binary vmlinux-NeXT.macho-simpkern
-./arch/m68k/tools/next/macho vmlinux.binary vmlinux-NeXT.macho
+./arch/m68k/tools/next/macho vmlinux.binary vmlinux-NeXT.macho 0x${KERN_LOADADDR}
 
 MOUNTP=/mnt/target
 FS_LABEL=/
