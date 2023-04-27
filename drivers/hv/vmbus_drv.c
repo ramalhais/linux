@@ -684,7 +684,7 @@ static const struct attribute_group vmbus_dev_group = {
 __ATTRIBUTE_GROUPS(vmbus_dev);
 
 /* Set up the attribute for /sys/bus/vmbus/hibernation */
-static ssize_t hibernation_show(struct bus_type *bus, char *buf)
+static ssize_t hibernation_show(const struct bus_type *bus, char *buf)
 {
 	return sprintf(buf, "%d\n", !!hv_is_hibernation_supported());
 }
@@ -2156,7 +2156,6 @@ void vmbus_device_unregister(struct hv_device *device_obj)
  * VMBUS is an acpi enumerated device. Get the information we
  * need from DSDT.
  */
-#define VTPM_BASE_ADDRESS 0xfed40000
 static acpi_status vmbus_walk_resources(struct acpi_resource *res, void *ctx)
 {
 	resource_size_t start = 0;
