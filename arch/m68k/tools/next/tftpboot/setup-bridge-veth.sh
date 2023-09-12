@@ -30,6 +30,7 @@ ip link set $SECOND_IF master $BRIDGE_IF
 ip link set $HOST_VIF master $BRIDGE_IF
 
 # NeXT PROM doesn't do ARP. Match these to dhcpd.conf.
+sleep 1
 arp -s 192.168.111.12 00:00:0f:00:30:90
 arp -s 192.168.111.13 00:00:0f:00:f3:02
 arp -s 192.168.111.14 00:00:0f:12:34:56
