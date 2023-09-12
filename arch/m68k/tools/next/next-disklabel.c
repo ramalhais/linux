@@ -364,7 +364,7 @@ int main(int argc, char **argv)
 		printf("No recognized options. Just print disklabel.\n");
 	}
 
-	printf("\nsizeof(struct next68k_disklabel)=%ld\n", sizeof(struct next68k_disklabel));
+	printf("\nsizeof(struct next68k_disklabel)=%lu\n", sizeof(struct next68k_disklabel));
 
 	rewind(diskf);
 	if (fread(&dl, sizeof(dl), 1, diskf) != 1) {
