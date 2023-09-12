@@ -171,7 +171,7 @@ irqreturn_t next_scsi_dma_intr(int irq, void *dev_id)
 
 static int next_scsi_probe(struct platform_device *dev)
 {
-	struct scsi_host_template *tpnt = &scsi_esp_template;
+	struct scsi_host_template *tpnt = (struct scsi_host_template *)&scsi_esp_template;
 	struct Scsi_Host *host;
 	struct esp *esp;
 	// struct resource *res;
