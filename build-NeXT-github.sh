@@ -178,7 +178,7 @@ sudo mount $LOOPDEV $MOUNTP
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 
 apt -y install procps
-apt -y install sysvinit-core rsyslog libsystemd0 #libpam-elogind
+apt -y install sysvinit-core rsyslog #libpam-elogind
 
 EOF
 
