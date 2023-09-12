@@ -69,7 +69,7 @@ tar zcvf $DISK.tar.gz --sparse $DISK
 # Build debian disk image
 ORIG_DISK=$DISK
 DISK=linux-next-2gb-debian-systemd.disk
-cp $ORIG_DISK $DISK
+mv $ORIG_DISK $DISK
 
 LOOPDEV=$(sudo losetup -f | head -1)
 sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK
@@ -168,7 +168,7 @@ tar zcvf $DISK.tar.gz --sparse $DISK
 
 ORIG_DISK=$DISK
 DISK=linux-next-2gb-debian-sysvinit.disk
-cp $ORIG_DISK $DISK
+mv $ORIG_DISK $DISK
 
 LOOPDEV=$(sudo losetup -f | head -1)
 sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK
