@@ -93,7 +93,7 @@ static int nextfb_probe_030(struct platform_device *dev)
 	info->var = nextfb_var;
 	info->fix = nextfb_fix;
 	info->fbops = &nextfb_ops;
-	info->flags = FBINFO_DEFAULT;
+	info->flags = FBINFO_HWACCEL_DISABLED|FBINFO_VIRTFB|FBINFO_READS_FAST;
 	info->pseudo_palette = info->par;
 	info->par = NULL;
 
@@ -216,7 +216,7 @@ static int nextfb_probe(struct platform_device *dev)
 	info->var = nextfb_var;
 	info->fix = nextfb_fix;
 	info->fbops = &nextfb_ops;
-	info->flags = FBINFO_DEFAULT;
+	info->flags = FBINFO_HWACCEL_DISABLED|FBINFO_VIRTFB|FBINFO_READS_FAST;
 	info->pseudo_palette = info->par;
 	info->par = NULL;
 
