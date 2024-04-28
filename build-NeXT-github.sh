@@ -17,7 +17,7 @@ done
 make -j$NPROCS -C arch/m68k/tools/next/
 
 # Get netbsd bootloader
-curl -v -L -o arch/m68k/tools/next/netbsd-boot-next.aout https://github.com/ramalhais/netbsd-src/releases/latest/download/netbsd-boot-next.aout
+curl -v -L -o arch/m68k/tools/next/netbsd-boot-next.aout https://github.com/ramalhais/netbsd-boot-NeXT/releases/latest/download/netbsd-boot-next.aout
 
 # Compile Kernel
 make next_defconfig
