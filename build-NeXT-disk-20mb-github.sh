@@ -7,7 +7,7 @@ FS_LABEL=/
 # Build small empty bootable disk image
 DISK=linux-next-100mb-sparse.disk
 
-dd if=/dev/zero of=$DISK bs=100M count=1 conv=sparse
+dd if=/dev/zero of=$DISK bs=20M count=1 conv=sparse
 LOOPDEV=$(sudo losetup -f | head -1)
 sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK
 arch/m68k/tools/next/next-disklabel $DISK -c
