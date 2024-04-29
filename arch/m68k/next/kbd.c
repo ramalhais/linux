@@ -351,8 +351,8 @@ static int next_kbd_probe(struct platform_device *pdev)
 
 	// next_intmask_enable(NEXT_IRQ_KYBD_MOUSE-NEXT_IRQ_BASE);
 
-	// #define KMS_ENABLE	0x00020000
-	// mon->csr = (mon->csr)&KMS_ENABLE;
+	#define KMS_ENABLE	0x00020000
+	mon->csr = (mon->csr)&KMS_ENABLE;
 
 	return 0;
 }
