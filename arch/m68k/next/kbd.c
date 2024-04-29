@@ -28,6 +28,8 @@ struct mon {
 #define KM_INT		0x00800000	// r
 #define KM_HAVEDATA	0x00400000	// r
 #define KM_OVERRUN	0x00200000	// rw
+#define NMI_RECEIVED	0x00100000	// rw
+#define KMS_OVERRUN	0x00020000	// rw
 
 /* high bits in km_data */
 
@@ -187,9 +189,14 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	// This is not right, at leat in Previous emulator
 	// mon->csr=(csr & ~KM_INT);
 	// PR: According to Previous, it's readonly. Makes sense. Seems like we just need to read the data to clear the interruput.
-	data = mon->km_data;
 	csr = mon->csr;
+	data = mon->km_data;
 
+	if (csr&(KM_OVERRUN|NMI_RECEIVED|KMS_OVERRUN)) {
+		mon->csr = mon->csr&(~(KM_OVERRUN|NMI_RECEIVED|KMS_OVERRUN));
+	}
+
+	// 400e0200(sound enable, KMS int+recv+overrun,KMS enable) continuous:40ae0200 (sound enable, KM int+overrun+NMI, KMS int+recv+overrun,KMS enable)
 	if (!(csr & KM_HAVEDATA)) {
 		pr_err("NeXT Keyboard and Mouse interrupt, but no data to handle. csr=0x%08x data=0x%08x\n", csr, data);
 		goto bail;
