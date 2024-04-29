@@ -25,8 +25,9 @@ struct mon {
 } *mon = (struct mon *)NEXT_MON_BASE;
 
 /* bits in csr */
-#define KM_INT		0x00800000
-#define KM_HAVEDATA	0x00400000
+#define KM_INT		0x00800000	// r
+#define KM_HAVEDATA	0x00400000	// r
+#define KM_OVERRUN	0x00200000	// rw
 
 /* high bits in km_data */
 
@@ -167,6 +168,7 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	struct next_kbd *kbd = dev_id;
 	struct input_dev *input = kbd->input;
 	struct input_dev *mouse = kbd->mouse;
+	// struct mon *mon;
 	u32 csr;
 	u32 data;
 	unsigned long flags;
@@ -178,18 +180,21 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	// 	return IRQ_NONE;
 	// }
 
+
+	// mon = __iomem ioremap(NEXT_MON_BASE, sizeof(struct mon));
+
 	// ack the int
 	// This is not right, at leat in Previous emulator
 	// mon->csr=(csr & ~KM_INT);
-
+	// PR: According to Previous, it's readonly. Makes sense. Seems like we just need to read the data to clear the interruput.
+	data = mon->km_data;
 	csr = mon->csr;
 
 	if (!(csr & KM_HAVEDATA)) {
-		pr_err("NeXT Keyboard and Mouse interrupt, but no data to handle\n");
+		pr_err("NeXT Keyboard and Mouse interrupt, but no data to handle. csr=0x%08x data=0x%08x\n", csr, data);
 		goto bail;
 	}
 
-	data = mon->km_data;
 
 	if ((data & KD_ADDRMASK) == KD_KADDR) {
 		unsigned int changed;
@@ -338,6 +343,9 @@ static int next_kbd_probe(struct platform_device *pdev)
 	}
 
 	// next_intmask_enable(NEXT_IRQ_KYBD_MOUSE-NEXT_IRQ_BASE);
+
+	// #define KMS_ENABLE	0x00020000
+	// mon->csr = (mon->csr)&KMS_ENABLE;
 
 	return 0;
 }
