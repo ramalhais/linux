@@ -207,7 +207,7 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	// PR: This is not right, at leat in Previous emulator
 	// mon->csr = mon->csr&(~KM_INT);
 	// According to Previous, it's readonly. Makes sense. Seems like we just need to read the data to clear the interruput.
-	csr = mon->csr
+	csr = mon->csr;
 	csr_new = csr&~(KM_INT|KMS_INT);
 	if (csr_new&(KM_OVERRUN|NMI_RECEIVED|KMS_OVERRUN)) {
 		csr_new &= ~(KM_OVERRUN|NMI_RECEIVED|KMS_OVERRUN);
