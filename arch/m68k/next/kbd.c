@@ -216,6 +216,7 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 
 	data = mon->km_data;
 
+	pr_err("NeXT Keyboard and Mouse interrupt, csr=0x%08x csr_new=0x%08x csr_new=0x%08x data=0x%08x\n", csr, csr_new, mon->csr, data);
 	// 400e0200(sound enable, KMS int+recv+overrun, KMS enable) continuous:40ae0200 (sound enable, KM int+overrun, KMS int+recv+overrun,KMS enable)
 	if (!(csr&KM_HAVEDATA)) {
 		pr_err("NeXT Keyboard and Mouse interrupt, no KM_HAVEDATA. csr=0x%08x csr_new=0x%08x csr_new=0x%08x data=0x%08x\n", csr, csr_new, mon->csr, data);
