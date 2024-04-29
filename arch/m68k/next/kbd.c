@@ -204,9 +204,7 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	// mon = __iomem ioremap(NEXT_MON_BASE, sizeof(struct mon));
 
 	// ack the int
-	// PR: This is not right, at leat in Previous emulator
-	// mon->csr = mon->csr&(~KM_INT);
-	// According to Previous, it's readonly. Makes sense. Seems like we just need to read the data to clear the interruput.
+	// According to Previous, it's readonly. Should just need to read the data to clear the interrupt.
 	csr = mon->csr;
 	csr_new = csr&~(KM_INT|KMS_INT);
 	if (csr_new&(KM_OVERRUN|NMI_RECEIVED|KMS_OVERRUN)) {
@@ -216,15 +214,18 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 
 	data = mon->km_data;
 
-	pr_err("NeXT Keyboard and Mouse interrupt, csr=0x%08x csr_new=0x%08x csr_new=0x%08x data=0x%08x\n", csr, csr_new, mon->csr, data);
+	// pr_err("NeXT Keyboard and Mouse interrupt, csr=0x%08x csr_new=0x%08x csr_new=0x%08x data=0x%08x\n", csr, csr_new, mon->csr, data);
 	// 400e0200(sound enable, KMS int+recv+overrun, KMS enable) continuous:40ae0200 (sound enable, KM int+overrun, KMS int+recv+overrun,KMS enable)
+	// csr 40ce0200 csr_new 40440200 real csr: 400e0200
+	// csr 40ae0200 csr_new 40040200 real csr: 40ae0200
 	if (!(csr&KM_HAVEDATA)) {
-		pr_err("NeXT Keyboard and Mouse interrupt, no KM_HAVEDATA. csr=0x%08x csr_new=0x%08x csr_new=0x%08x data=0x%08x\n", csr, csr_new, mon->csr, data);
-	}
-	if (!(csr&KMS_RECEIVED)) {
-		pr_err("NeXT Keyboard and Mouse interrupt, no KMS_RECEIVED. Ignoring. csr=0x%08x csr_new=0x%08x csr_new=0x%08x data=0x%08x\n", csr, csr_new, mon->csr, data);
 		goto bail;
+		// pr_err("NeXT Keyboard and Mouse interrupt, no KM_HAVEDATA. csr=0x%08x csr_new=0x%08x csr_new=0x%08x data=0x%08x\n", csr, csr_new, mon->csr, data);
 	}
+	// if (!(csr&KMS_RECEIVED)) {
+	// 	pr_err("NeXT Keyboard and Mouse interrupt, no KMS_RECEIVED. Ignoring. csr=0x%08x csr_new=0x%08x csr_new=0x%08x data=0x%08x\n", csr, csr_new, mon->csr, data);
+	// 	goto bail;
+	// }
 
 
 	if ((data & KD_ADDRMASK) == KD_KADDR) {
