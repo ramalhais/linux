@@ -25,11 +25,29 @@ struct mon {
 } *mon = (struct mon *)NEXT_MON_BASE;
 
 /* bits in csr */
+#define SNDOUT_DMA_ENABLE	0x80000000	// rw
+#define SNDOUT_DMA_REQUEST	0x40000000	// r
+#define SNDOUT_DMA_UNDERRUN	0x20000000	// rw
+#define SNDIN_DMA_ENABLE	0x08000000	// rw
+#define SNDIN_DMA_REQUEST	0x04000000	// r
+#define SNDIN_DMA_OVERRUN	0x02000000	// rw
+
 #define KM_INT		0x00800000	// r
 #define KM_HAVEDATA	0x00400000	// r
 #define KM_OVERRUN	0x00200000	// rw
 #define NMI_RECEIVED	0x00100000	// rw
+#define KMS_INT         0x00080000	// r
+#define KMS_RECEIVED	0x00040000	// r
 #define KMS_OVERRUN	0x00020000	// rw
+
+#define TX_DMA_PENDING	0x00008000	// r
+#define TX_DMA		0x00004000	// r
+#define TX_CPU_PENDING	0x00002000	// r
+#define TX_CPU		0x00001000	// r
+#define TX_RX_PEND	0x00000800	// r
+#define TX_RX		0x00000400	// r
+#define KMS_ENABLE	0x00000200	// rw
+#define TX_LOOP		0x00000100	// rw
 
 /* high bits in km_data */
 
@@ -171,7 +189,7 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	struct input_dev *input = kbd->input;
 	struct input_dev *mouse = kbd->mouse;
 	// struct mon *mon;
-	u32 csr;
+	u32 csr, csr_new;
 	u32 data;
 	unsigned long flags;
 
@@ -186,19 +204,24 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	// mon = __iomem ioremap(NEXT_MON_BASE, sizeof(struct mon));
 
 	// ack the int
-	// This is not right, at leat in Previous emulator
-	// mon->csr=(csr & ~KM_INT);
-	// PR: According to Previous, it's readonly. Makes sense. Seems like we just need to read the data to clear the interruput.
-	csr = mon->csr;
+	// PR: This is not right, at leat in Previous emulator
+	// mon->csr = mon->csr&(~KM_INT);
+	// According to Previous, it's readonly. Makes sense. Seems like we just need to read the data to clear the interruput.
+	csr = mon->csr
+	csr_new = csr&~(KM_INT|KMS_INT);
+	if (csr_new&(KM_OVERRUN|NMI_RECEIVED|KMS_OVERRUN)) {
+		csr_new &= ~(KM_OVERRUN|NMI_RECEIVED|KMS_OVERRUN);
+	}
+	mon->csr = csr_new;
+
 	data = mon->km_data;
 
-	if (csr&(KM_OVERRUN|NMI_RECEIVED|KMS_OVERRUN)) {
-		mon->csr = mon->csr&(~(KM_OVERRUN|NMI_RECEIVED|KMS_OVERRUN));
+	// 400e0200(sound enable, KMS int+recv+overrun, KMS enable) continuous:40ae0200 (sound enable, KM int+overrun, KMS int+recv+overrun,KMS enable)
+	if (!(csr&KM_HAVEDATA)) {
+		pr_err("NeXT Keyboard and Mouse interrupt, no KM_HAVEDATA. csr=0x%08x csr_new=0x%08x csr_new=0x%08x data=0x%08x\n", csr, csr_new, mon->csr, data);
 	}
-
-	// 400e0200(sound enable, KMS int+recv+overrun,KMS enable) continuous:40ae0200 (sound enable, KM int+overrun+NMI, KMS int+recv+overrun,KMS enable)
-	if (!(csr & KM_HAVEDATA)) {
-		pr_err("NeXT Keyboard and Mouse interrupt, but no data to handle. csr=0x%08x data=0x%08x\n", csr, data);
+	if (!(csr&KMS_RECEIVED)) {
+		pr_err("NeXT Keyboard and Mouse interrupt, no KMS_RECEIVED. Ignoring. csr=0x%08x csr_new=0x%08x csr_new=0x%08x data=0x%08x\n", csr, csr_new, mon->csr, data);
 		goto bail;
 	}
 
@@ -351,7 +374,6 @@ static int next_kbd_probe(struct platform_device *pdev)
 
 	// next_intmask_enable(NEXT_IRQ_KYBD_MOUSE-NEXT_IRQ_BASE);
 
-	#define KMS_ENABLE	0x00020000
 	mon->csr = (mon->csr)&KMS_ENABLE;
 
 	return 0;
