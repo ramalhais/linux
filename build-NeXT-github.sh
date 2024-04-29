@@ -50,7 +50,23 @@ fi
 MOUNTP=/mnt/target
 FS_LABEL=/
 
-# Build empty bootable disk image
+# Build small empty bootable disk image
+DISK=linux-next-100m-sparse.disk
+
+dd if=/dev/zero of=$DISK bs=100M count=1 conv=sparse
+LOOPDEV=$(sudo losetup -f | head -1)
+sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK
+arch/m68k/tools/next/next-disklabel $DISK -c
+arch/m68k/tools/next/next-disklabel $DISK -b arch/m68k/tools/next/netbsd-boot-next.aout
+sudo mkfs.ext2 -m0 -L$FS_LABEL -r0 $LOOPDEV
+sudo mkdir -p $MOUNTP
+sudo mount $LOOPDEV $MOUNTP
+sudo cp vmlinux.stripped $MOUNTP/vmlinux
+sudo umount $MOUNTP
+sudo losetup -d $LOOPDEV
+tar zcvf $DISK.tar.gz --sparse $DISK
+
+# Build 2GB empty bootable disk image
 DISK=linux-next-2gb-sparse.disk
 
 dd if=/dev/zero of=$DISK bs=2G count=1 conv=sparse
