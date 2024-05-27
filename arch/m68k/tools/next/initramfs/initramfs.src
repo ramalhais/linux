@@ -41,4 +41,3 @@ file /netbsd-boot-next.aout arch/m68k/tools/next/netbsd-boot-next.aout 755 0 0
 #file /tmp/debianutils_5.7-0.3_m68k.deb arch/m68k/tools/next/initramfs/debianutils_5.7-0.3_m68k.deb 755 0 0
 #file /tmp/libc6_2.34-4_m68k.deb arch/m68k/tools/next/initramfs/libc6_2.34-4_m68k.deb 755 0 0
 #file /tmp/libtinfo6_6.3+20220423-2_m68k.deb arch/m68k/tools/next/initramfs/libtinfo6_6.3+20220423-2_m68k.deb 755 0 0
-

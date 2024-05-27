@@ -15,7 +15,7 @@ INITIATOR=$(hostname -f)
 # File needed by iscsid
 INITIATOR_FILE=/etc/iscsi/initiatorname.iscsi
 echo "InitiatorName=$INITIATOR" > $INITIATOR_FILE
-# iscsiadm needs to communicate with iscsid. using ofreground because otherwise the process disappears.
+# iscsiadm needs to communicate with iscsid. using foreground because otherwise the process disappears.
 iscsid --foreground&
 # List targets
 iscsiadm -m discovery -t sendtargets -p $TARGET_ADDR -l
