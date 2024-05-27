@@ -1225,6 +1225,14 @@ config SCSI_WD719X
 	  This is a driver for Western Digital WD7193, WD7197 and WD7296 PCI
 	  SCSI controllers (based on WD33C296A chip).
 
+config NEXT_SCSI
+	bool "NeXT SCSI support"
+	depends on NEXT && SCSI
+	select SCSI_SPI_ATTRS
+	help
+	  This is the driver for the onboard SCSI host adapter of
+	  NeXT Computer/cube/station.
+
 config SCSI_DEBUG
 	tristate "SCSI debugging host and device simulator"
 	depends on SCSI

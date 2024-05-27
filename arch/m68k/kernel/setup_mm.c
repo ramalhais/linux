@@ -46,6 +46,9 @@
 #ifdef CONFIG_SUN3X
 #include <asm/dvma.h>
 #endif
+#ifdef CONFIG_NEXT
+#include <asm/nexthw.h>
+#endif
 #include <asm/macintosh.h>
 #include <asm/natfeat.h>
 #include <asm/config.h>
@@ -209,7 +212,7 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
 void __init setup_arch(char **cmdline_p)
 {
 	/* The bootinfo is located right after the kernel */
-	if (!CPU_IS_COLDFIRE)
+	if (!CPU_IS_COLDFIRE && !MACH_IS_NEXT)
 		m68k_parse_bootinfo((const struct bi_record *)_end);
 
 	if (CPU_IS_040)
@@ -308,6 +311,18 @@ void __init setup_arch(char **cmdline_p)
 #ifdef CONFIG_SUN3X
 	case MACH_SUN3X:
 		config_sun3x();
+		break;
+#endif
+#ifdef CONFIG_NEXT
+	case MACH_NEXT:
+		config_next();
+		// This should be above (before config_next()), but we don't have access to the whole RAM before config_next()
+		pr_info("prom_info.bootarg_ptr=0x%x\n", (prom_info.bootarg_ptr-0x4000000));
+		if (strlen(m68k_command_line))
+			strncpy(m68k_command_line+strlen(m68k_command_line), " ", 1);
+		// strncpy(m68k_command_line+strlen(m68k_command_line), (char *)(prom_info.bootarg_ptr-0x4000000), CL_SIZE-strlen(m68k_command_line));
+		strncpy(m68k_command_line+strlen(m68k_command_line), (char *)prom_info.inputline, CL_SIZE-strlen(m68k_command_line));
+		memcpy(boot_command_line, *cmdline_p, CL_SIZE);
 		break;
 #endif
 #ifdef CONFIG_COLDFIRE

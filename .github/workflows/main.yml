@@ -1,0 +1,244 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "master" branch
+  push:
+    branches: [ "NeXT" ]
+  pull_request:
+    branches: [ "NeXT" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest # ubuntu-22.04
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      # Runs a set of commands using the runners shell
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y gcc-10-m68k-linux-gnu make gcc flex bison debootstrap qemu-user-static && echo CPUS=$(nproc)
+
+      - name: Build Kernel
+        run: |
+          cd $GITHUB_WORKSPACE
+          set -e
+          ./build-NeXT-kernel-github.sh
+          echo "DATE=$(date +%F-%H.%M.%S)" >> $GITHUB_ENV
+          echo "KERNELVER=$(make kernelversion)" >> $GITHUB_ENV
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: build/${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
+          release_name: NeXT-${{ env.DATE }}-${{ env.KERNELVER }}-${{ github.sha }}
+          # body: |
+          #   Changes in this Release
+          #   - First Change
+          #   - Second Change
+          draft: false
+          prerelease: false
+
+      - name: Upload aout Kernel to Release
+        id: upload-release-asset-kernel-aout
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./vmlinux-NeXT.aout
+          asset_name: vmlinux-NeXT.aout
+          asset_content_type: application/octet-stream
+
+      - name: Upload macho Kernel to Release
+        id: upload-release-asset-kernel-macho
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./vmlinux-NeXT.macho
+          asset_name: vmlinux-NeXT.macho
+          asset_content_type: application/octet-stream
+
+      - name: Upload macho simpkern Kernel to Release
+        id: upload-release-asset-kernel-macho-simpkern
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./vmlinux-NeXT.macho-simpkern
+          asset_name: vmlinux-NeXT.macho-simpkern
+          asset_content_type: application/octet-stream
+
+      - name: Upload elf32 Kernel to Release
+        id: upload-release-asset-kernel-elf32
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./vmlinux
+          asset_name: vmlinux-NeXT.elf32
+          asset_content_type: application/octet-stream
+
+      - name: Upload elf32 stripped Kernel to Release
+        id: upload-release-asset-kernel-elf32-stripped
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./vmlinux.stripped
+          asset_name: vmlinux-NeXT.elf32-stripped
+          asset_content_type: application/octet-stream
+
+      - name: Upload .config to Release
+        id: upload-release-asset-config
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./.config
+          asset_name: config-NeXT-${{ env.KERNELVER }}
+          asset_content_type: text/plain
+
+      - name: Upload aout to Release
+        id: upload-release-asset-aout
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./arch/m68k/tools/next/aout
+          asset_name: aout
+          asset_content_type: application/octet-stream
+
+      - name: Upload macho to Release
+        id: upload-release-asset-macho
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./arch/m68k/tools/next/macho
+          asset_name: macho
+          asset_content_type: application/octet-stream
+
+      - name: Upload next-disklabel to Release
+        id: upload-release-asset-next-disklabel
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./arch/m68k/tools/next/next-disklabel
+          asset_name: next-disklabel
+          asset_content_type: application/octet-stream
+
+      - name: Upload aout.m68k to Release
+        id: upload-release-asset-aout-m68k
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./arch/m68k/tools/next/aout.m68k
+          asset_name: aout.m68k
+          asset_content_type: application/octet-stream
+
+      - name: Upload macho.m68k to Release
+        id: upload-release-asset-macho-m68k
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./arch/m68k/tools/next/macho.m68k
+          asset_name: macho.m68k
+          asset_content_type: application/octet-stream
+
+      - name: Upload next-disklabel.m68k to Release
+        id: upload-release-asset-next-disklabel-m68k
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./arch/m68k/tools/next/next-disklabel.m68k
+          asset_name: next-disklabel.m68k
+          asset_content_type: application/octet-stream
+
+      - name: Build tiny Disk Image
+        run: |
+          cd $GITHUB_WORKSPACE
+          set -e
+          ./build-NeXT-disk-20mb-github.sh
+
+      - name: Upload tiny disk image to Release
+        id: upload-release-asset-disk-image-tiny
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: linux-next-20mb-sparse.disk.tar.gz
+          asset_name: linux-next-20mb-sparse.disk.tar.gz
+          asset_content_type: application/octet-stream
+
+      - name: Build 2GB Disk Image
+        run: |
+          cd $GITHUB_WORKSPACE
+          set -e
+          ./build-NeXT-disk-2gb-github.sh
+
+      - name: Upload 2GB disk image to Release
+        id: upload-release-asset-disk-image-2gb
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: linux-next-2gb-sparse.disk.tar.gz
+          asset_name: linux-next-2gb-sparse.disk.tar.gz
+          asset_content_type: application/octet-stream
+
+      - name: Upload debian systemd disk image to Release
+        id: upload-release-asset-disk-image-debian-systemd
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: linux-next-2gb-debian-systemd.disk.tar.gz
+          asset_name: linux-next-2gb-debian-systemd.disk.tar.gz
+          asset_content_type: application/octet-stream
+
+      - name: Upload debian sysvinit disk image to Release
+        id: upload-release-asset-disk-image-debian-sysvinit
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: linux-next-2gb-debian-sysvinit.disk.tar.gz
+          asset_name: linux-next-2gb-debian-sysvinit.disk.tar.gz
+          asset_content_type: application/octet-stream
+

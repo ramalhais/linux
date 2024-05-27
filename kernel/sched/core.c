@@ -6588,9 +6588,9 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 
 	schedule_debug(prev, !!sched_mode);
 
-	if (sched_feat(HRTICK) || sched_feat(HRTICK_DL))
+	if (sched_feat(HRTICK) || sched_feat(HRTICK_DL)) {
 		hrtick_clear(rq);
-
+	}
 	local_irq_disable();
 	rcu_note_context_switch(!!sched_mode);
 
@@ -6632,9 +6632,9 @@ static void __sched notrace __schedule(unsigned int sched_mode)
 				!(prev_state & TASK_NOLOAD) &&
 				!(prev_state & TASK_FROZEN);
 
-			if (prev->sched_contributes_to_load)
+			if (prev->sched_contributes_to_load) {
 				rq->nr_uninterruptible++;
-
+			}
 			/*
 			 * __schedule()			ttwu()
 			 *   prev_state = prev->state;    if (p->on_rq && ...)
