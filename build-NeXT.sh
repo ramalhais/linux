@@ -1,6 +1,7 @@
 #!/bin/bash -x
 
-GCC_SUFFIX="-12"
+GCC_SUFFIX="-13"
+SCRIPT_DIR=$(dirname $(readlink -f ${BASH_SOURCE[0]}))
 
 # Needed for network boot, because PROM uses the addr on the aout or macho header.
 # Not needed for the netbsd bootloader because it adds 0x4000000 to the entrypoint if lower than 0x4000000
@@ -17,7 +18,7 @@ if (grep fedora /etc/os-release); then
   GCC_SUFFIX=""
 fi
 
-export ARCH=m68k CROSS_COMPILE=m68k-linux-gnu- GCC_SUFFIX=$GCC_SUFFIX
+export ARCH=m68k CROSS_COMPILE=m68k-linux-gnu- GCC_SUFFIX
 export _MODULES_DIR=~/next/modules
 export _BUILDROOT_DIR=~/git/buildroot
 export _BUILDROOT_OVERLAY_DIR=$_BUILDROOT_DIR/linux-modules/
@@ -34,7 +35,7 @@ export _BUILDROOT_OVERLAY_DIR=$_BUILDROOT_DIR/linux-modules/
 # cp defconfig arch/m68k/configs/next_defconfig
 
 ### Setup NeXT config
-#make next_defconfig
+[ ! -f .config ] && make next_defconfig
 
 #
 # Kernel Modules
@@ -70,20 +71,26 @@ make -C $_BUILDROOT_DIR
 fi
 
 # Compile NeXT tools for m68k (disabled. not working on redhat. missing m68k glibc headers and libraries)
-#make CC=${CROSS_COMPILE}gcc${GCC_SUFFIX} -j$NPROCS -C arch/m68k/tools/next/
-#for BIN in aout macho simpkern next-disklabel; do
-#        mv arch/m68k/tools/next/$BIN arch/m68k/tools/next/$BIN.m68k
-#done
-touch arch/m68k/tools/next/aout.m68k
-touch arch/m68k/tools/next/macho.m68k
-touch arch/m68k/tools/next/simpkern.m68k
-touch arch/m68k/tools/next/next-disklabel.m68k
+BINARIES="aout macho simpkern next-disklabel"
+if (grep fedora /etc/os-release); then
+	for BIN in $BINARIES; do
+		touch ${SCRIPT_DIR}/arch/m68k/tools/next/$BIN.m68k
+	done
+else
+	for BIN in $BINARIES; do
+	        rm ${SCRIPT_DIR}/arch/m68k/tools/next/$BIN ${SCRIPT_DIR}/arch/m68k/tools/next/$BIN.m68k
+	done
+	make CC=${CROSS_COMPILE}gcc${GCC_SUFFIX} -j$NPROCS -C ${SCRIPT_DIR}/arch/m68k/tools/next/
+	for BIN in $BINARIES; do
+	        mv ${SCRIPT_DIR}/arch/m68k/tools/next/$BIN ${SCRIPT_DIR}/arch/m68k/tools/next/$BIN.m68k
+	done
+fi
 
 # Compile NeXT tools
-make -C arch/m68k/tools/next/
+make -C ${SCRIPT_DIR}/arch/m68k/tools/next/
 
 # Copy netbsd bootloader
-cp ~/next/netbsd-obj/netbsd-boot-next.aout arch/m68k/tools/next/ || touch arch/m68k/tools/next/netbsd-boot-next.aout
+cp ~/next/netbsd-obj/netbsd-boot-next.aout ${SCRIPT_DIR}/arch/m68k/tools/next/ || touch ${SCRIPT_DIR}/arch/m68k/tools/next/netbsd-boot-next.aout
 
 #
 # Kernel image
@@ -97,14 +104,14 @@ KERNEL_VERSION=$(make kernelversion)
 KERNEL_RELEASE=$(make kernelrelease)
 
 # Strip symbols
-m68k-linux-gnu-strip --strip-unneeded vmlinux -o vmlinux.stripped
+m68k-linux-gnu-strip --strip-unneeded ${SCRIPT_DIR}/vmlinux -o ${SCRIPT_DIR}/vmlinux.stripped
 
 # Extract binary from ELF kernel image
-m68k-linux-gnu-objcopy --strip-unneeded --output-target=binary vmlinux vmlinux.binary_$DATE
+m68k-linux-gnu-objcopy --strip-unneeded --output-target=binary ${SCRIPT_DIR}/vmlinux ${SCRIPT_DIR}/vmlinux.binary_$DATE
 
 if [ -z $KERN_LOADADDR ]; then
 	MEM_BASE=4000000
-	KERN_LOADADDR=$(m68k-linux-gnu-objdump -D vmlinux|grep '<_stext>:'|cut -f1 -d' ')
+	KERN_LOADADDR=$(m68k-linux-gnu-objdump -D ${SCRIPT_DIR}/vmlinux|grep '<_stext>:'|cut -f1 -d' ')
 
 	IS_OFFSET=$(echo "ibase=16; ${KERN_LOADADDR} < ${MEM_BASE}" | bc)
 	if [ $IS_OFFSET -eq 1 ] && [ $ADD_OFFSET -eq 1 ]; then
@@ -119,21 +126,22 @@ fi
 # - NetBSD disk bootloader supports aout and elf32 (and elf64 and ecoff)
 
 # Wrap kernel binary code in Mach-O header (bigger than aout header)
-#./arch/m68k/tools/next/simpkern vmlinux.binary_$DATE vmlinux.simpk_$DATE
-./arch/m68k/tools/next/macho vmlinux.binary_$DATE vmlinux.macho_$DATE 0x${KERN_LOADADDR}
-#sudo cp vmlinux.macho_$DATE /srv/tftp/
-#sudo ln -sf vmlinux.macho_$DATE /srv/tftp/boot
-#ln -sf ~/next/linux/vmlinux.simpk_$DATE ~/next/tftp/private/tftpboot/boot
-#ln -sf ~/next/linux/vmlinux.macho_$DATE ~/next/tftp/private/tftpboot/boot
+#${SCRIPT_DIR}/arch/m68k/tools/next/simpkern vmlinux.binary_$DATE vmlinux.simpk_$DATE
+${SCRIPT_DIR}/arch/m68k/tools/next/macho ${SCRIPT_DIR}/vmlinux.binary_$DATE ${SCRIPT_DIR}/vmlinux.macho_$DATE 0x${KERN_LOADADDR}
+#sudo cp ${SCRIPT_DIR}/vmlinux.macho_$DATE /srv/tftp/
+#sudo ln -sf ${SCRIPT_DIR}/vmlinux.macho_$DATE /srv/tftp/boot
+#ln -sf ${SCRIPT_DIR}/vmlinux.simpk_$DATE ~/next/tftp/private/tftpboot/boot
+#ln -sf ${SCRIPT_DIR}/vmlinux.macho_$DATE ~/next/tftp/private/tftpboot/boot
 
 # Wrap kernel binary code in aout header (old UNIX COFF format?)
-./arch/m68k/tools/next/aout vmlinux.binary_$DATE vmlinux.aout_$DATE 0x${KERN_LOADADDR}
-#sudo cp vmlinux.aout_$DATE /srv/tftp/
-#sudo ln -sf vmlinux.aout_$DATE /srv/tftp/boot
-ln -sf ~/next/linux/vmlinux.aout_$DATE ~/next/tftp/private/tftpboot/boot
+${SCRIPT_DIR}/arch/m68k/tools/next/aout ${SCRIPT_DIR}/vmlinux.binary_$DATE ${SCRIPT_DIR}/vmlinux.aout_$DATE 0x${KERN_LOADADDR}
+#sudo cp ${SCRIPT_DIR}/vmlinux.aout_$DATE /srv/tftp/
+#sudo ln -sf ${SCRIPT_DIR}/vmlinux.aout_$DATE /srv/tftp/boot
+ln -sf ${SCRIPT_DIR}/vmlinux.aout_$DATE ~/next/tftp/private/tftpboot/boot
 
 ### Save patch
-git diff master > ../linux-NeXT-$DATE.patch
+BASE_BRANCH=linux-6.9.y
+git diff $BASE_BRANCH > ../linux-$BASE_BRANCH-NeXT-$DATE.patch
 # git tag NeXT-$(date +%F-%H.%M.%S)
 # git push --tags
 
