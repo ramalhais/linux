@@ -155,6 +155,9 @@ config NEXT
 	select EARLY_PRINTK
 	select CONFIG_PRINTK
 	select CONFIG_PRINTK_TIME
+	select CONFIG_NEXT_PARTITION
+	select CONFIG_NEXT_SCSI
+	select CONFIG_NEXT_NET
 
 	help
 	  This option enables support for the NeXT series of
