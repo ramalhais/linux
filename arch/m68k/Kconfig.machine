@@ -167,6 +167,28 @@ config VIRT
 	  This options enable a pure virtual machine based on m68k,
 	  VIRTIO MMIO devices and GOLDFISH interfaces (TTY, RTC, PIC).
 
+config NEXT
+	bool "NeXT support"
+	depends on MMU
+	select MMU_MOTOROLA if MMU
+	select M68030
+	select M68040
+	select LEGACY_TIMER_TICK
+	select FB_NEXT
+	select FRAMEBUFFER_CONSOLE
+	select CONFIG_DUMMY_CONSOLE
+	select EARLY_PRINTK
+	select CONFIG_PRINTK
+	select CONFIG_PRINTK_TIME
+	select CONFIG_NEXT_PARTITION
+	select CONFIG_NEXT_SCSI
+	select CONFIG_NEXT_NET
+
+	help
+	  This option enables support for the NeXT series of
+	  computers. If you plan to use this kernel on a NeXT, say Y here
+	  otherwise say N.
+
 config PILOT
 	bool
 

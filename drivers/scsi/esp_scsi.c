@@ -265,7 +265,11 @@ static void esp_reset_esp(struct esp *esp)
 			esp->rev = FSC;
 			/* Enable Active Negation */
 			esp_write8(ESP_CONFIG4_RADE, ESP_CFG4);
+		} else if (family_code == ESP_UID_F100A) {
+			esp->rev = FAS100A;
 		} else {
+			shost_printk(KERN_ALERT, esp->host,
+				"Chip with unknown family_code=0x%x. Defaulting to FAS100A!\n", family_code);
 			esp->rev = FAS100A;
 		}
 		esp->min_period = ((4 * esp->ccycle) / 1000);
@@ -392,6 +396,9 @@ static void esp_map_dma(struct esp *esp, struct scsi_cmnd *cmd)
 		}
 	} else {
 		spriv->num_sg = scsi_dma_map(cmd);
+		if (spriv->num_sg <= 0) {
+			dev_warn(esp->dev, "Error DMA mapping sg with scsi_dma_map\n");
+		}
 		scsi_for_each_sg(cmd, s, spriv->num_sg, i)
 			total += sg_dma_len(s);
 	}
@@ -826,7 +833,7 @@ build_identify:
 		select_and_stop = true;
 	}
 
-	if (select_and_stop) {
+	if (select_and_stop && !(esp->flags&ESP_FLAG_NO_SELAS)) {
 		esp->cmd_bytes_left = cmd->cmd_len;
 		esp->cmd_bytes_ptr = &cmd->cmnd[0];
 
@@ -843,7 +850,7 @@ build_identify:
 		esp->select_state = ESP_SELECT_MSGOUT;
 	} else {
 		start_cmd = ESP_CMD_SELA;
-		if (ent->tag[0]) {
+		if (ent->tag[0] && !(esp->flags&ESP_FLAG_NO_SA3)) {
 			*p++ = ent->tag[0];
 			*p++ = ent->tag[1];
 
@@ -1741,6 +1748,25 @@ again:
 		dma_addr_t dma_addr = esp_cur_dma_addr(ent, cmd);
 		unsigned int dma_len = esp_cur_dma_len(ent, cmd);
 
+		// if (dma_mapping_error(esp->dev, dma_addr)) {
+		// 	dev_warn(esp->dev, "Error mapping DMA 0x%x\n",
+		// 		 dma_addr);
+
+		// 	struct esp_cmd_priv *p = ESP_CMD_PRIV(cmd);
+
+		// 	if (ent->flags & ESP_CMD_FLAG_AUTOSENSE) {
+		// 		dev_warn(esp->dev, "Error mapping DMA: autosense: sense_dma=0x%x sense_ptr=0x%x sense_buffer=0x%x\n",
+		// 			 ent->sense_dma, (unsigned int )(ent->sense_ptr), (unsigned int)(cmd->sense_buffer));
+		// 		// return ent->sense_dma +
+		// 		// 	(ent->sense_ptr - cmd->sense_buffer);
+		// 	} else {
+		// 		dev_warn(esp->dev, "Error mapping DMA: Not autosense: sg_dma_address(p->cur_sg)=0x%x sg_dma_len(p->cur_sg)=0x%x p->cur_residue=0x%x\n",
+		// 			 sg_dma_address(p->cur_sg), sg_dma_len(p->cur_sg), p->cur_residue);
+		// 	}
+
+		// 	return 0;
+		// }
+
 		if (esp->rev == ESP100)
 			scsi_esp_cmd(esp, ESP_CMD_NULL);
 
@@ -1795,12 +1821,12 @@ again:
 		}
 		esp->ops->dma_invalidate(esp);
 
-		if (esp->ireg != ESP_INTR_BSERV) {
+		if (esp->ireg != ESP_INTR_BSERV && esp->ireg != ESP_INTR_FDONE) {
 			/* We should always see exactly a bus-service
 			 * interrupt at the end of a successful transfer.
 			 */
 			shost_printk(KERN_INFO, esp->host,
-				     "data done, not BSERV, resetting\n");
+				     "data done, not BSERV nor FDONE. resetting\n");
 			esp_schedule_reset(esp);
 			return 0;
 		}
