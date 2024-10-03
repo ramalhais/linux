@@ -35,11 +35,16 @@ extern char *next_machine_names[];
 
 #define NEXT_IO_VIRT	0xff000000 // MMU mapped in head.S to physical 0x0200.0000
 #define NEXT_IO_PHYS	0x02000000
-#define NEXT_IO_BASE	NEXT_IO_VIRT
+#define	NEXT_IO_SIZE	0x0001c000
+#define NEXT_IO_BASE	NEXT_IO_PHYS//NEXT_IO_VIRT
 
 #define NEXT_SLOT 0x0
 
 #define NEXT_SLOT_BMAP (prom_info.mach_type == NEXT_MACHINE_COMPUTER ? 0x0 : 0x100000)
+
+#define NEXT_EPROM		(NEXT_SLOT)
+#define NEXT_EPROM_BMAP		(NEXT_SLOT + 0x01000000)
+#define	NEXT_EPROM_SIZE		(128*1024)
 
 // DMA CSR registers
 #define NEXT_CSR_SCSI		(NEXT_IO_BASE + NEXT_SLOT + 0x010)
@@ -55,18 +60,11 @@ extern char *next_machine_names[];
 #define NEXT_CSR_M2R		(NEXT_IO_BASE + NEXT_SLOT + 0x1d0)	// Generic DMA to Device?
 #define NEXT_CSR_R2M		(NEXT_IO_BASE + NEXT_SLOT + 0x1c0)	// Generic DMA to Memory?
 
-#define NEXT_SCSI_DMA_BASE	NEXT_CSR_SCSI
-#define NEXT_ETHER_TXDMA_BASE	NEXT_CSR_ETHER_TX
-#define NEXT_ETHER_RXDMA_BASE	NEXT_CSR_ETHER_RX
-
 // Misc registers
 #define NEXT_SCR1		(NEXT_IO_BASE + NEXT_SLOT + 0xc000)
 #define NEXT_SCR2		(NEXT_IO_BASE + NEXT_SLOT + 0xd000)
 #define NEXT_MON		(NEXT_IO_BASE + NEXT_SLOT + 0xe000)
 #define NEXT_PRINTER		(NEXT_IO_BASE + NEXT_SLOT + 0xf000)
-
-#define NEXT_SCR2_BASE	NEXT_SCR2
-#define NEXT_MON_BASE	NEXT_MON
 
 // BMAP register
 #define NEXT_BMAP		(NEXT_IO_BASE + NEXT_SLOT + 0xc0000)
@@ -84,9 +82,6 @@ extern char *next_machine_names[];
 #define NEXT_P_C16_DAC		(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x18100) // 1 byte for each DAC (4)
 #define NEXT_P_C16_CMD_CSR	(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x18180)
 #define NEXT_EVENTC		(NEXT_IO_BASE + NEXT_SLOT_BMAP + 0x1a000)
-
-#define NEXT_SCSI_BASE	NEXT_SCSI
-#define NEXT_TIMER_BASE	NEXT_TIMER
 
 struct next_dma_channel {
 	volatile u32	csr;
@@ -167,16 +162,18 @@ struct bmap_chip {
 #define NSCSI_RESET	0x02	// ?
 #define NSCSI_INTMASK	0x20	// pass the 90a int pin to the int chip
 
-#define _sctl_reg ((volatile __u8 *)(NEXT_SCSI_BASE+0x20))
-#define write_sctl(x) *(_sctl_reg)=x
+// #define _sctl_reg ((volatile __u8 *)(NEXT_SCSI+0x20))
+// #define write_sctl(x) *(_sctl_reg)=x
 
 // common dma csr bits
 
 // status bits for reading
-#define DMA_BUSERR	0x10000000
-#define DMA_CINT	0x08000000 // DMA complete
-#define DMA_SUPDATE	0x02000000 // DMA single update
 #define DMA_ENABLED	0x01000000
+#define DMA_SUPDATE	0x02000000 // DMA single update
+#define DMA_READING	0x04000000 // DMA is in a read operation
+#define DMA_CINT	0x08000000 // DMA complete (chained int?)
+#define DMA_BUSERR	0x10000000
+#define DMA_OVERFLOW	0x20000000 // FIXME: check?
 #define DMA_STATUS_MASK	(DMA_ENABLED|DMA_SUPDATE|DMA_CINT|DMA_BUSERR)
 
 // control bits for writing
@@ -191,7 +188,6 @@ struct bmap_chip {
 #define DMA_CMD_MASK		(DMA_SETENABLE|DMA_SETCHAIN|DMA_CLEARCHAINI|DMA_RESET|DMA_INITDMA)
 
 // this is copied from memory that is initialized by the next prom at boot
-
 struct prom_info {
 	#define NUMSIMMS 4
 	u8	simm_something[NUMSIMMS];
