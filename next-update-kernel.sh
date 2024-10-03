@@ -1,3 +1,5 @@
+#!/bin/bash -x
+
 LOOPDEV=$(sudo losetup -f | head -1)
 DISK=/media/ramalhais/SD32GB/HD10-20mb-sparse.hda
 sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK

@@ -541,16 +541,22 @@ static u32 esp_dma_length_limit(struct esp *esp, u32 dma_addr, u32 dma_len)
 		 * in the ESP_CFG2 register but that causes other unwanted
 		 * changes so we don't use it currently.
 		 */
-		if (dma_len > (1U << 16))
-			dma_len = (1U << 16);
+		if (dma_len > (1U << 16)){
+						dev_warn(esp->dev, "dma_len 0x%x truncated to 16bits: 0x%x\n",
+				 dma_len, (1U << 16));
+
+			dma_len = (1U << 16);}
 
 		/* All of the DMA variants hooked up to these chips
 		 * cannot handle crossing a 24-bit address boundary.
 		 */
 		base = dma_addr & ((1U << 24) - 1U);
 		end = base + dma_len;
-		if (end > (1U << 24))
-			end = (1U <<24);
+		if (end > (1U << 24)){
+									dev_warn(esp->dev, "dma end 0x%x truncated to 24bits: 0x%x\n",
+				 end, (1U <<24));
+
+			end = (1U <<24);}
 		dma_len = end - base;
 	}
 	return dma_len;
@@ -994,7 +1000,8 @@ static int esp_check_gross_error(struct esp *esp)
 		 * - improper phase change
 		 */
 		shost_printk(KERN_ERR, esp->host,
-			     "Gross error sreg[%02x]\n", esp->sreg);
+			     "Gross error sreg[%02x] seqreg[%02x] ireg[%02x]\n", esp->sreg, esp->seqreg, esp->ireg);
+
 		/* XXX Reset the chip. XXX */
 		return 1;
 	}
@@ -1697,10 +1704,15 @@ static int esp_process_event(struct esp *esp)
 {
 	int write, i;
 
+	esp_debug = 8191;
+
 again:
 	write = 0;
 	esp_log_event("process event %d phase %x\n",
 		      esp->event, esp->sreg & ESP_STAT_PMASK);
+shost_printk(KERN_INFO, esp->host,
+"process event %d phase %x\n",
+esp->event, esp->sreg & ESP_STAT_PMASK);
 	switch (esp->event) {
 	case ESP_EVENT_CHECK_PHASE:
 		switch (esp->sreg & ESP_STAT_PMASK) {
@@ -1748,24 +1760,25 @@ again:
 		dma_addr_t dma_addr = esp_cur_dma_addr(ent, cmd);
 		unsigned int dma_len = esp_cur_dma_len(ent, cmd);
 
-		// if (dma_mapping_error(esp->dev, dma_addr)) {
-		// 	dev_warn(esp->dev, "Error mapping DMA 0x%x\n",
-		// 		 dma_addr);
+		// FIXME: NeXT: i had this commented out to work on previous
+		if (dma_mapping_error(esp->dev, dma_addr)) {
+			dev_warn(esp->dev, "Error mapping DMA 0x%x\n",
+				 dma_addr);
 
-		// 	struct esp_cmd_priv *p = ESP_CMD_PRIV(cmd);
+			struct esp_cmd_priv *p = ESP_CMD_PRIV(cmd);
 
-		// 	if (ent->flags & ESP_CMD_FLAG_AUTOSENSE) {
-		// 		dev_warn(esp->dev, "Error mapping DMA: autosense: sense_dma=0x%x sense_ptr=0x%x sense_buffer=0x%x\n",
-		// 			 ent->sense_dma, (unsigned int )(ent->sense_ptr), (unsigned int)(cmd->sense_buffer));
-		// 		// return ent->sense_dma +
-		// 		// 	(ent->sense_ptr - cmd->sense_buffer);
-		// 	} else {
-		// 		dev_warn(esp->dev, "Error mapping DMA: Not autosense: sg_dma_address(p->cur_sg)=0x%x sg_dma_len(p->cur_sg)=0x%x p->cur_residue=0x%x\n",
-		// 			 sg_dma_address(p->cur_sg), sg_dma_len(p->cur_sg), p->cur_residue);
-		// 	}
+			if (ent->flags & ESP_CMD_FLAG_AUTOSENSE) {
+				dev_warn(esp->dev, "Error mapping DMA: autosense: sense_dma=0x%x sense_ptr=0x%x sense_buffer=0x%x\n",
+					 ent->sense_dma, (unsigned int )(ent->sense_ptr), (unsigned int)(cmd->sense_buffer));
+				return ent->sense_dma +
+					(ent->sense_ptr - cmd->sense_buffer);
+			} else {
+				dev_warn(esp->dev, "Error mapping DMA: Not autosense: sg_dma_address(p->cur_sg)=0x%x sg_dma_len(p->cur_sg)=0x%x p->cur_residue=0x%x\n",
+					 sg_dma_address(p->cur_sg), sg_dma_len(p->cur_sg), p->cur_residue);
+			}
 
-		// 	return 0;
-		// }
+			return 0;
+		}
 
 		if (esp->rev == ESP100)
 			scsi_esp_cmd(esp, ESP_CMD_NULL);
@@ -2129,7 +2142,12 @@ static void __esp_interrupt(struct esp *esp)
 	esp->seqreg = esp_read8(ESP_SSTEP);
 	esp->ireg = esp_read8(ESP_INTRPT);
 
+			shost_printk(KERN_INFO, esp->host,
+			"__esp_interrupt(): ESP_STATUS=0x%hhx ESP_SSTEP=0x%hhx ESP_INTRPT=0x%hhx", esp->sreg, esp->seqreg, esp->ireg);
+
 	if (esp->flags & ESP_FLAG_RESETTING) {
+			shost_printk(KERN_INFO, esp->host,
+			"ESP_FLAG_RESETTING");
 		finish_reset = 1;
 	} else {
 		if (esp_check_gross_error(esp))
@@ -2181,17 +2199,27 @@ static void __esp_interrupt(struct esp *esp)
 		esp_schedule_reset(esp);
 	} else {
 		if (esp->ireg & ESP_INTR_RSEL) {
-			if (esp->active_cmd)
-				(void) esp_finish_select(esp);
+			shost_printk(KERN_INFO, esp->host,
+			"ESP_INTR_RSEL");
+			if (esp->active_cmd){
+							shost_printk(KERN_INFO, esp->host,
+			"esp->active_cmd");
+
+				(void) esp_finish_select(esp);}
 			intr_done = esp_reconnect(esp);
 		} else {
 			/* Some combination of FDONE, BSERV, DC. */
-			if (esp->select_state != ESP_SELECT_NONE)
-				intr_done = esp_finish_select(esp);
+			if (esp->select_state != ESP_SELECT_NONE){
+							shost_printk(KERN_INFO, esp->host,
+			"esp->select_state != ESP_SELECT_NONE");
+
+				intr_done = esp_finish_select(esp);}
 		}
 	}
-	while (!intr_done)
-		intr_done = esp_process_event(esp);
+	while (!intr_done){
+			shost_printk(KERN_INFO, esp->host,
+			"esp_process_event");
+		intr_done = esp_process_event(esp);}
 }
 
 irqreturn_t scsi_esp_intr(int irq, void *dev_id)
@@ -2200,6 +2228,8 @@ irqreturn_t scsi_esp_intr(int irq, void *dev_id)
 	unsigned long flags;
 	irqreturn_t ret;
 
+			shost_printk(KERN_INFO, esp->host,
+			"scsi_esp_intr()");
 	spin_lock_irqsave(esp->host->host_lock, flags);
 	ret = IRQ_NONE;
 	if (esp->ops->irq_pending(esp)) {
@@ -2219,6 +2249,11 @@ irqreturn_t scsi_esp_intr(int irq, void *dev_id)
 			if (i == ESP_QUICKIRQ_LIMIT)
 				break;
 		}
+	} else {
+			shost_printk(KERN_INFO, esp->host,
+			"irq_pending returned 0 !!! Handling anyway. ESP_STATUS=0x%x", *(volatile u8 *)(esp->regs + ESP_STATUS));
+			ret = IRQ_HANDLED;
+			// __esp_interrupt(esp);
 	}
 	spin_unlock_irqrestore(esp->host->host_lock, flags);
 
@@ -2766,6 +2801,7 @@ static struct spi_function_template esp_transport_ops = {
 
 static int __init esp_init(void)
 {
+	esp_debug = 8191;
 	esp_transport_template = spi_attach_transport(&esp_transport_ops);
 	if (!esp_transport_template)
 		return -ENODEV;

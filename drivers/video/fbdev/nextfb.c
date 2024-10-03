@@ -58,7 +58,7 @@ static int nextfb_probe_030(struct platform_device *dev)
 
 	nextfb_fix.smem_start	= NEXTFB_ADDR;
 	nextfb_fix.smem_len	= NEXTFB_SIZE;
-	info->screen_base	= ioremap_wt(nextfb_fix.smem_start, nextfb_fix.smem_len);
+	info->screen_base	= ioremap(nextfb_fix.smem_start, nextfb_fix.smem_len);
 
 	fb_info(info, "Hardcoded %dx%dx%dbpp framebuffer @ 0x%x+0x%x mapped @ 0x%x\n",
 		NEXTFB_WIDTH,
@@ -126,7 +126,7 @@ static int nextfb_probe(struct platform_device *dev)
 	}
 	fb_info(info, "Probing NeXT frame buffer.\n");
 
-	if (prom_info.fbinfo.pixels_pword <= 0) {
+	if (prom_info.fbinfo.pixels_pword == 0) {
 		fb_err(info, "Pixels Per Word can't be 0. This is probably a NeXT Computer 68030.\n");
 		framebuffer_release(info);
 		return nextfb_probe_030(dev);
@@ -145,7 +145,7 @@ static int nextfb_probe(struct platform_device *dev)
 
 	nextfb_fix.smem_start	= frame.phys;
 	nextfb_fix.smem_len	= frame.len;
-	info->screen_base	= ioremap_wt(nextfb_fix.smem_start, nextfb_fix.smem_len);
+	info->screen_base	= ioremap(nextfb_fix.smem_start, nextfb_fix.smem_len);
 
 	fb_info(info, "Detected %dx%dx%dbpp (%dppw) framebuffer @ 0x%x+0x%x mapped @ 0x%x\n",
 		prom_info.fbinfo.vispixx,
