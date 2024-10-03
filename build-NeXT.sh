@@ -127,7 +127,7 @@ fi
 
 # Wrap kernel binary code in Mach-O header (bigger than aout header)
 #${SCRIPT_DIR}/arch/m68k/tools/next/simpkern vmlinux.binary_$DATE vmlinux.simpk_$DATE
-${SCRIPT_DIR}/arch/m68k/tools/next/macho ${SCRIPT_DIR}/vmlinux.binary_$DATE ${SCRIPT_DIR}/vmlinux.macho_$DATE 0x${KERN_LOADADDR}
+#${SCRIPT_DIR}/arch/m68k/tools/next/macho ${SCRIPT_DIR}/vmlinux.binary_$DATE ${SCRIPT_DIR}/vmlinux.macho_$DATE 0x${KERN_LOADADDR}
 #sudo cp ${SCRIPT_DIR}/vmlinux.macho_$DATE /srv/tftp/
 #sudo ln -sf ${SCRIPT_DIR}/vmlinux.macho_$DATE /srv/tftp/boot
 #ln -sf ${SCRIPT_DIR}/vmlinux.simpk_$DATE ~/next/tftp/private/tftpboot/boot

@@ -278,15 +278,18 @@
 
 #undef MMU_NOCACHE_KERNEL
 
-//#define MMU_PRINT
+#define MMU_PRINT
 //#define DEBUG 1
 
 #ifdef CONFIG_NEXT
 
 //#define DEBUG_QEMU 1
+
+#if defined(DEBUG_QEMU)
 #define  DEBUG_QEMU_ADDR #0x0200f004 // Previous debug
 //#define DEBUG_QEMU_ADDR #0x02004200
 #define  DEBUG_QEMU_ADDR_FF #0xff00f004 // Previous debug mmu_map'ed
+#endif // DEBUG_QEMU
 
 #endif // CONFIG_NEXT
 
@@ -893,6 +896,7 @@ L(test_notvirt):
 1:
 	movew	#_PAGE_CACHE040,%d0
 	movel	#_PAGE_CACHE040W,%d1
+//	movel	#_PAGE_NOCACHE_S,%d1 // FIXME: NeXT: test no cache for pagetables
 
 L(save_cachetype):
 	/* Save cache mode for supervisor mode and page tables
@@ -1157,7 +1161,7 @@ L(nocon):
 	puts	"\nStarting Linux...\n"
 	
 	leds	0x2
-	// Why are all these empty on 030? 030 has cputype=0, and 020/030 don't have cachemode (0)
+	// Why are all these empty on 030 you ask? 030 has cputype=0, and 020/030 don't have cachemode (0)
 	dputn	%pc@(L(cputype))
 	dputn	%pc@(m68k_supervisor_cachemode)
 	dputn	%pc@(m68k_pgtable_cachemode)
@@ -1591,7 +1595,9 @@ L(notapollo):
 	putc	'3'
 	// Map 030 NeXT IO space: Map 16MB logical 0xff00.0000 to physical 0x0200.0000
 	// FIXME: Should probably use ioremap()
-	mmu_map	#0xff000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE030
+//	mmu_map	#0xff000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE030
+	mmu_map_eq #0x02000000,#0x0011c000,#_PAGE_NOCACHE030 // 0x0011c000 = 0x00100000(BMAP offset (on an 030?)) + 0x0001c000(device space size)
+
 
 #if defined(DEBUG_QEMU)
 	movel	DEBUG_QEMU_ADDR, %a4
@@ -1603,18 +1609,9 @@ L(notapollo):
 1:	// 040
 	putc	'4'
 
-	// Map 040 NeXT IO space: Map 16MB logical 0xff00.0000 to physical 0x0200.0000
-	// FIXME: Should probably use ioremap()
-	mmu_map #0xff000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
-
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
-	movel	#0x18, %a4@
-#endif
-
 	// NeXT 040 PROM left us with:
-	// tt1: mapping for 0x0 -> 0x0
 	// tt0: mapping for 0x0200.0000 -> 0x0200.0000.
+	// tt1: mapping for 0x0 -> 0x0
 	// Need to disable the tt1 0x0 transparent mapping, or it won't work because the kernel will relocate to 0x0.
 	// Actually, kernel will try to use these addresses for memory mapping starting at 0x0. Set this to something that will not be used (or disable?)
 	// Disable Transparent Translation Registers
@@ -1625,6 +1622,23 @@ L(notapollo):
 	movec	%d0,%itt1
 	movec	%d0,%dtt1
 	.chip	68k
+
+#if defined(DEBUG_QEMU)
+	movel	DEBUG_QEMU_ADDR, %a4
+	movel	#0x18, %a4@
+#endif
+
+
+//	mmu_map #0x2c000000,#0x2c000000,#0x00040000,#_PAGE_NOCACHE_S // Nextstation Color framebuffer?
+//	mmu_map #0xd0000000,#0xd0000000,#0x00040000,#_PAGE_NOCACHE_S // Nextstation Color framebuffer?
+//	mmu_map #0x0b000000,#0x0b000000,#0x00040000,#_PAGE_NOCACHE_S // NeXT_X15 framebuffer? 030 Cube? all mono?
+
+	// Map 040 NeXT IO space: Map 16MB logical 0xff00.0000 to physical 0x0200.0000
+	// FIXME: Should probably use ioremap()
+//	mmu_map_tt       #0,#0x02000000,#0x0011c000,#_PAGE_NOCACHE_S // 0x0011c000 = 0x00100000(BMAP offset) + 0x0001c000(device space size)
+//	mmu_map_eq          #0x02000000,#0x0011c000,#_PAGE_NOCACHE_S // 0x0011c000 = 0x00100000(BMAP offset) + 0x0001c000(device space size)
+	mmu_map #0x02000000,#0x02000000,#0x0011c000,#_PAGE_NOCACHE_S
+//	mmu_map #0xff000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
 
 	jbra	L(mmu_init_done)
 
