@@ -18,11 +18,11 @@ MODULE_AUTHOR("Pedro Ramalhais <ramalhais@gmail.com>");
 
 /* shouldn't be global i'll wager :) */
 struct mon {
-	volatile u32 csr;
-	volatile u32 data;
-	volatile u32 km_data;
-	volatile u32 snd_data;
-} *mon = (struct mon *)NEXT_MON_BASE;
+	u32 csr;
+	u32 data;
+	u32 km_data;
+	u32 snd_data;
+} *mon;// = (struct mon *)NEXT_MON;
 
 /* bits in csr */
 #define SNDOUT_DMA_ENABLE	0x80000000	// rw
@@ -59,7 +59,6 @@ struct mon {
 
 /* bits in km_data for keyboard */
 
-#define KD_KEYMASK	0x007f
 #define KD_DIRECTION	0x0080
 #define KD_CNTL		0x0100
 #define KD_LSHIFT	0x0200
@@ -69,8 +68,8 @@ struct mon {
 #define KD_LALT		0x2000
 #define KD_RALT		0x4000
 #define KD_VALID	0x8000 /* only set for scancode keys ? */
-
-#define KD_FLAGKEYS	0x7f00
+#define KD_KEYMASK	0x007f // normal keys
+#define KD_FLAGKEYS	0x7f00 // modifiers
 
 #define DEFAULT_KEYB_REP_DELAY  (HZ/4)
 #define DEFAULT_KEYB_REP_RATE   (HZ/25)
@@ -188,7 +187,6 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	struct next_kbd *kbd = dev_id;
 	struct input_dev *input = kbd->input;
 	struct input_dev *mouse = kbd->mouse;
-	// struct mon *mon;
 	u32 csr, csr_new;
 	u32 data;
 	unsigned long flags;
@@ -200,8 +198,6 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 	// 	return IRQ_NONE;
 	// }
 
-
-	// mon = __iomem ioremap(NEXT_MON_BASE, sizeof(struct mon));
 
 	// ack the int
 	// According to Previous, it's readonly. Should just need to read the data to clear the interrupt.
@@ -239,24 +235,22 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 		// don't suffer.
 
 		changed = oldflagmap;
-		oldflagmap = data & KD_FLAGKEYS;
+		oldflagmap = data&KD_FLAGKEYS;
 
 		changed ^= oldflagmap;
 		if ((changed)) {
-			unsigned int mask, index;
-			/* use cool bitmap instructions */
-			for (mask = KD_CNTL, index = 0; index < NR_CTRL_KEYS; mask <<= 1, index++) {
+			for (int index = 0; index < NR_CTRL_KEYS; index++) {
 				unsigned int scan, is_pressed;
 
-				if (!(changed&mask))
+				if (!(changed&(KD_CNTL<<index)))
 					continue;
 
 				scan = CTRL_BASE_CODE+index;
 				is_pressed = !(data&KD_DIRECTION); // FIXME: could try sending data&KD_FLAGKEYS&mask instead
 				input_report_key(input, kbd->keycodes[scan], is_pressed);
-				input_sync(input);
 			}
 		}
+
 		if (data&KD_VALID && data&KD_KEYMASK) {
 			unsigned int scan, is_pressed;
 
@@ -264,8 +258,9 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 			scan = data&KD_KEYMASK;
 			is_pressed = !(data&KD_DIRECTION);
 			input_report_key(input, kbd->keycodes[scan], is_pressed);
-			input_sync(input);
 		}
+
+		input_sync(input);
 	} else if ((data & KD_ADDRMASK) == KD_MADDR) {
 		// Mouse
 		if (data&NEXT_MOUSE_DX_MASK)
@@ -376,7 +371,8 @@ static int next_kbd_probe(struct platform_device *pdev)
 
 	// next_intmask_enable(NEXT_IRQ_KYBD_MOUSE-NEXT_IRQ_BASE);
 
-	mon->csr = (mon->csr)&KMS_ENABLE;
+	mon = ioremap(NEXT_MON, sizeof(struct mon));
+	mon->csr &= KMS_ENABLE;
 
 	return 0;
 }

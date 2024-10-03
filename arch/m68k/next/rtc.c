@@ -18,14 +18,9 @@
 
 #include "rtc.h"
 
-#define TIMER_HZ 1000000L
-
-u_char rtc_read(u_char reg);
-void rtc_write(u_char reg, u_char v);
-// void next_poweroff(int vec, void *blah2, struct pt_regs *fp);
-
 // the system control reg (?), through which we talk to the rtc's serial interface
-volatile unsigned int *scr2 = (unsigned int *)NEXT_SCR2_BASE;
+unsigned int *scr2;// = (unsigned int *)NEXT_SCR2;
+u8 *timerp;
 
 struct clockst {
 	char *chipname;
@@ -53,6 +48,23 @@ static struct clocksource next_clk = {
 
 static u32 clk_total;
 
+void write_timer_ticks(u16 ticks) {
+	*(volatile u8 *)(timerp+TIMER_R_MSB) = (u8)((ticks>>8)&0xff);
+	*(volatile u8 *)(timerp+TIMER_R_LSB) = (u8)(ticks&0xff);
+}
+
+u16 read_timer_ticks(void) {
+	return ((*(volatile u8 *)(timerp+TIMER_R_MSB))<<8)|(*(volatile u8 *)(timerp+TIMER_R_LSB));
+}
+
+void set_timer_csr(u8 csr) {
+	*(volatile u8 *)(timerp+TIMER_R_CSR) = csr;
+}
+
+void set_timer_csr_bits(u8 csr) {
+	*(volatile u8 *)(timerp+TIMER_R_CSR) |= csr;
+}
+
 static irqreturn_t next_tick(int irq, void *dev_id)
 {
 	unsigned long flags;
@@ -65,7 +77,7 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 	// }
 
 	// write_timer_ticks(TIMER_HZ/HZ); // atempt to set the ticks back
-	set_timer_csr_bits(TIM_RESTART); // retrigger timer
+	set_timer_csr_bits((u8)TIM_RESTART); // retrigger timer
 	clk_total += TIMER_HZ/HZ;
 	legacy_timer_tick(1);
 
@@ -177,6 +189,8 @@ void next_sched_init(void)
 		prom_info.diskchip
 	);
 
+	scr2 = ioremap(NEXT_SCR2, sizeof(unsigned int));
+	timerp = ioremap(NEXT_TIMER, 5); // FIXME: we only need to map 5bytes. maybe round to 8 or 16?
 	next_nvram_fix();
 
 	/* could also get this from the prom i think */
@@ -196,7 +210,8 @@ void next_sched_init(void)
 
 	// next_intmask_enable(NEXT_IRQ_TIMER-NEXT_IRQ_BASE);
 
-	if (__timer_csr) {	// Reading CSR clears the interrupt
+	// if (__timer_csr) {	// Reading CSR clears the interrupt
+	if (*(volatile u8 *)(timerp+TIMER_R_CSR)) {
 		set_timer_csr(0);
 	}
 

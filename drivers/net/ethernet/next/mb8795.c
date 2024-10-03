@@ -44,13 +44,13 @@
 
 #include <linux/etherdevice.h>
 #include <linux/platform_device.h>
+#include <linux/mm.h>
 
 #include <asm/nexthw.h>
 #include <asm/nextints.h>
 
 // #define DEBUGME_TX
 // #define DEBUGME_RX
-
 // #define DEBUGME_FUNC
 
 #ifndef DEBUGME
@@ -129,11 +129,12 @@ struct mb8795regs {
 
 // #define MAX_DMASIZE 4096
 // #define	DMA_ENDALIGNMENT	16	// DMA must start(Previous) and end on quad longword //default
-// #define ENDMA_ENDALIGNMENT	32	// Ethernet DMA is very special //TX
+// #define ENDMA_ENDALIGNMENT	32	// Ethernet DMA is very special
 // #define	DMA_ENDALIGN(type, addr) ((type)(((unsigned)(addr)+DMA_ENDALIGNMENT-1)&~(DMA_ENDALIGNMENT-1))) // default
 // #define	ENDMA_ENDALIGN(type, addr) ((type)((((unsigned)(addr)+ENDMA_ENDALIGNMENT-1)&~(DMA_ENDALIGNMENT-1))|0x80000000)) // TX with end of packet bit?
 
 struct mb8795_private {
+	// spinlock_t lock;
 	struct platform_device *pdev;
 	struct net_device *ndev;
 
@@ -240,8 +241,10 @@ static inline void handle_packet(struct mb8795_private *priv, struct net_device 
 static irqreturn_t mb8795_rxint(int irq, void *dev_id)
 {
 	unsigned long flags;
+#ifdef DEBUGME_RX
 	struct mb8795_private *priv = (struct mb8795_private *)dev_id;
 	struct mb8795regs *mb = (struct mb8795regs *)priv->mb;
+#endif
 
 	local_irq_save(flags);
 
@@ -254,8 +257,8 @@ static irqreturn_t mb8795_rxint(int irq, void *dev_id)
 	pr_info("\nRX int: rxstat=0x%x", mb->rxstat);
 #endif
 
-	if (mb->rxstat&RSTAT_PRECV)
-		mb->rxstat = RSTAT_PRECV; // is this like an acknowledgement? or should it be cleared(0) or 0xff?
+	// if (mb->rxstat&RSTAT_PRECV)
+	// 	mb->rxstat = RSTAT_PRECV; // is this like an acknowledgement? or should it be cleared(0) or 0xff?
 
 	local_irq_restore(flags);
 	return IRQ_HANDLED;
@@ -284,12 +287,16 @@ static void setup_rxdma(struct net_device *ndev)
 
 	rxd->start = rx->p_data;//dd_next
 	rxd->end = rx->p_data+RXBUFLEN;//dd_limit
+	// rxd->start = ALIGN(rx->p_data, 32);//dd_next
+	// rxd->end = ALIGN(rx->p_data+RXBUFLEN, 32);//dd_limit
 
 	rx = rx->next;
 
 	// Set this up only if setting DMA_SETCHAIN in rxd->csr (chained DMA)
 	rxd->next_start = rx->p_data;//dd_start // set to 0 in netbsd maybe because they don't use CHAINED DMA interrupts
 	rxd->next_end = rx->p_data+RXBUFLEN;//dd_stop // set to 0 in netbsd maybe because they don't use CHAINED DMA interrupts
+	// rxd->next_start = ALIGN(rx->p_data, 32);//dd_start // set to 0 in netbsd maybe because they don't use CHAINED DMA interrupts
+	// rxd->next_end = ALIGN(rx->p_data+RXBUFLEN, 32);//dd_stop // set to 0 in netbsd maybe because they don't use CHAINED DMA interrupts
 
 	rxd->csr = DMA_SETENABLE|DMA_SETTMEM|DMA_SETCHAIN;
 }
@@ -308,9 +315,12 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 	struct next_dma_channel *rxd = (struct next_dma_channel *)priv->rxdma;
 	struct rxb *rx = (struct rxb *)priv->cur_rxb;
 	u32 csr;
+	u8 rxstat;
 	unsigned long flags;
 
 	local_irq_save(flags);
+	// spin_lock_irqsave(&priv->lock, flags);
+
 
 	// if (!next_irq_pending(NEXT_IRQ_ENETR_DMA)) {
 	// 	local_irq_restore(flags);
@@ -323,6 +333,7 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 #endif
 	// Perhaps should check chip status sometime to look for rx errors
 
+	rxstat = priv->mb->rxstat;
 	csr = rxd->csr;
 
 	// netbsd
@@ -338,12 +349,41 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 	// 	goto bail;
 	// }
 
-	if(!(priv->mb->rxstat&RSTAT_PRECV)) {
-		// setup_rxdma(priv->ndev); // try this?
+#ifdef DEBUGME_RX
+	if (rxstat&RSTAT_OVERFLOW) {
+		pr_info("RSTAT_OVERFLOW");
+	}
+	if (rxstat&RSTAT_CRC) {
+		pr_info("RSTAT_CRC");
+	}
+	if (rxstat&RSTAT_ALIGN) {
+		pr_info("RSTAT_ALIGN");
+	}
+	if (rxstat&RSTAT_RUNT) {
+		pr_info("RSTAT_RUNT");
+	}
+	if (rxstat&RSTAT_RESET) {
+		pr_info("RSTAT_RESET");
+	}
+#endif // DEBUGME_RX
+
+	if (!(rxstat&RSTAT_PRECV) /*|| csr&DMA_OVERFLOW*/) {
+#ifdef DEBUGME_RX
+		if (!(rxstat&RSTAT_PRECV))
+			pr_info("!RSTAT_PRECV: No DMA packet received");
+		else
+			pr_info("csr DMA_OVERFLOW: clearing csr");
+#endif // DEBUGME_RX
+
+		priv->cur_rxb = rx->next;
+		// FIXME: should probably free skb but this oopses
+		// dev_kfree_skb_any(rx->skb);
+		// kfree_skb(rx->skb);
+		setup_rxdma(priv->ndev);
 		goto bail;
 	}
 
-	if (csr&DMA_CINT && csr&DMA_ENABLED) {
+	if ((csr&DMA_CINT) && (csr&DMA_ENABLED)) {
 		// Chain interrupt, we have another buffer yet
 		rxd->csr = DMA_CLEARCHAINI;
 
@@ -379,9 +419,11 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 #endif
 		if (csr&DMA_CINT)
 			rxd->csr = DMA_CLEARCHAINI;
+
+		handle_packet(priv, priv->ndev, rx);
+
 		priv->cur_rxb = rx->next;
 		setup_rxdma(priv->ndev);
-		handle_packet(priv, priv->ndev, rx);
 		// priv->stats.rx_packets++;// already done in handle_packet?
 	}
 
@@ -390,7 +432,10 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 #endif
 
 bail:
+	priv->mb->rxstat = RSTAT_CLEAR;
 	local_irq_restore(flags);
+	// spin_unlock_irqrestore(&priv->lock, flags);
+
 	return IRQ_HANDLED;
 }
 
@@ -551,7 +596,7 @@ static int mb8795_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 	// try: eth_skb_pad(struct sk_buff *skb) and remove the +15 below? No 15 is magic and also in Previous.
 	// The 0x80000000 is also some kind of magic (bit 31(highest bit)) End Of Packet.
 	// txd->end	= (priv->p_txbuf+TXBUFLEN+15) | 0x80000000;
-	txd->end = (priv->p_txbuf + priv->txlen + (priv->is_turbo ? 0 : MB_MAGIC_PADDING)) | MB_TX_EOP; //dd_limit should align to 16 or maybe 32bytes
+	txd->end = (priv->p_txbuf + priv->txlen + (priv->is_turbo ? 0 : MB_MAGIC_PADDING)) | MB_TX_EOP; //dd_limit should align to 16 TX and 32bytes on RX
 	txd->next_end = 0; //TEST dd_stop
 	if (!priv->is_turbo)
 		txd->saved_end = txd->end;// not needed in netbsd code?
@@ -587,11 +632,11 @@ static void mb8795_reset(struct net_device *ndev)
 
 	mb->txmask = 0;
 	mb->txstat = TSTAT_CLEAR;
-	mb->txmode = priv->is_turbo ? TXM_TURBO : TXM_LOOP_DISABLE;
+	mb->txmode = (priv->is_turbo ? TXM_TURBO : TXM_LOOP_DISABLE);
 
 	mb->rxmask = 0;
 	mb->rxstat = RSTAT_CLEAR;
-	mb->rxmode = priv->is_turbo ? RXM_TURBO|RXM_ACCEPT : RXM_PROMISC;
+	mb->rxmode = (priv->is_turbo ? (RXM_TURBO|RXM_ACCEPT) : RXM_PROMISC);
 
 	rxd->csr = DMA_RESET;
 	txd->csr = DMA_RESET;
@@ -602,7 +647,7 @@ static int mb8795_stop(struct net_device *ndev)
 	struct mb8795_private *priv = netdev_priv(ndev);
 
 #ifdef DEBUGME_FUNC
-	pr_info("in %s\n", __func_);
+	pr_info("in %s\n", __func__);
 #endif
 
 	// dev->start = 0;
@@ -635,13 +680,13 @@ static int mb8795_open(struct net_device *ndev)
 	struct mb8795regs *mb = (struct mb8795regs *)priv->mb;
 
 #ifdef DEBUGME_FUNC
-	pr_info("in %s\n", __func_);
+	pr_info("in %s\n", __func__);
 #endif
 
 	mb8795_reset(ndev);
 
 	// ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
-	ether_addr_copy((u8 *)ndev->dev_addr, (u8 *)priv->mb->eaddr);
+	// ether_addr_copy((u8 *)ndev->dev_addr, (u8 *)priv->mb->eaddr);
 
 	// dev->tbusy = 0;
 	// dev->interrupt = 0;
@@ -733,24 +778,36 @@ static struct net_device_stats *mb8795_get_stats(struct net_device *ndev)
 
 
 static const struct net_device_ops mb8795_ndev_ops = {
-	.ndo_open				= mb8795_open,
-	.ndo_stop				= mb8795_stop,
-	.ndo_start_xmit			= mb8795_start_xmit,
-	// .ndo_tx_timeout			= mb8795_tx_timeout,
-	.ndo_get_stats			= mb8795_get_stats,
-	.ndo_validate_addr		= eth_validate_addr,
+	.ndo_open		= mb8795_open,
+	.ndo_stop		= mb8795_stop,
+	.ndo_start_xmit		= mb8795_start_xmit,
+	// .ndo_tx_timeout	= mb8795_tx_timeout,
+	.ndo_get_stats		= mb8795_get_stats,
+	.ndo_validate_addr	= eth_validate_addr,
 	.ndo_set_mac_address	= eth_mac_addr
 };
+
+void inline bytecopy(void *d, void *s, size_t n)
+{
+    while (n--) {
+        *(volatile u8 *)d++ = *(volatile u8 *)s++;
+    }
+}
 
 static int mb8795_probe(struct platform_device *pdev)
 {
 	struct net_device *ndev;
 	struct mb8795_private *priv;
-	volatile struct bmap_chip *bmap = (void __iomem *)NEXT_BMAP;
+	// volatile struct bmap_chip *bmap = (void __iomem *)NEXT_BMAP;
+	struct bmap_chip *bmap = ioremap(NEXT_BMAP, sizeof(struct bmap_chip));
+	// char *eprom = (void __iomem *)NEXT_EPROM_BMAP;
+	char *eprom = ioremap(NEXT_EPROM, NEXT_EPROM_SIZE);
+	char *eprom_bmap = ioremap(NEXT_EPROM_BMAP, NEXT_EPROM_SIZE);
 	int err;
 	int i;
 
 	dev_info(&pdev->dev, "Probing\n");
+	dev_info(&pdev->dev, "bmap->bm_sid=0x%x, bmap->bm_lo=0x%x\n", bmap->bm_sid, bmap->bm_lo);
 
 	ndev = alloc_etherdev(sizeof(struct mb8795_private));
 	if (!ndev) {
@@ -766,15 +823,18 @@ static int mb8795_probe(struct platform_device *pdev)
 
 	// Kick BMAP
 	// if (machine_type == NeXT_X15) // cube040?
-	if (!priv->is_turbo){
+	if (!priv->is_turbo) {
 		dev_info(&pdev->dev, "Kicking BMAP\n");
 		bmap->bm_lo = 0;
 		dev_info(&pdev->dev, "BMAP kicked\n");
 	}
 
+	struct mb8795regs *mb_regs = (struct mb8795regs __iomem *)NEXT_ETHER;
+	volatile u8 *mb_regs_eaddr = mb_regs->eaddr;
 	priv->mb = (void __iomem *)NEXT_ETHER;
-	// priv->mb = ioremap(0x2000000+0x6000, sizeof(struct mb8795regs));
-	// priv->mb = __iomem ioremap(0x02000000+0x00100000+0x00006000, sizeof(struct mb8795regs));
+	// priv->mb = ioremap(0x02000000+0x00100000+0x00006000, sizeof(struct mb8795regs));
+	// priv->mb = ioremap(NEXT_ETHER, sizeof(struct mb8795regs));
+	// priv->mb = ioremap_wt(NEXT_ETHER, sizeof(struct mb8795regs));
 	// work-around bug?
 	priv->mb->txmode = TXM_LOOP_DISABLE;
 	mdelay(10);
@@ -788,29 +848,117 @@ static int mb8795_probe(struct platform_device *pdev)
 	priv->mb->txmode = priv->is_turbo ? TXM_TURBO : TXM_LOOP_DISABLE;
 	priv->mb->rxmode = RXM_DISABLE;
 
-	priv->rxdma = (struct next_dma_channel *)NEXT_ETHER_RXDMA_BASE;
-	priv->txdma = (struct next_dma_channel *)NEXT_ETHER_TXDMA_BASE;
+	// priv->rxdma = (struct next_dma_channel *)NEXT_CSR_ETHER_RX;
+	// priv->txdma = (struct next_dma_channel *)NEXT_CSR_ETHER_TX;
+	priv->rxdma = ioremap(NEXT_CSR_ETHER_RX, sizeof(struct next_dma_channel));
+	priv->txdma = ioremap(NEXT_CSR_ETHER_TX, sizeof(struct next_dma_channel));
+
+	// FIXME: TEST kicking bmap a second time after ioremap
+	if (!priv->is_turbo) {
+		dev_info(&pdev->dev, "Kicking BMAP\n");
+		bmap->bm_lo = 0;
+		dev_info(&pdev->dev, "BMAP kicked\n");
+		// and resetting again
+			priv->mb->reset = RST_RESET;
+
+	}
 
 	// dev_info(&pdev->dev, "rxdma->csr=0x%x rxdma->turbo_rx_saved_start=0x%x rxdma->start=0x%x txdma->csr=0x%x txdma->start=0x%x\n", &priv->rxdma->csr, &priv->rxdma->turbo_rx_saved_start, &priv->rxdma->start, &priv->txdma->csr, &priv->txdma->start);
 
-	dev_info(&pdev->dev, "PROM MAC Address: %pM\n", eprom_info.eaddr);
-	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %pM\n", priv->mb->eaddr);
+	// TODO: copy from EEPROM+0x08 or PROM info
+	dev_info(&pdev->dev, "PROM Info MAC Address: %pM\n", eprom_info.eaddr);
+	u8 eaddr[6];
+	// memcpy_fromio(eaddr, priv->mb->eaddr, ETH_ALEN);
+	// bytecopy(eaddr, priv->mb->eaddr, ETH_ALEN);
+
+	// eaddr[0] = *(volatile u8 *)(eprom+8);
+	// eaddr[1] = *(volatile u8 *)(eprom+8+1);
+	// eaddr[2] = *(volatile u8 *)(eprom+8+2);
+	// eaddr[3] = *(volatile u8 *)(eprom+8+3);
+	// eaddr[4] = *(volatile u8 *)(eprom+8+4);
+	// eaddr[5] = *(volatile u8 *)(eprom+8+5);
+	// memcpy_fromio(eaddr, eprom+8, ETH_ALEN);
+	bytecopy(eaddr, eprom+8, ETH_ALEN);
+	dev_info(&pdev->dev, "EPROM Ethernet Chip MAC Address: %pM\n", eaddr);
+	dev_info(&pdev->dev, "EPROM BMAP Ethernet Chip MAC Address: %pM\n", eprom_bmap+8);
+
+	// eaddr[0] = mb_regs->eaddr[0];
+	// eaddr[1] = mb_regs->eaddr[1];
+	// eaddr[2] = mb_regs->eaddr[2];
+	// eaddr[3] = mb_regs->eaddr[3];
+	// eaddr[4] = mb_regs->eaddr[4];
+	// eaddr[5] = mb_regs->eaddr[5];
+
+	eaddr[0] = *mb_regs_eaddr;
+	eaddr[1] = *(mb_regs_eaddr+1);
+	eaddr[2] = *(mb_regs_eaddr+2);
+	eaddr[3] = *(mb_regs_eaddr+3);
+	eaddr[4] = *(mb_regs_eaddr+4);
+	eaddr[5] = *(mb_regs_eaddr+5);
+
+	dev_info(&pdev->dev, "read Ethernet Chip MAC Address: %pM\n", eaddr);
+
+	eaddr[0] = *(volatile u8 *)((void *)(priv->mb)+8);
+	eaddr[1] = *(volatile u8 *)((void *)(priv->mb)+8+1);
+	eaddr[2] = *(volatile u8 *)((void *)(priv->mb)+8+2);
+	eaddr[3] = *(volatile u8 *)((void *)(priv->mb)+8+3);
+	eaddr[4] = *(volatile u8 *)((void *)(priv->mb)+8+4);
+	eaddr[5] = *(volatile u8 *)((void *)(priv->mb)+8+5);
+
+	dev_info(&pdev->dev, "read2 Ethernet Chip MAC Address: %pM\n", eaddr);
+	// bytecopy(priv->mb->eaddr, eprom_info.eaddr, ETH_ALEN);
+	// bytecopy(eaddr, priv->mb->eaddr, ETH_ALEN);
+
+	*(volatile u8 *)(priv->mb->eaddr) = eprom_info.eaddr[0];
+	*(volatile u8 *)(priv->mb->eaddr+1) = eprom_info.eaddr[1];
+	*(volatile u8 *)(priv->mb->eaddr+2) = eprom_info.eaddr[2];
+	*(volatile u8 *)(priv->mb->eaddr+3) = eprom_info.eaddr[3];
+	*(volatile u8 *)(priv->mb->eaddr+4) = eprom_info.eaddr[4];
+	*(volatile u8 *)(priv->mb->eaddr+5) = eprom_info.eaddr[5];
+
+	eaddr[0] = *(volatile u8 *)((void *)(priv->mb)+8);
+	eaddr[1] = *(volatile u8 *)((void *)(priv->mb)+8+1);
+	eaddr[2] = *(volatile u8 *)((void *)(priv->mb)+8+2);
+	eaddr[3] = *(volatile u8 *)((void *)(priv->mb)+8+3);
+	eaddr[4] = *(volatile u8 *)((void *)(priv->mb)+8+4);
+	eaddr[5] = *(volatile u8 *)((void *)(priv->mb)+8+5);
+
+	dev_info(&pdev->dev, "read after write: Ethernet Chip MAC Address: %pM\n", eaddr);
+
+	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %hhx %hhx %hhx %hhx %hhx %hhx\n", priv->mb->eaddr[0], priv->mb->eaddr[1], priv->mb->eaddr[2], priv->mb->eaddr[3], priv->mb->eaddr[4], priv->mb->eaddr[5]);
+	// dev_info(&pdev->dev, "Ethernet Chip MAC Address: %pM\n", priv->mb->eaddr);
 
 	if (eprom_info.eaddr[0]|eprom_info.eaddr[1]|eprom_info.eaddr[2]|eprom_info.eaddr[3]|eprom_info.eaddr[4]|eprom_info.eaddr[5]) {
-		ether_addr_copy((u8 *)eprom_info.eaddr, (u8 *)priv->mb->eaddr);
 		dev_info(&pdev->dev, "Using PROM MAC Address\n");
-	} else if (priv->mb->eaddr[0]|priv->mb->eaddr[1]|priv->mb->eaddr[2]|priv->mb->eaddr[3]|priv->mb->eaddr[4]|priv->mb->eaddr[5]) {
-		dev_info(&pdev->dev, "Using Ethernet Chip MAC Address\n");
-	} else {
-		eth_hw_addr_random(ndev);
-		ether_addr_copy((u8 *)ndev->dev_addr, (u8 *)priv->mb->eaddr);
+		priv->mb->eaddr[0] = eprom_info.eaddr[0];
+		priv->mb->eaddr[1] = eprom_info.eaddr[1];
+		priv->mb->eaddr[2] = eprom_info.eaddr[2];
+		priv->mb->eaddr[3] = eprom_info.eaddr[3];
+		priv->mb->eaddr[4] = eprom_info.eaddr[4];
+		priv->mb->eaddr[5] = eprom_info.eaddr[5];
+	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %hhx %hhx %hhx %hhx %hhx %hhx\n", priv->mb->eaddr[0], priv->mb->eaddr[1], priv->mb->eaddr[2], priv->mb->eaddr[3], priv->mb->eaddr[4], priv->mb->eaddr[5]);
+	// dev_info(&pdev->dev, "Ethernet Chip MAC Address: %pM\n", priv->mb->eaddr);
+	bytecopy((void *)&priv->mb->eaddr[0], eprom_info.eaddr, ETH_ALEN);
+	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %hhx %hhx %hhx %hhx %hhx %hhx\n", priv->mb->eaddr[0], priv->mb->eaddr[1], priv->mb->eaddr[2], priv->mb->eaddr[3], priv->mb->eaddr[4], priv->mb->eaddr[5]);
+
+		// memcpy(priv->mb->eaddr, eprom_info.eaddr, ETH_ALEN);
+		eth_hw_addr_set(ndev, (u8 *)eprom_info.eaddr);
+	}
+	// else if (priv->mb->eaddr[0]|priv->mb->eaddr[1]|priv->mb->eaddr[2]|priv->mb->eaddr[3]|priv->mb->eaddr[4]|priv->mb->eaddr[5]) {
+	// 	dev_info(&pdev->dev, "Using Ethernet Chip MAC Address\n");
+	// } 
+	else {
 		dev_info(&pdev->dev, "Missing Ethernet Chip and PROM MAC address. Assigning random address\n");
+		eth_hw_addr_random(ndev);
+		// ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
 	}
 	// ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
-	eth_hw_addr_set(ndev, (u8 *)priv->mb->eaddr);
-	dev_info(&pdev->dev, "Netdev MAC Address: %pM\n", ndev->dev_addr);
+	// eth_hw_addr_set(ndev, (u8 *)priv->mb->eaddr);
 
-	// spin_lock_init(&bp->lock);
+	// eth_hw_addr_set(ndev, (u8 *)eprom_info.eaddr);
+	dev_info(&pdev->dev, "Netdev MAC Address: %pM\n", ndev->dev_addr);
+	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %x %x %x %x %x %x\n", priv->mb->eaddr[0], priv->mb->eaddr[1], priv->mb->eaddr[2], priv->mb->eaddr[3], priv->mb->eaddr[4], priv->mb->eaddr[5]);
+	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %pM\n", priv->mb->eaddr);
 
 	err = register_netdev(ndev);
 	if (err) {
@@ -820,6 +968,7 @@ static int mb8795_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, ndev);
 	SET_NETDEV_DEV(ndev, &pdev->dev);
+	// spin_lock_init(&priv->lock);
 
 	priv->txbuf = devm_kmalloc(&ndev->dev, TXBUFLEN, GFP_KERNEL);
 
@@ -830,6 +979,7 @@ static int mb8795_probe(struct platform_device *pdev)
 
 	/* assuming we're on a page boundry for dma alignment */
 	priv->p_txbuf = virt_to_phys(priv->txbuf);
+	dev_info(&pdev->dev, "virt_to_phys");
 
 		// OR linux/arch/m68k/kernel/dma.c
 		// arch_dma_alloc(struct device *dev, size_t size, dma_addr_t *dma_handle,
@@ -853,13 +1003,16 @@ static int mb8795_probe(struct platform_device *pdev)
 		if (i)
 			priv->rxbufs[i-1].next = rx;
 	}
+	dev_info(&pdev->dev, "for NRXBUFS");
 
 	// take care of head/tail
 	priv->rxbufs[0].next	= &priv->rxbufs[1];
 	priv->rxbufs[i-1].next	= &priv->rxbufs[0];
 	priv->cur_rxb		= &priv->rxbufs[0];
+	dev_info(&pdev->dev, "rxbufs");
 
 	mb8795_reset(ndev);
+	dev_info(&pdev->dev, "mb8795_reset");
 
 	// dev_info(&pdev->dev, "Finished probing\n");
 
