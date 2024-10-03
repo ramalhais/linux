@@ -2,6 +2,9 @@
 // Deal with the RTC and timer chip
 // Copyright (C) 1998 Zach Brown <zab@zabbo.net>
 
+#ifndef NEXT_RTC_H
+#define NEXT_RTC_H
+
 #include <asm/nexthw.h>
 
 // NeXT clock registers
@@ -61,21 +64,33 @@
 #define TIMER_R_LSB (1)
 #define TIMER_R_CSR (4)
 
+#define TIMER_HZ 1000000L
+
 // silly, silly
 
-#define __timer_msb *(volatile unsigned char *)(NEXT_TIMER_BASE+TIMER_R_MSB)
-#define __timer_lsb *(volatile unsigned char *)(NEXT_TIMER_BASE+TIMER_R_LSB)
-#define __timer_csr *(volatile unsigned char *)(NEXT_TIMER_BASE+TIMER_R_CSR)
+// #define __timer_msb *(volatile unsigned char *)(NEXT_TIMER+TIMER_R_MSB)
+// #define __timer_lsb *(volatile unsigned char *)(NEXT_TIMER+TIMER_R_LSB)
+// #define __timer_csr *(volatile unsigned char *)(NEXT_TIMER+TIMER_R_CSR)
 
-#define write_timer_ticks(x)  __timer_msb=((x)>>8)&0xff; \
-	__timer_lsb=(x)&0xff
+// #define write_timer_ticks(x)  __timer_msb=((x)>>8)&0xff; __timer_lsb=(x)&0xff
 
-#define read_timer_ticks() (__timer_lsb+(__timer_msb<<8))
+// #define read_timer_ticks() (__timer_lsb+(__timer_msb<<8))
 
-#define set_timer_csr(x) __timer_csr=(x)
+// #define set_timer_csr(x) __timer_csr=(x)
 
-#define set_timer_csr_bits(x) __timer_csr|=(x)
+// #define set_timer_csr_bits(x) __timer_csr|=(x)
+
+u_char rtc_read(u_char reg);
+void rtc_write(u_char reg, u_char v);
+// void next_poweroff(int vec, void *blah2, struct pt_regs *fp);
+
+void write_timer_ticks(u16 ticks);
+u16 read_timer_ticks(void);
+void set_timer_csr(u8 csr);
+void set_timer_csr_bits(u8 csr);
 
 extern void next_sched_init(void);
 extern void next_poweroff(void);
 extern int next_hwclk(int, struct rtc_time*);
+
+#endif //NEXT_RTC_H

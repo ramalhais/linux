@@ -465,7 +465,11 @@ void __init paging_init(void)
 
 	high_memory = phys_to_virt(max_addr) + 1;
 
-	min_low_pfn = availmem >> PAGE_SHIFT;
+	// min_low_pfn = availmem >> PAGE_SHIFT;
+	// FIXME: NeXT: The following works, but make sure we're doing the right thing (probably not).
+	// This hack is a workaround for the dma check at dma_capable().
+	// Maybe we should make sure DMA memory is not in kernel image space? 
+	min_low_pfn = PFN_DOWN(min_addr);
 	max_pfn = max_low_pfn = (max_addr >> PAGE_SHIFT) + 1;
 
 	/* Reserve kernel text/data/bss and the memory allocated in head.S */
