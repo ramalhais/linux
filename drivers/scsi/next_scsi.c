@@ -29,7 +29,7 @@
 
 #define	NEXT_SCSI_DMA_ENDALIGNMENT 16
 #define NEXT_SCSI_DMA_REGS_OFFSET 0x20
-#define NEXT_SCSI_DMA_MAXSIZE 4096 // netbsd says 64k?
+// #define NEXT_SCSI_DMA_MAXSIZE 4096 // netbsd says 64k?
 #define NEXT_SCSI_ID 7
 #define NEXT_SCSI_HZ 20000000
 #define NEXT_ESP_DELAY 100 // us(microseconds)
@@ -60,7 +60,7 @@ static int next_scsi_irq_pending(struct esp *esp)
 	 
 	// // if (next_scsi_esp_read8(esp, ESP_STATUS) & ESP_STAT_INTR)
 	// if (status & ESP_STAT_INTR)
-		return 1;
+		return next_irq_pending(esp->host->irq);
 
 	// 	shost_printk(KERN_INFO, esp->host,
 	// 		"next_scsi_irq_pending(): Missing ESP_STAT_INTR !!!");
@@ -91,10 +91,34 @@ static void next_scsi_dma_drain(struct esp *esp)
 {
 	/* nothing to do */
 	// struct next_dma_channel *scsi_dma = (struct next_dma_channel *)NEXT_CSR_SCSI;
-	scsi_dma->csr |= DMA_SETENABLE/*|DMA_SETTMEM*/;
-	*(volatile u8 *)(esp->dma_regs) |= /*ESPCTRL_ENABLE_INT|ESPCTRL_CLK20MHz|ESPCTRL_MODE_DMA|ESPCTRL_DMA_READ|*/ESPCTRL_FLUSH;
-	udelay(NEXT_ESP_DELAY);
-	printk(KERN_ERR "next_scsi_dma_drain()\n");
+	u32 prev_addr = 0;
+	int try = 0;
+	u16 esp_count;
+
+//	udelay(20);
+	printk(KERN_ERR "dma_regs+1 =0x%x\n", *(volatile u8 *)(esp->dma_regs+1));
+	
+
+	#define ESP_FLUSH_MAX_TRIES 4 // 16/4 = DMA_ALIGNMENT/FIFO_ALIGNMENT
+	while ((try < ESP_FLUSH_MAX_TRIES) /*&& (scsi_dma->start > prev_addr)*/) {
+		prev_addr = scsi_dma->start;
+
+//		scsi_dma->csr |= DMA_SETENABLE|DMA_SETTMEM;
+		*(volatile u8 *)(esp->dma_regs) = ESPCTRL_ENABLE_INT|ESPCTRL_CLK20MHz|ESPCTRL_MODE_DMA|ESPCTRL_DMA_READ|ESPCTRL_FLUSH;
+//		udelay(5);
+		*(volatile u8 *)(esp->dma_regs) = ESPCTRL_ENABLE_INT|ESPCTRL_CLK20MHz|ESPCTRL_MODE_DMA|ESPCTRL_DMA_READ;
+//		udelay(5);
+
+		try++;
+		printk(KERN_ERR "next_scsi_dma_drain(): Flushing. Try=%d\n", try);
+	}
+	*(volatile u8 *)(esp->dma_regs) = ESPCTRL_ENABLE_INT|ESPCTRL_CLK20MHz;
+	esp_count = next_scsi_esp_read8(esp, ESP_TCLOW);
+	esp_count |= next_scsi_esp_read8(esp, ESP_TCMED)<<8;
+	printk(KERN_ERR "esp_count=%d\n", esp_count);
+	scsi_dma->csr = /*DMA_CLEARCHAINI|*/DMA_RESET;
+
+	printk(KERN_ERR "next_scsi_dma_drain(): Flushed. tries=%d cur_addr=0x%x scsi_dma->start=0x%x\n", try, prev_addr, scsi_dma->start);
 }
 
 static void next_scsi_dma_invalidate(struct esp *esp)
@@ -102,10 +126,10 @@ static void next_scsi_dma_invalidate(struct esp *esp)
 	// vdma_disable ((int)esp->dma_regs);
 	// struct next_dma_channel *scsi_dma = (struct next_dma_channel *)NEXT_CSR_SCSI;
 	printk(KERN_ERR "next_scsi_dma_invalidate(): START: scsi_dma->csr=0x%x esp->dma_regs=0x%x\n", (volatile u32)(scsi_dma->csr), *(volatile u8 *)(esp->dma_regs));
-	*(volatile u8 *)(esp->dma_regs) &= ~ESPCTRL_MODE_DMA;
-	scsi_dma->csr = DMA_RESET;
+//	*(volatile u8 *)(esp->dma_regs) = ESPCTRL_ENABLE_INT|ESPCTRL_CLK20MHz;
+//	scsi_dma->csr = DMA_RESET;
 	// scsi_dma->csr = 0;
-	printk(KERN_ERR "next_scsi_dma_invalidate(): END: scsi_dma->csr=0x%x esp->dma_regs=0x%x\n", (volatile u32)(scsi_dma->csr), *(volatile u8 *)(esp->dma_regs));
+//	printk(KERN_ERR "next_scsi_dma_invalidate(): END: scsi_dma->csr=0x%x esp->dma_regs=0x%x\n", (volatile u32)(scsi_dma->csr), *(volatile u8 *)(esp->dma_regs));
 }
 
 static void next_scsi_send_dma_cmd(struct esp *esp, u32 addr, u32 esp_count,
@@ -115,17 +139,10 @@ static void next_scsi_send_dma_cmd(struct esp *esp, u32 addr, u32 esp_count,
 
 	printk(KERN_ERR "next_scsi_send_dma_cmd(): START: addr=0x%x, esp_count=%d, dma_count=%d, write=%d, scsi_dma->csr=0x%x esp->dma_regs=0x%x\n", addr, esp_count, dma_count, write, (volatile u32)(scsi_dma->csr), *(volatile u8 *)(esp->dma_regs));
 
-	scsi_esp_cmd(esp, ESP_CMD_FLUSH);
+	scsi_esp_cmd(esp, ESP_CMD_FLUSH); // FIXME: test
 
-	next_scsi_esp_write8(esp, (esp_count >> 0) & 0xff, ESP_TCLOW);
-	next_scsi_esp_write8(esp, (esp_count >> 8) & 0xff, ESP_TCMED);
-
-	// scsi_esp_cmd(esp, ESP_CMD_DMA);
-	scsi_esp_cmd(esp, cmd);
-	// udelay(NEXT_ESP_DELAY);
-
-	scsi_dma->csr = 0;
-	scsi_dma->csr = DMA_RESET|(write ? DMA_SETTMEM : DMA_SETTDEV)|(NEXT_IS_TURBO ? DMA_INITDMA_TURBO : DMA_INITDMA);
+	// scsi_dma->csr = 0;
+	scsi_dma->csr = DMA_RESET|(write ? DMA_SETTMEM : DMA_SETTDEV)/*|(NEXT_IS_TURBO ? DMA_INITDMA_TURBO : DMA_INITDMA)*/;
 
 	scsi_dma->next_initbuf = addr; // not used in netbsd
 	scsi_dma->start = addr;
@@ -152,7 +169,19 @@ static void next_scsi_send_dma_cmd(struct esp *esp, u32 addr, u32 esp_count,
 	// write is SCSI to Memory
 	// *(volatile u8 *)(esp->dma_regs) = ESPCTRL_ENABLE_INT|ESPCTRL_CLK20MHz|ESPCTRL_MODE_DMA|(write ? ESPCTRL_DMA_READ : 0);
 
-	*(volatile u8 *)(esp->dma_regs) = ESPCTRL_ENABLE_INT|ESPCTRL_CLK20MHz|ESPCTRL_MODE_DMA|(write ? ESPCTRL_DMA_READ : 0);
+	// scsi_esp_cmd(esp, ESP_CMD_FLUSH);
+
+	next_scsi_esp_write8(esp, (esp_count >> 0) & 0xff, ESP_TCLOW);
+	next_scsi_esp_write8(esp, (esp_count >> 8) & 0xff, ESP_TCMED);
+
+	// scsi_esp_cmd(esp, ESP_CMD_DMA);
+	scsi_esp_cmd(esp, ESP_CMD_NULL); // FIXME: in NextMach code
+
+	scsi_esp_cmd(esp, cmd);
+//	udelay(NEXT_ESP_DELAY);
+
+	*(volatile u8 *)(esp->dma_regs) = ESPCTRL_ENABLE_INT|ESPCTRL_CLK20MHz|ESPCTRL_MODE_DMA|(write ? ESPCTRL_DMA_READ : 0); // Go my son!
+//	udelay(NEXT_ESP_DELAY);
 
 	printk(KERN_ERR "next_scsi_send_dma_cmd(): END: scsi_dma->next_initbuf=0x%x, scsi_dma->start=0x%x, scsi_dma->end=0x%x, scsi_dma->csr=0x%x esp->dma_regs=0x%x\n", (volatile u32)scsi_dma->next_initbuf, (volatile u32)scsi_dma->start, (volatile u32)scsi_dma->end, (volatile u32)(scsi_dma->csr), *(volatile u8 *)(esp->dma_regs));
 }
@@ -205,17 +234,20 @@ irqreturn_t next_scsi_dma_intr(int irq, void *dev_id)
 	unsigned long flags;
 	// irqreturn_t ret;
 	// struct next_dma_channel *scsi_dma = (struct next_dma_channel *)NEXT_CSR_SCSI;
-	// u32 csr;
+	u32 csr = scsi_dma->csr;
 
-	printk(KERN_ERR "next_scsi_dma_intr(): scsi_dma->csr=0x%x esp->dma_regs=0x%x\n", scsi_dma->csr, *(volatile u8 *)(esp->dma_regs));
+	printk(KERN_ERR "next_scsi_dma_intr(): START scsi_dma->csr=0x%x esp->dma_regs=0x%x\n", csr, *(volatile u8 *)(esp->dma_regs));
 	// spin_lock_irqsave(esp->host->host_lock, flags);
 	// ret = IRQ_NONE;
 
 	// if (!next_irq_pending(NEXT_IRQ_SCSI_DMA))
 	// 	goto done;
-
-	// csr = scsi_dma->csr;
-	scsi_dma->csr = DMA_RESET;
+	// scsi_dma->csr = DMA_RESET;
+	if (csr&DMA_CINT) {
+		scsi_dma->csr = csr|DMA_CLEARCHAINI;
+	} else {
+		scsi_dma->csr = DMA_RESET;
+	}
 	// if (csr&DMA_SETTMEM) {
 	// 	// Device To Memory (Receive)
 	// 	// Handle received data in DMA memory?
@@ -231,7 +263,7 @@ irqreturn_t next_scsi_dma_intr(int irq, void *dev_id)
 // done:
 
 	// spin_unlock_irqrestore(esp->host->host_lock, flags);
-	printk(KERN_ERR "next_scsi_dma_intr(): scsi_dma->csr=0x%x esp->dma_regs=0x%x\n", scsi_dma->csr, *(volatile u8 *)(esp->dma_regs));
+	printk(KERN_ERR "next_scsi_dma_intr(): END scsi_dma->csr=0x%x esp->dma_regs=0x%x\n", scsi_dma->csr, *(volatile u8 *)(esp->dma_regs));
 	return IRQ_HANDLED;
 }
 
@@ -264,11 +296,11 @@ static int next_scsi_probe(struct platform_device *dev)
 	//	goto fail_unlink;
 
 	// esp->regs = (void __iomem *)NEXT_SCSI;//res->start
-	esp->regs = (void *)NEXT_SCSI;//res->start
-	// esp->regs = ioremap(NEXT_SCSI, NEXT_SCSI_DMA_REGS_OFFSET);
+	// esp->regs = (void *)NEXT_SCSI;//res->start
+	esp->regs = ioremap(NEXT_SCSI, NEXT_SCSI_DMA_REGS_OFFSET);
 
-	// if (!esp->regs)
-	//	goto fail_unlink;
+	if (!esp->regs)
+		goto fail_unlink;
 
 	// res = platform_get_resource(dev, IORESOURCE_MEM, 1);
 	// if (!res)
@@ -359,7 +391,7 @@ static int next_scsi_probe(struct platform_device *dev)
 	esp->cfreq = NEXT_SCSI_HZ;
 
 	dev_set_drvdata(&dev->dev, esp);
-next_scsi_reset_dma(esp);
+
 	err = scsi_esp_register(esp);
 	if (err)
 		goto fail_free_irq;
@@ -373,7 +405,7 @@ fail_unmap_command_block:
 			  esp->command_block,
 			  esp->command_block_dma);
 fail_unmap_regs:
-// fail_unlink:
+fail_unlink:
 	scsi_host_put(host);
 fail:
 	return err;
