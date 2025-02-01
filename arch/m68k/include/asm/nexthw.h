@@ -159,33 +159,33 @@ struct bmap_chip {
 #define ESPCTRL_CHIP_TYPE   0x01    /* select chip type: 1 = WD33C92, 0 = NCR53C90(A) */
 
 // magical scsi register
-#define NSCSI_RESET	0x02	// ?
-#define NSCSI_INTMASK	0x20	// pass the 90a int pin to the int chip
+// #define NSCSI_RESET	0x02	// ? same as ESPCTRL_RESET above
+// #define NSCSI_INTMASK	0x20	// pass the 90a int pin to the int chip. same as ESPCTRL_ENABLE_INT above
 
-// #define _sctl_reg ((volatile __u8 *)(NEXT_SCSI+0x20))
+// #define _sctl_reg ((volatile __u8 *)(NEXT_SCSI+0x20)) // same as NEXT_SCSI_DMA_REGS_OFFSET in next_scsi.c
 // #define write_sctl(x) *(_sctl_reg)=x
 
 // common dma csr bits
 
-// status bits for reading
-#define DMA_ENABLED	0x01000000
-#define DMA_SUPDATE	0x02000000 // DMA single update
-#define DMA_READING	0x04000000 // DMA is in a read operation
-#define DMA_CINT	0x08000000 // DMA complete (chained int?)
-#define DMA_BUSERR	0x10000000
-#define DMA_OVERFLOW	0x20000000 // FIXME: check?
-#define DMA_STATUS_MASK	(DMA_ENABLED|DMA_SUPDATE|DMA_CINT|DMA_BUSERR)
-
 // control bits for writing
-#define DMA_INITDMA_TURBO	0x00800000 // Turbo-only?
-#define DMA_INITDMA		0x00200000
-#define DMA_RESET		0x00100000
-#define DMA_CLEARCHAINI		0x00080000 // Clear Complete
-#define DMA_SETTMEM		0x00040000 // DMA from device to memory
-#define DMA_SETCHAIN		0x00020000 // DMA single update
+#define DMA_SETTDEV		0x00000000 // dummy. DMA from memory to device
 #define DMA_SETENABLE		0x00010000
-#define DMA_SETTDEV		0x00000000 // DMA from memory to device
-#define DMA_CMD_MASK		(DMA_SETENABLE|DMA_SETCHAIN|DMA_CLEARCHAINI|DMA_RESET|DMA_INITDMA)
+#define DMA_SETCHAIN		0x00020000 // DMA single update
+#define DMA_SETTMEM		0x00040000 // DMA from device to memory
+#define DMA_CLEARCHAINI		0x00080000 // Clear Complete
+#define DMA_RESET		0x00100000
+#define DMA_INITDMA		0x00200000
+#define DMA_INITDMA_TURBO	0x00800000 // Turbo-only?
+// status bits for reading
+#define DMA_ENABLED		0x01000000
+#define DMA_SUPDATE		0x02000000 // DMA single update
+#define DMA_READING		0x04000000 // DMA is in a read operation
+#define DMA_CINT		0x08000000 // DMA complete (chained int?)
+#define DMA_BUSERR		0x10000000
+#define DMA_OVERFLOW		0x20000000 // FIXME: check?
+
+#define DMA_STATUS_MASK	(DMA_ENABLED|DMA_SUPDATE|DMA_CINT|DMA_BUSERR)
+#define DMA_CMD_MASK	(DMA_SETENABLE|DMA_SETCHAIN|DMA_CLEARCHAINI|DMA_RESET|DMA_INITDMA)
 
 // this is copied from memory that is initialized by the next prom at boot
 struct prom_info {
