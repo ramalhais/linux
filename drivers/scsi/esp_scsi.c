@@ -1017,6 +1017,9 @@ static int esp_check_spur_intr(struct esp *esp)
 		 * be trusted on these revisions.
 		 */
 		esp->sreg &= ~ESP_STAT_INTR;
+					shost_printk(KERN_INFO, esp->host,
+			"esp_check_spur_intr(): ESP_STATUS=0x%hhx", esp->sreg);
+
 		break;
 
 	default:
@@ -1083,6 +1086,8 @@ static struct esp_cmd_entry *esp_reconnect_with_tag(struct esp *esp,
 
 	esp->sreg = esp_read8(ESP_STATUS);
 	esp->ireg = esp_read8(ESP_INTRPT);
+					shost_printk(KERN_INFO, esp->host,
+			"esp_reconnect_with_tag(): ESP_STATUS=0x%hhx ESP_INTRPT=0x%hhx", esp->sreg, esp->ireg);
 
 	esp_log_reconnect("IRQ(%d:%x:%x), ",
 			  i, esp->ireg, esp->sreg);
@@ -1112,6 +1117,9 @@ static struct esp_cmd_entry *esp_reconnect_with_tag(struct esp *esp,
 		if (esp->ops->irq_pending(esp)) {
 			esp->sreg = esp_read8(ESP_STATUS);
 			esp->ireg = esp_read8(ESP_INTRPT);
+					shost_printk(KERN_INFO, esp->host,
+			"esp_reconnect_with_tag(): irq_pending(): ESP_STATUS=0x%hhx ESP_INTRPT=0x%hhx", esp->sreg, esp->ireg);
+
 			if (esp->ireg & ESP_INTR_FDONE)
 				break;
 		}
@@ -1402,6 +1410,9 @@ static int esp_data_bytes_sent(struct esp *esp, struct esp_cmd_entry *ent,
 			 * target in synchronous mode.
 			 */
 			esp->sreg = esp_read8(ESP_STATUS);
+								shost_printk(KERN_INFO, esp->host,
+			"esp_data_bytes_sent(): ESP_STATUS=0x%hhx", esp->sreg);
+
 			phase = esp->sreg & ESP_STAT_PMASK;
 			fflags = esp_read8(ESP_FFLAGS);
 
@@ -2867,6 +2878,9 @@ static inline int esp_wait_for_intr(struct esp *esp)
 
 	do {
 		esp->sreg = esp_read8(ESP_STATUS);
+			shost_printk(KERN_INFO, esp->host,
+			"esp_wait_for_intr(): ESP_STATUS=0x%hhx", esp->sreg);
+
 		if (esp->sreg & ESP_STAT_INTR)
 			return 0;
 
