@@ -34,6 +34,11 @@
 #define NEXT_SCSI_HZ 20000000
 #define NEXT_ESP_DELAY 100 // us(microseconds)
 
+u8 dma_regs;
+#define ESPCTRL_INIT(b)		dma_regs=b; *(volatile u8 *)(esp->dma_regs) = dma_regs; udelay(NEXT_ESP_DELAY);
+#define ESPCTRL_SET(b)		dma_regs|=b; *(volatile u8 *)(esp->dma_regs) = dma_regs; udelay(NEXT_ESP_DELAY);
+#define ESPCTRL_CLEAR(b)	dma_regs&=~b; *(volatile u8 *)(esp->dma_regs) = dma_regs; udelay(NEXT_ESP_DELAY);
+
 struct next_dma_channel *scsi_dma;
 
 static void next_scsi_esp_write8(struct esp *esp, u8 val, unsigned long reg)
