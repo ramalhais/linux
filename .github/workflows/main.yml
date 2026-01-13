@@ -6,9 +6,12 @@ name: CI
 on:
   # Triggers the workflow on push or pull request events but only for the "master" branch
   push:
-    branches: [ "NeXT" ]
-  pull_request:
-    branches: [ "NeXT" ]
+    branches:
+      - NeXT
+      - linux-6.9.y-NeXT-2-WIP
+      - linux-6.18.y-NeXT2
+  # pull_request:
+  #   branches: [ "NeXT" ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
