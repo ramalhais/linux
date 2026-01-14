@@ -133,7 +133,7 @@ sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 
 # apt -y libpam-elogind
 # apt -y install sysvinit-core rsyslog
-apt --purge --allow-remove-essential install sysvinit-core libpam-elogind dbus-x11 systemd-sysv-
+apt -y --purge --allow-remove-essential install sysvinit-core libpam-elogind dbus-x11 systemd-sysv-
 # apt-mark hold systemd systemd-sysv
 
 EOF
