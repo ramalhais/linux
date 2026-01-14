@@ -12,8 +12,10 @@
 #include <linux/kernel.h>
 #include <linux/console.h>
 #include <linux/init.h>
+#include <linux/irqflags.h>
 #include <linux/reboot.h>
 #include <asm/machdep.h>
+#include <asm/processor.h>
 
 #include <asm/nextints.h>
 #include <asm/nexthw.h>
@@ -82,18 +84,22 @@ void next_get_hardware_list(struct seq_file *m)
 	seq_printf(m, "Interrupt Status: 0x%x\n", next_intstat);
 }
 
-void next_halt(void) {
-	// FIXME: bad kernel trap
-	char command[] = "-h";
-
-	asm("movl %0, %d0" : : "r" (command[0]));
-	asm("trap #13");
+void next_halt(void)
+{
+	local_irq_disable();
+	next_poweroff();
+	/* If poweroff failed, just loop */
+	while (1)
+		cpu_relax();
 }
 
-void next_reset(void) {
-	// FIXME: bad kernel trap
-	asm("movl #0, %d0");
-	asm("trap #13");
+void next_reset(void)
+{
+	local_irq_disable();
+	/* TODO: Implement proper reset via SCR2 or PROM monitor */
+	/* For now, just loop forever */
+	while (1)
+		cpu_relax();
 }
 
 void __init config_next(void)
