@@ -140,12 +140,6 @@ struct mb8795_private {
 
 	bool is_turbo;
 
-	// Ugly hack to attempt to pass unique dev_id to shared IRQs, so that it finds the correct handler on free_irq(). Probably not working because we need to pass the pointer (&) to these :( We need a NeXT IRQ driver
-	struct mb8795_private *irq_rx;
-	struct mb8795_private *irq_tx;
-	struct mb8795_private *irq_rx_dma;
-	struct mb8795_private *irq_tx_dma;
-
 	struct mb8795regs *mb;
 	struct next_dma_channel *rxdma;
 	struct next_dma_channel *txdma;
@@ -668,19 +662,10 @@ static int mb8795_stop(struct net_device *ndev)
 
 	mb8795_reset(ndev);
 
-	// next_intmask_disable(NEXT_IRQ_ENETR_DMA-NEXT_IRQ_BASE);
-	// next_intmask_disable(NEXT_IRQ_ENETX_DMA-NEXT_IRQ_BASE);
-	// next_intmask_disable(NEXT_IRQ_ENETR-NEXT_IRQ_BASE);
-	// next_intmask_disable(NEXT_IRQ_ENETX-NEXT_IRQ_BASE);
-
-	free_irq(NEXT_IRQ_ENETR_DMA, priv->irq_rx_dma);
-	free_irq(NEXT_IRQ_ENETX_DMA, priv->irq_tx_dma);
-	free_irq(NEXT_IRQ_ENETR, priv->irq_rx);
-	free_irq(NEXT_IRQ_ENETX, priv->irq_tx);
-	// free_irq(IRQ_AUTO_6, priv->irq_rx_dma);
-	// free_irq(IRQ_AUTO_6, priv->irq_tx_dma);
-	// free_irq(IRQ_AUTO_3, priv->irq_rx);
-	// free_irq(IRQ_AUTO_3, priv->irq_tx);
+	free_irq(NEXT_IRQ_ENETX_DMA, priv);
+	free_irq(NEXT_IRQ_ENETR_DMA, priv);
+	free_irq(NEXT_IRQ_ENETX, priv);
+	free_irq(NEXT_IRQ_ENETR, priv);
 
 	return 0;
 }
@@ -710,35 +695,22 @@ static int mb8795_open(struct net_device *ndev)
 	pr_info("\n");
 #endif
 
-	priv->irq_rx = priv;
-	priv->irq_tx = priv;
-	priv->irq_rx_dma = priv;
-	priv->irq_tx_dma = priv;
-
-	// if (request_irq(IRQ_AUTO_3, mb8795_rxint, IRQF_SHARED, "NeXT Ethernet Receive", priv->irq_rx)) {
-	if (request_irq(NEXT_IRQ_ENETR, mb8795_rxint, 0, "Ethernet RX", priv->irq_rx)) {
+	if (request_irq(NEXT_IRQ_ENETR, mb8795_rxint, 0, "Ethernet RX", priv)) {
 		pr_err("Failed to register interrupt for NeXT Ethernet RX\n");
-		goto err_out_irq_rx;
+		goto err_out;
 	}
-	// if (request_irq(IRQ_AUTO_3, mb8795_txint, IRQF_SHARED, "NeXT Ethernet Transmit", priv->irq_tx)) {
-	if (request_irq(NEXT_IRQ_ENETX, mb8795_txint, 0, "Ethernet TX", priv->irq_tx)) {
+	if (request_irq(NEXT_IRQ_ENETX, mb8795_txint, 0, "Ethernet TX", priv)) {
 		pr_err("Failed to register interrupt for NeXT Ethernet TX\n");
-		goto err_out_irq_tx;
+		goto err_free_rx;
 	}
-	// if (request_irq(IRQ_AUTO_6, mb8795_rxdmaint, IRQF_SHARED, "NeXT Ethernet DMA Receive", priv->irq_rx_dma)) {
-	if (request_irq(NEXT_IRQ_ENETR_DMA, mb8795_rxdmaint, 0, "Ethernet RX DMA", priv->irq_rx_dma)) {
+	if (request_irq(NEXT_IRQ_ENETR_DMA, mb8795_rxdmaint, 0, "Ethernet RX DMA", priv)) {
 		pr_err("Failed to register interrupt for NeXT Ethernet RX DMA\n");
-		goto err_out_irq_rx_dma;
+		goto err_free_tx;
 	}
-	// if (request_irq(IRQ_AUTO_6, mb8795_txdmaint, IRQF_SHARED, "NeXT Ethernet DMA Transmit", priv->irq_tx_dma)) {
-	if (request_irq(NEXT_IRQ_ENETX_DMA, mb8795_txdmaint, 0, "Ethernet TX DMA", priv->irq_tx_dma)) {
+	if (request_irq(NEXT_IRQ_ENETX_DMA, mb8795_txdmaint, 0, "Ethernet TX DMA", priv)) {
 		pr_err("Failed to register interrupt for NeXT Ethernet TX DMA\n");
-		goto err_out_irq_tx_dma;
+		goto err_free_rx_dma;
 	}
-	// next_intmask_enable(NEXT_IRQ_ENETR-NEXT_IRQ_BASE);
-	// next_intmask_enable(NEXT_IRQ_ENETX-NEXT_IRQ_BASE);
-	// next_intmask_enable(NEXT_IRQ_ENETR_DMA-NEXT_IRQ_BASE);
-	// next_intmask_enable(NEXT_IRQ_ENETX_DMA-NEXT_IRQ_BASE);
 
 	// enable interrupts
 	// I couldn't get the chip to stop giving us tons of errors,
@@ -767,16 +739,13 @@ static int mb8795_open(struct net_device *ndev)
 
 	return 0;
 
-err_out_irq_tx_dma:
-	// free_irq(IRQ_AUTO_3, priv->irq_tx_dma);
-	free_irq(NEXT_IRQ_ENETX_DMA, priv->irq_tx_dma);
-err_out_irq_rx_dma:
-	// free_irq(IRQ_AUTO_6, priv->irq_rx_dma);
-	free_irq(NEXT_IRQ_ENETR_DMA, priv->irq_rx_dma);
-err_out_irq_tx:
-	// free_irq(IRQ_AUTO_6, priv->irq_tx);
-	free_irq(NEXT_IRQ_ENETX, priv->irq_tx);
-err_out_irq_rx:
+err_free_rx_dma:
+	free_irq(NEXT_IRQ_ENETR_DMA, priv);
+err_free_tx:
+	free_irq(NEXT_IRQ_ENETX, priv);
+err_free_rx:
+	free_irq(NEXT_IRQ_ENETR, priv);
+err_out:
 	return -EAGAIN;
 }
 
