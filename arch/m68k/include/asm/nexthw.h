@@ -145,6 +145,59 @@ struct bmap_chip {
 
 #define NEXT_IS_TURBO (prom_info.mach_type >= NEXT_MACHINE_STATION_TURBO)
 
+// ADB (Apple Desktop Bus) for Turbo systems
+// On Turbo machines, keyboard/mouse uses ADB instead of KMS
+#define NEXT_ADB_BASE		0x02208000
+
+// ADB register offsets
+#define ADB_INTSTATUS		0x00	// Interrupt status (rw)
+#define ADB_INTMASK		0x08	// Interrupt mask (rw)
+#define ADB_SETINT		0x10	// Set interrupt (w)
+#define ADB_CONFIG		0x18	// Configuration (rw)
+#define ADB_CTRL		0x20	// Control (w)
+#define ADB_STATUS		0x28	// Status (r)
+#define ADB_CMD			0x30	// Command (rw)
+#define ADB_COUNT		0x38	// Bit count (rw)
+#define ADB_DATA0		0x80	// Data register 0 (rw)
+#define ADB_DATA1		0x88	// Data register 1 (rw)
+
+// ADB interrupt bits
+#define ADB_INT_REJECT		0x01
+#define ADB_INT_POLLSTOP	0x02
+#define ADB_INT_ACCESS		0x04
+#define ADB_INT_RESET		0x08
+
+// ADB control bits
+#define ADB_CTRL_EN_POLL	0x01	// Enable polling
+#define ADB_CTRL_DIS_POLL	0x02	// Disable polling
+#define ADB_CTRL_XMIT_CMD	0x04	// Transmit command
+#define ADB_CTRL_RESET_ADB	0x08	// Reset ADB bus
+
+// ADB status bits
+#define ADB_STAT_CONFLICT	0x01
+#define ADB_STAT_REQUEST	0x02	// Device has data
+#define ADB_STAT_TIMEOUT	0x04
+#define ADB_STAT_DATAPEND	0x08	// Data pending
+#define ADB_STAT_RESET		0x10
+#define ADB_STAT_ACCESS		0x20
+#define ADB_STAT_POLL_EN	0x40
+#define ADB_STAT_POLL_OV	0x80
+
+// ADB command bits
+#define ADB_CMD_REG_MASK	0x03	// Register select
+#define ADB_CMD_CMD_MASK	0x0C	// Command type
+#define ADB_CMD_ADDR_MASK	0xF0	// Device address
+
+// ADB commands (shifted into position)
+#define ADB_CMD_RESET		0x00
+#define ADB_CMD_FLUSH		0x01
+#define ADB_CMD_LISTEN		0x08	// (2 << 2)
+#define ADB_CMD_TALK		0x0C	// (3 << 2)
+
+// ADB device addresses (shifted into position)
+#define ADB_ADDR_KBD		0x20	// (2 << 4) Keyboard
+#define ADB_ADDR_MOUSE		0x30	// (3 << 4) Mouse
+
 // SCSI
 #define ESPCTRL_CLKMASK     0xc0    /* clock selection bits */
 #define ESPCTRL_CLK10MHz    0x00
