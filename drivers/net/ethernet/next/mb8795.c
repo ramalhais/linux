@@ -202,15 +202,16 @@ void dumpdmaregs(void *ptr, bool is_turbo)
 };
 #endif
 
-/* XXX check for return of NULL :( */
 static inline struct sk_buff *mb_new_skb(struct net_device *ndev)
 {
 	struct sk_buff *newskb;
 	unsigned int fixup;
 
-	// newskb=dev_alloc_skb(RXBUFLEN);
 	newskb = netdev_alloc_skb(ndev, RXBUFLEN);
-	fixup = (unsigned int)newskb->data&(NEXT_ALIGN-1);
+	if (!newskb)
+		return NULL;
+
+	fixup = (unsigned int)newskb->data & (NEXT_ALIGN-1);
 	if (fixup)
 		skb_reserve(newskb, NEXT_ALIGN-fixup);
 
@@ -221,6 +222,7 @@ static inline void handle_packet(struct mb8795_private *priv, struct net_device 
 {
 	int len = rx->len;
 	struct sk_buff *skb = rx->skb;
+	struct sk_buff *newskb;
 
 	cache_clear(rx->p_data, len);
 	skb->dev = ndev;
@@ -232,9 +234,18 @@ static inline void handle_packet(struct mb8795_private *priv, struct net_device 
 
 	netif_rx(skb);
 
-	rx->skb = mb_new_skb(ndev);
-	rx->p_data = virt_to_phys(rx->skb->data);
-	rx->len = 0;
+	newskb = mb_new_skb(ndev);
+	if (newskb) {
+		rx->skb = newskb;
+		rx->p_data = virt_to_phys(rx->skb->data);
+		rx->len = 0;
+	} else {
+		/* Allocation failed - reuse old buffer's physical address */
+		/* This will cause the old packet to be overwritten on next DMA */
+		rx->skb = NULL;
+		rx->len = 0;
+		priv->stats.rx_dropped++;
+	}
 }
 
 //  no rx ints are being allowed for now...
@@ -997,6 +1008,11 @@ static int mb8795_probe(struct platform_device *pdev)
 		struct rxb *rx = (struct rxb *)&priv->rxbufs[i];
 
 		rx->skb = mb_new_skb(ndev);
+		if (!rx->skb) {
+			dev_err(&pdev->dev, "Failed to allocate RX buffer %d\n", i);
+			err = -ENOMEM;
+			goto err_out_free_rxbufs;
+		}
 		rx->p_data = virt_to_phys(rx->skb->data);
 		rx->len = 0;  /* is filled in by chain handler */
 
@@ -1018,6 +1034,11 @@ static int mb8795_probe(struct platform_device *pdev)
 
 	return 0;
 
+err_out_free_rxbufs:
+	while (--i >= 0) {
+		if (priv->rxbufs[i].skb)
+			dev_kfree_skb(priv->rxbufs[i].skb);
+	}
 // err_out_unregister_netdev:
 // 	unregister_netdev(ndev);
 // err_out_free_irq:
