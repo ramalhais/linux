@@ -41,6 +41,7 @@ jobs:
           ./build-NeXT-kernel-github.sh
           echo "DATE=$(date +%F-%H.%M.%S)" >> $GITHUB_ENV
           echo "KERNELVER=$(make kernelversion)" >> $GITHUB_ENV
+          echo "BRANCH=${{ github.head_ref || github.ref_name }}" >> $GITHUB_ENV
 
       - name: Create Release
         id: create_release
@@ -48,8 +49,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: build/${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
-          release_name: NeXT-${{ env.DATE }}-${{ env.KERNELVER }}-${{ github.sha }}
+          tag_name: build/${{ env.BRANCH }}_${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
+          release_name: ${{ env.BRANCH }}-${{ env.DATE }}-${{ env.KERNELVER }}-${{ github.sha }}
           # body: |
           #   Changes in this Release
           #   - First Change
