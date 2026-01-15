@@ -412,22 +412,23 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 
 		handle_packet(priv, priv->ndev, rx);
 	} else {
-		// if we missed the first chained int we'll
-		// have a waiting packet in the 'first' slot
-		// but aren't currently dealing with it. Fix
+		/*
+		 * Fallback path: if we missed the first chain interrupt,
+		 * there's a waiting packet in the next slot.
+		 */
 		rx = rx->next;
-		rx->len = rxd->start - rxd->next_start - 4;// FIXME: this is probably wrong! Seems always correct after all. WTF
+		rx->len = (priv->is_turbo ? rxd->turbo_rx_saved_start : rxd->saved_end)
+			  - rx->p_data - 4;
 #ifdef DEBUGME_RX
 		pr_info("CINT2 rx->p_data=0x%x rx->len=0x%x (%d) ", rx->p_data, rx->len, rx->len);
 #endif
-		if (csr&DMA_CINT)
+		if (csr & DMA_CINT)
 			rxd->csr = DMA_CLEARCHAINI;
 
 		handle_packet(priv, priv->ndev, rx);
 
 		priv->cur_rxb = rx->next;
 		setup_rxdma(priv->ndev);
-		// priv->stats.rx_packets++;// already done in handle_packet?
 	}
 
 #ifdef DEBUGME_RX
