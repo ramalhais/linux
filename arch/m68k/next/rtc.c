@@ -71,17 +71,14 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 
 	local_irq_save(flags);
 
-	// if (!next_irq_pending(NEXT_IRQ_TIMER)) {
-	// 	local_irq_restore(flags);
-	// 	return IRQ_NONE;
-	// }
-
-	// write_timer_ticks(TIMER_HZ/HZ); // atempt to set the ticks back
-	set_timer_csr_bits((u8)TIM_RESTART); // retrigger timer
+	/*
+	 * Restart the timer and clear the interrupt.
+	 * Writing TIM_RESTART to the timer CSR acknowledges the interrupt
+	 * and re-arms the timer for the next tick.
+	 */
+	set_timer_csr_bits((u8)TIM_RESTART);
 	clk_total += TIMER_HZ/HZ;
 	legacy_timer_tick(1);
-
-	// FIXME: how to mark IRQ as handled on the NeXT interrupt controller or RTC?
 
 	local_irq_restore(flags);
 	return IRQ_HANDLED;
@@ -190,7 +187,7 @@ void next_sched_init(void)
 	);
 
 	scr2 = ioremap(NEXT_SCR2, sizeof(unsigned int));
-	timerp = ioremap(NEXT_TIMER, 5); // FIXME: we only need to map 5bytes. maybe round to 8 or 16?
+	timerp = ioremap(NEXT_TIMER, 8);  /* Timer registers: MSB, LSB, pad, pad, CSR */
 	next_nvram_fix();
 
 	/* could also get this from the prom i think */
