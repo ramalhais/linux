@@ -808,8 +808,6 @@ static int mb8795_probe(struct platform_device *pdev)
 		dev_info(&pdev->dev, "BMAP kicked\n");
 	}
 
-	struct mb8795regs *mb_regs = (struct mb8795regs __iomem *)NEXT_ETHER;
-	volatile u8 *mb_regs_eaddr = mb_regs->eaddr;
 	priv->mb = (void __iomem *)NEXT_ETHER;
 	// priv->mb = ioremap(0x02000000+0x00100000+0x00006000, sizeof(struct mb8795regs));
 	// priv->mb = ioremap(NEXT_ETHER, sizeof(struct mb8795regs));
@@ -842,102 +840,34 @@ static int mb8795_probe(struct platform_device *pdev)
 
 	}
 
-	// dev_info(&pdev->dev, "rxdma->csr=0x%x rxdma->turbo_rx_saved_start=0x%x rxdma->start=0x%x txdma->csr=0x%x txdma->start=0x%x\n", &priv->rxdma->csr, &priv->rxdma->turbo_rx_saved_start, &priv->rxdma->start, &priv->txdma->csr, &priv->txdma->start);
-
-	// TODO: copy from EEPROM+0x08 or PROM info
-	dev_info(&pdev->dev, "PROM Info MAC Address: %pM\n", eprom_info.eaddr);
-	u8 eaddr[6];
-	// memcpy_fromio(eaddr, priv->mb->eaddr, ETH_ALEN);
-	// bytecopy(eaddr, priv->mb->eaddr, ETH_ALEN);
-
-	// eaddr[0] = *(volatile u8 *)(eprom+8);
-	// eaddr[1] = *(volatile u8 *)(eprom+8+1);
-	// eaddr[2] = *(volatile u8 *)(eprom+8+2);
-	// eaddr[3] = *(volatile u8 *)(eprom+8+3);
-	// eaddr[4] = *(volatile u8 *)(eprom+8+4);
-	// eaddr[5] = *(volatile u8 *)(eprom+8+5);
-	// memcpy_fromio(eaddr, eprom+8, ETH_ALEN);
-	bytecopy(eaddr, eprom+8, ETH_ALEN);
-	dev_info(&pdev->dev, "EPROM Ethernet Chip MAC Address: %pM\n", eaddr);
-	dev_info(&pdev->dev, "EPROM BMAP Ethernet Chip MAC Address: %pM\n", eprom_bmap+8);
-
-	// eaddr[0] = mb_regs->eaddr[0];
-	// eaddr[1] = mb_regs->eaddr[1];
-	// eaddr[2] = mb_regs->eaddr[2];
-	// eaddr[3] = mb_regs->eaddr[3];
-	// eaddr[4] = mb_regs->eaddr[4];
-	// eaddr[5] = mb_regs->eaddr[5];
-
-	eaddr[0] = *mb_regs_eaddr;
-	eaddr[1] = *(mb_regs_eaddr+1);
-	eaddr[2] = *(mb_regs_eaddr+2);
-	eaddr[3] = *(mb_regs_eaddr+3);
-	eaddr[4] = *(mb_regs_eaddr+4);
-	eaddr[5] = *(mb_regs_eaddr+5);
-
-	dev_info(&pdev->dev, "read Ethernet Chip MAC Address: %pM\n", eaddr);
-
-	eaddr[0] = *(volatile u8 *)((void *)(priv->mb)+8);
-	eaddr[1] = *(volatile u8 *)((void *)(priv->mb)+8+1);
-	eaddr[2] = *(volatile u8 *)((void *)(priv->mb)+8+2);
-	eaddr[3] = *(volatile u8 *)((void *)(priv->mb)+8+3);
-	eaddr[4] = *(volatile u8 *)((void *)(priv->mb)+8+4);
-	eaddr[5] = *(volatile u8 *)((void *)(priv->mb)+8+5);
-
-	dev_info(&pdev->dev, "read2 Ethernet Chip MAC Address: %pM\n", eaddr);
-	// bytecopy(priv->mb->eaddr, eprom_info.eaddr, ETH_ALEN);
-	// bytecopy(eaddr, priv->mb->eaddr, ETH_ALEN);
-
-	*(volatile u8 *)(priv->mb->eaddr) = eprom_info.eaddr[0];
-	*(volatile u8 *)(priv->mb->eaddr+1) = eprom_info.eaddr[1];
-	*(volatile u8 *)(priv->mb->eaddr+2) = eprom_info.eaddr[2];
-	*(volatile u8 *)(priv->mb->eaddr+3) = eprom_info.eaddr[3];
-	*(volatile u8 *)(priv->mb->eaddr+4) = eprom_info.eaddr[4];
-	*(volatile u8 *)(priv->mb->eaddr+5) = eprom_info.eaddr[5];
-
-	eaddr[0] = *(volatile u8 *)((void *)(priv->mb)+8);
-	eaddr[1] = *(volatile u8 *)((void *)(priv->mb)+8+1);
-	eaddr[2] = *(volatile u8 *)((void *)(priv->mb)+8+2);
-	eaddr[3] = *(volatile u8 *)((void *)(priv->mb)+8+3);
-	eaddr[4] = *(volatile u8 *)((void *)(priv->mb)+8+4);
-	eaddr[5] = *(volatile u8 *)((void *)(priv->mb)+8+5);
-
-	dev_info(&pdev->dev, "read after write: Ethernet Chip MAC Address: %pM\n", eaddr);
-
-	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %hhx %hhx %hhx %hhx %hhx %hhx\n", priv->mb->eaddr[0], priv->mb->eaddr[1], priv->mb->eaddr[2], priv->mb->eaddr[3], priv->mb->eaddr[4], priv->mb->eaddr[5]);
-	// dev_info(&pdev->dev, "Ethernet Chip MAC Address: %pM\n", priv->mb->eaddr);
-
-	if (eprom_info.eaddr[0]|eprom_info.eaddr[1]|eprom_info.eaddr[2]|eprom_info.eaddr[3]|eprom_info.eaddr[4]|eprom_info.eaddr[5]) {
-		dev_info(&pdev->dev, "Using PROM MAC Address\n");
-		priv->mb->eaddr[0] = eprom_info.eaddr[0];
-		priv->mb->eaddr[1] = eprom_info.eaddr[1];
-		priv->mb->eaddr[2] = eprom_info.eaddr[2];
-		priv->mb->eaddr[3] = eprom_info.eaddr[3];
-		priv->mb->eaddr[4] = eprom_info.eaddr[4];
-		priv->mb->eaddr[5] = eprom_info.eaddr[5];
-	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %hhx %hhx %hhx %hhx %hhx %hhx\n", priv->mb->eaddr[0], priv->mb->eaddr[1], priv->mb->eaddr[2], priv->mb->eaddr[3], priv->mb->eaddr[4], priv->mb->eaddr[5]);
-	// dev_info(&pdev->dev, "Ethernet Chip MAC Address: %pM\n", priv->mb->eaddr);
-	bytecopy((void *)&priv->mb->eaddr[0], eprom_info.eaddr, ETH_ALEN);
-	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %hhx %hhx %hhx %hhx %hhx %hhx\n", priv->mb->eaddr[0], priv->mb->eaddr[1], priv->mb->eaddr[2], priv->mb->eaddr[3], priv->mb->eaddr[4], priv->mb->eaddr[5]);
-
-		// memcpy(priv->mb->eaddr, eprom_info.eaddr, ETH_ALEN);
+	/*
+	 * MAC address priority:
+	 * 1. PROM info (from boot loader)
+	 * 2. EEPROM at offset 8
+	 * 3. Random fallback
+	 */
+	if (is_valid_ether_addr(eprom_info.eaddr)) {
+		dev_info(&pdev->dev, "Using PROM MAC address: %pM\n", eprom_info.eaddr);
 		eth_hw_addr_set(ndev, (u8 *)eprom_info.eaddr);
-	}
-	// else if (priv->mb->eaddr[0]|priv->mb->eaddr[1]|priv->mb->eaddr[2]|priv->mb->eaddr[3]|priv->mb->eaddr[4]|priv->mb->eaddr[5]) {
-	// 	dev_info(&pdev->dev, "Using Ethernet Chip MAC Address\n");
-	// } 
-	else {
-		dev_info(&pdev->dev, "Missing Ethernet Chip and PROM MAC address. Assigning random address\n");
-		eth_hw_addr_random(ndev);
-		// ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
-	}
-	// ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
-	// eth_hw_addr_set(ndev, (u8 *)priv->mb->eaddr);
+		bytecopy((void *)priv->mb->eaddr, eprom_info.eaddr, ETH_ALEN);
+	} else if (eprom) {
+		u8 eaddr[ETH_ALEN];
 
-	// eth_hw_addr_set(ndev, (u8 *)eprom_info.eaddr);
-	dev_info(&pdev->dev, "Netdev MAC Address: %pM\n", ndev->dev_addr);
-	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %x %x %x %x %x %x\n", priv->mb->eaddr[0], priv->mb->eaddr[1], priv->mb->eaddr[2], priv->mb->eaddr[3], priv->mb->eaddr[4], priv->mb->eaddr[5]);
-	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %pM\n", priv->mb->eaddr);
+		bytecopy(eaddr, eprom + 8, ETH_ALEN);
+		if (is_valid_ether_addr(eaddr)) {
+			dev_info(&pdev->dev, "Using EEPROM MAC address: %pM\n", eaddr);
+			eth_hw_addr_set(ndev, eaddr);
+			bytecopy((void *)priv->mb->eaddr, eaddr, ETH_ALEN);
+		} else {
+			goto use_random;
+		}
+	} else {
+use_random:
+		dev_info(&pdev->dev, "No valid MAC address found, using random\n");
+		eth_hw_addr_random(ndev);
+	}
+
+	dev_info(&pdev->dev, "MAC address: %pM\n", ndev->dev_addr);
 
 	err = register_netdev(ndev);
 	if (err) {
