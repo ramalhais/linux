@@ -372,18 +372,16 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 	}
 #endif // DEBUGME_RX
 
-	if (!(rxstat&RSTAT_PRECV) /*|| csr&DMA_OVERFLOW*/) {
+	if (!(rxstat & RSTAT_PRECV)) {
 #ifdef DEBUGME_RX
-		if (!(rxstat&RSTAT_PRECV))
-			pr_info("!RSTAT_PRECV: No DMA packet received");
-		else
-			pr_info("csr DMA_OVERFLOW: clearing csr");
-#endif // DEBUGME_RX
-
+		pr_info("!RSTAT_PRECV: No DMA packet received");
+#endif
+		/*
+		 * No packet received - reuse the current buffer.
+		 * We don't free the SKB because it's part of the RX ring
+		 * and will be reused for the next DMA transfer.
+		 */
 		priv->cur_rxb = rx->next;
-		// FIXME: should probably free skb but this oopses
-		// dev_kfree_skb_any(rx->skb);
-		// kfree_skb(rx->skb);
 		setup_rxdma(priv->ndev);
 		goto bail;
 	}
