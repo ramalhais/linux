@@ -235,7 +235,12 @@ struct bmap_chip {
 #define DMA_READING		0x04000000 // DMA is in a read operation
 #define DMA_CINT		0x08000000 // DMA complete (chained int?)
 #define DMA_BUSERR		0x10000000
-#define DMA_OVERFLOW		0x20000000 // FIXME: check?
+/*
+ * DMA_OVERFLOW: This bit is not documented in the Previous emulator.
+ * The emulator only uses ENABLE, SUPDATE, CINT(COMPLETE), and BUSERR
+ * for DMA status. This definition may be incorrect or hardware-specific.
+ */
+#define DMA_OVERFLOW		0x20000000
 
 #define DMA_STATUS_MASK	(DMA_ENABLED|DMA_SUPDATE|DMA_CINT|DMA_BUSERR)
 #define DMA_CMD_MASK	(DMA_SETENABLE|DMA_SETCHAIN|DMA_CLEARCHAINI|DMA_RESET|DMA_INITDMA)
