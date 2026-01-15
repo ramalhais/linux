@@ -506,15 +506,16 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 		oldflagmap = data&KD_FLAGKEYS;
 
 		changed ^= oldflagmap;
-		if ((changed)) {
+		if (changed) {
 			for (int index = 0; index < NR_CTRL_KEYS; index++) {
 				unsigned int scan, is_pressed;
 
-				if (!(changed&(KD_CNTL<<index)))
+				if (!(changed & (KD_CNTL << index)))
 					continue;
 
-				scan = CTRL_BASE_CODE+index;
-				is_pressed = !(data&KD_DIRECTION); // FIXME: could try sending data&KD_FLAGKEYS&mask instead
+				scan = CTRL_BASE_CODE + index;
+				/* Use flag bitmap to determine current modifier state */
+				is_pressed = !!(oldflagmap & (KD_CNTL << index));
 				input_report_key(input, kbd->keycodes[scan], is_pressed);
 			}
 		}
