@@ -60,12 +60,13 @@ unsigned int levelinfo[8]={
 	(NEXT_IPL_7MIN<<16)+NEXT_IPL_7NUM
 };
 
-// XXX use for int cursor in fbcon instead of just disabling it
-#define C16_INTCLEAR	1
-#define C16_INTENABLE	2
-#define C16_UNBLANK	4
-*(volatile unsigned char *)0xff018180= (C16_UNBLANK|C16_INTCLEAR)&~(C16_INTENABLE);
 */
+
+/*
+ * Note: NeXT C16 color display has hardware cursor interrupt capability
+ * at register 0x02018180 (bits: INTCLEAR=1, INTENABLE=2, UNBLANK=4).
+ * This is not currently used; fbcon uses software cursor instead.
+ */
 
 static irqreturn_t next_nmi_handler(int irq, void *dev_id)
 {
