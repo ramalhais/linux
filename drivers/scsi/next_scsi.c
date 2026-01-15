@@ -1,8 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
-// next_scsi.c: ESP front-end for NeXT Computer/cube/station.
-// based on jazz_esp.c: Copyright (C) 2007 Thomas Bogendörfer (tsbogend@alpha.frankende)
-// 2022 Pedro Ramalhais <ramalhais@gmail.com>
+/*
+ * next_scsi.c: ESP front-end for NeXT Computer/cube/station.
+ * based on jazz_esp.c: Copyright (C) 2007 Thomas Bogendörfer (tsbogend@alpha.frankende)
+ * 2022 Pedro Ramalhais <ramalhais@gmail.com>
+ *
+ * SCSI chipset:
+ *   Non-Turbo (NeXT Computer, NeXTcube, NeXTstation): NCR53C90
+ *   Turbo (NeXTstation Turbo, NeXTcube Turbo): NCR53C90A
+ *
+ * DMA controller:
+ *   Non-Turbo: Fujitsu MB610313 Integrated Channel Processor (ISP)
+ *   Turbo: Motorola DMA controller with different CSR commands
+ */
 
 #include <linux/kernel.h>
 #include <linux/gfp.h>
@@ -147,7 +157,7 @@ static void next_scsi_send_dma_cmd(struct esp *esp, u32 addr, u32 esp_count,
 	scsi_esp_cmd(esp, ESP_CMD_FLUSH); // FIXME: test
 
 	// scsi_dma->csr = 0;
-	scsi_dma->csr = DMA_RESET|(write ? DMA_SETTMEM : DMA_SETTDEV)/*|(NEXT_IS_TURBO ? DMA_INITDMA_TURBO : DMA_INITDMA)*/;
+	scsi_dma->csr = DMA_RESET|(write ? DMA_SETTMEM : DMA_SETTDEV)|(NEXT_IS_TURBO ? DMA_INITDMA_TURBO : DMA_INITDMA);
 
 	scsi_dma->next_initbuf = addr; // not used in netbsd
 	scsi_dma->start = addr;
