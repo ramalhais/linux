@@ -11,7 +11,7 @@ ENTRY(_start)
 jiffies = jiffies_64 + 4;
 SECTIONS
 {
-  . = 0x1000;
+  . = 0x13000;
   _text = .;			/* Text and read-only data */
   .text : {
 	HEAD_TEXT
