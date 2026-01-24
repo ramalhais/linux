@@ -44,4 +44,6 @@ systemctl restart isc-dhcp-server
 
 # Forwarding/SNAT
 echo 1 > /proc/sys/net/ipv4/ip_forward
+iptables -I FORWARD -i $BRIDGE_IF -j ACCEPT
+iptables -I FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
 iptables -t nat -I POSTROUTING -o $HOST_IF -j MASQUERADE
