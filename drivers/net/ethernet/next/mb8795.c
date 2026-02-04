@@ -140,12 +140,6 @@ struct mb8795_private {
 
 	bool is_turbo;
 
-	// Ugly hack to attempt to pass unique dev_id to shared IRQs, so that it finds the correct handler on free_irq(). Probably not working because we need to pass the pointer (&) to these :( We need a NeXT IRQ driver
-	struct mb8795_private *irq_rx;
-	struct mb8795_private *irq_tx;
-	struct mb8795_private *irq_rx_dma;
-	struct mb8795_private *irq_tx_dma;
-
 	struct mb8795regs *mb;
 	struct next_dma_channel *rxdma;
 	struct next_dma_channel *txdma;
@@ -202,15 +196,16 @@ void dumpdmaregs(void *ptr, bool is_turbo)
 };
 #endif
 
-/* XXX check for return of NULL :( */
 static inline struct sk_buff *mb_new_skb(struct net_device *ndev)
 {
 	struct sk_buff *newskb;
 	unsigned int fixup;
 
-	// newskb=dev_alloc_skb(RXBUFLEN);
 	newskb = netdev_alloc_skb(ndev, RXBUFLEN);
-	fixup = (unsigned int)newskb->data&(NEXT_ALIGN-1);
+	if (!newskb)
+		return NULL;
+
+	fixup = (unsigned int)newskb->data & (NEXT_ALIGN-1);
 	if (fixup)
 		skb_reserve(newskb, NEXT_ALIGN-fixup);
 
@@ -221,6 +216,7 @@ static inline void handle_packet(struct mb8795_private *priv, struct net_device 
 {
 	int len = rx->len;
 	struct sk_buff *skb = rx->skb;
+	struct sk_buff *newskb;
 
 	cache_clear(rx->p_data, len);
 	skb->dev = ndev;
@@ -232,9 +228,18 @@ static inline void handle_packet(struct mb8795_private *priv, struct net_device 
 
 	netif_rx(skb);
 
-	rx->skb = mb_new_skb(ndev);
-	rx->p_data = virt_to_phys(rx->skb->data);
-	rx->len = 0;
+	newskb = mb_new_skb(ndev);
+	if (newskb) {
+		rx->skb = newskb;
+		rx->p_data = virt_to_phys(rx->skb->data);
+		rx->len = 0;
+	} else {
+		/* Allocation failed - reuse old buffer's physical address */
+		/* This will cause the old packet to be overwritten on next DMA */
+		rx->skb = NULL;
+		rx->len = 0;
+		priv->stats.rx_dropped++;
+	}
 }
 
 //  no rx ints are being allowed for now...
@@ -367,18 +372,16 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 	}
 #endif // DEBUGME_RX
 
-	if (!(rxstat&RSTAT_PRECV) /*|| csr&DMA_OVERFLOW*/) {
+	if (!(rxstat & RSTAT_PRECV)) {
 #ifdef DEBUGME_RX
-		if (!(rxstat&RSTAT_PRECV))
-			pr_info("!RSTAT_PRECV: No DMA packet received");
-		else
-			pr_info("csr DMA_OVERFLOW: clearing csr");
-#endif // DEBUGME_RX
-
+		pr_info("!RSTAT_PRECV: No DMA packet received");
+#endif
+		/*
+		 * No packet received - reuse the current buffer.
+		 * We don't free the SKB because it's part of the RX ring
+		 * and will be reused for the next DMA transfer.
+		 */
 		priv->cur_rxb = rx->next;
-		// FIXME: should probably free skb but this oopses
-		// dev_kfree_skb_any(rx->skb);
-		// kfree_skb(rx->skb);
 		setup_rxdma(priv->ndev);
 		goto bail;
 	}
@@ -409,22 +412,23 @@ static irqreturn_t mb8795_rxdmaint(int irq, void *dev_id)
 
 		handle_packet(priv, priv->ndev, rx);
 	} else {
-		// if we missed the first chained int we'll
-		// have a waiting packet in the 'first' slot
-		// but aren't currently dealing with it. Fix
+		/*
+		 * Fallback path: if we missed the first chain interrupt,
+		 * there's a waiting packet in the next slot.
+		 */
 		rx = rx->next;
-		rx->len = rxd->start - rxd->next_start - 4;// FIXME: this is probably wrong! Seems always correct after all. WTF
+		rx->len = (priv->is_turbo ? rxd->turbo_rx_saved_start : rxd->saved_end)
+			  - rx->p_data - 4;
 #ifdef DEBUGME_RX
 		pr_info("CINT2 rx->p_data=0x%x rx->len=0x%x (%d) ", rx->p_data, rx->len, rx->len);
 #endif
-		if (csr&DMA_CINT)
+		if (csr & DMA_CINT)
 			rxd->csr = DMA_CLEARCHAINI;
 
 		handle_packet(priv, priv->ndev, rx);
 
 		priv->cur_rxb = rx->next;
 		setup_rxdma(priv->ndev);
-		// priv->stats.rx_packets++;// already done in handle_packet?
 	}
 
 #ifdef DEBUGME_RX
@@ -657,19 +661,10 @@ static int mb8795_stop(struct net_device *ndev)
 
 	mb8795_reset(ndev);
 
-	// next_intmask_disable(NEXT_IRQ_ENETR_DMA-NEXT_IRQ_BASE);
-	// next_intmask_disable(NEXT_IRQ_ENETX_DMA-NEXT_IRQ_BASE);
-	// next_intmask_disable(NEXT_IRQ_ENETR-NEXT_IRQ_BASE);
-	// next_intmask_disable(NEXT_IRQ_ENETX-NEXT_IRQ_BASE);
-
-	free_irq(NEXT_IRQ_ENETR_DMA, priv->irq_rx_dma);
-	free_irq(NEXT_IRQ_ENETX_DMA, priv->irq_tx_dma);
-	free_irq(NEXT_IRQ_ENETR, priv->irq_rx);
-	free_irq(NEXT_IRQ_ENETX, priv->irq_tx);
-	// free_irq(IRQ_AUTO_6, priv->irq_rx_dma);
-	// free_irq(IRQ_AUTO_6, priv->irq_tx_dma);
-	// free_irq(IRQ_AUTO_3, priv->irq_rx);
-	// free_irq(IRQ_AUTO_3, priv->irq_tx);
+	free_irq(NEXT_IRQ_ENETX_DMA, priv);
+	free_irq(NEXT_IRQ_ENETR_DMA, priv);
+	free_irq(NEXT_IRQ_ENETX, priv);
+	free_irq(NEXT_IRQ_ENETR, priv);
 
 	return 0;
 }
@@ -699,35 +694,22 @@ static int mb8795_open(struct net_device *ndev)
 	pr_info("\n");
 #endif
 
-	priv->irq_rx = priv;
-	priv->irq_tx = priv;
-	priv->irq_rx_dma = priv;
-	priv->irq_tx_dma = priv;
-
-	// if (request_irq(IRQ_AUTO_3, mb8795_rxint, IRQF_SHARED, "NeXT Ethernet Receive", priv->irq_rx)) {
-	if (request_irq(NEXT_IRQ_ENETR, mb8795_rxint, 0, "Ethernet RX", priv->irq_rx)) {
+	if (request_irq(NEXT_IRQ_ENETR, mb8795_rxint, 0, "Ethernet RX", priv)) {
 		pr_err("Failed to register interrupt for NeXT Ethernet RX\n");
-		goto err_out_irq_rx;
+		goto err_out;
 	}
-	// if (request_irq(IRQ_AUTO_3, mb8795_txint, IRQF_SHARED, "NeXT Ethernet Transmit", priv->irq_tx)) {
-	if (request_irq(NEXT_IRQ_ENETX, mb8795_txint, 0, "Ethernet TX", priv->irq_tx)) {
+	if (request_irq(NEXT_IRQ_ENETX, mb8795_txint, 0, "Ethernet TX", priv)) {
 		pr_err("Failed to register interrupt for NeXT Ethernet TX\n");
-		goto err_out_irq_tx;
+		goto err_free_rx;
 	}
-	// if (request_irq(IRQ_AUTO_6, mb8795_rxdmaint, IRQF_SHARED, "NeXT Ethernet DMA Receive", priv->irq_rx_dma)) {
-	if (request_irq(NEXT_IRQ_ENETR_DMA, mb8795_rxdmaint, 0, "Ethernet RX DMA", priv->irq_rx_dma)) {
+	if (request_irq(NEXT_IRQ_ENETR_DMA, mb8795_rxdmaint, 0, "Ethernet RX DMA", priv)) {
 		pr_err("Failed to register interrupt for NeXT Ethernet RX DMA\n");
-		goto err_out_irq_rx_dma;
+		goto err_free_tx;
 	}
-	// if (request_irq(IRQ_AUTO_6, mb8795_txdmaint, IRQF_SHARED, "NeXT Ethernet DMA Transmit", priv->irq_tx_dma)) {
-	if (request_irq(NEXT_IRQ_ENETX_DMA, mb8795_txdmaint, 0, "Ethernet TX DMA", priv->irq_tx_dma)) {
+	if (request_irq(NEXT_IRQ_ENETX_DMA, mb8795_txdmaint, 0, "Ethernet TX DMA", priv)) {
 		pr_err("Failed to register interrupt for NeXT Ethernet TX DMA\n");
-		goto err_out_irq_tx_dma;
+		goto err_free_rx_dma;
 	}
-	// next_intmask_enable(NEXT_IRQ_ENETR-NEXT_IRQ_BASE);
-	// next_intmask_enable(NEXT_IRQ_ENETX-NEXT_IRQ_BASE);
-	// next_intmask_enable(NEXT_IRQ_ENETR_DMA-NEXT_IRQ_BASE);
-	// next_intmask_enable(NEXT_IRQ_ENETX_DMA-NEXT_IRQ_BASE);
 
 	// enable interrupts
 	// I couldn't get the chip to stop giving us tons of errors,
@@ -756,16 +738,13 @@ static int mb8795_open(struct net_device *ndev)
 
 	return 0;
 
-err_out_irq_tx_dma:
-	// free_irq(IRQ_AUTO_3, priv->irq_tx_dma);
-	free_irq(NEXT_IRQ_ENETX_DMA, priv->irq_tx_dma);
-err_out_irq_rx_dma:
-	// free_irq(IRQ_AUTO_6, priv->irq_rx_dma);
-	free_irq(NEXT_IRQ_ENETR_DMA, priv->irq_rx_dma);
-err_out_irq_tx:
-	// free_irq(IRQ_AUTO_6, priv->irq_tx);
-	free_irq(NEXT_IRQ_ENETX, priv->irq_tx);
-err_out_irq_rx:
+err_free_rx_dma:
+	free_irq(NEXT_IRQ_ENETR_DMA, priv);
+err_free_tx:
+	free_irq(NEXT_IRQ_ENETX, priv);
+err_free_rx:
+	free_irq(NEXT_IRQ_ENETR, priv);
+err_out:
 	return -EAGAIN;
 }
 
@@ -829,8 +808,6 @@ static int mb8795_probe(struct platform_device *pdev)
 		dev_info(&pdev->dev, "BMAP kicked\n");
 	}
 
-	struct mb8795regs *mb_regs = (struct mb8795regs __iomem *)NEXT_ETHER;
-	volatile u8 *mb_regs_eaddr = mb_regs->eaddr;
 	priv->mb = (void __iomem *)NEXT_ETHER;
 	// priv->mb = ioremap(0x02000000+0x00100000+0x00006000, sizeof(struct mb8795regs));
 	// priv->mb = ioremap(NEXT_ETHER, sizeof(struct mb8795regs));
@@ -863,102 +840,34 @@ static int mb8795_probe(struct platform_device *pdev)
 
 	}
 
-	// dev_info(&pdev->dev, "rxdma->csr=0x%x rxdma->turbo_rx_saved_start=0x%x rxdma->start=0x%x txdma->csr=0x%x txdma->start=0x%x\n", &priv->rxdma->csr, &priv->rxdma->turbo_rx_saved_start, &priv->rxdma->start, &priv->txdma->csr, &priv->txdma->start);
-
-	// TODO: copy from EEPROM+0x08 or PROM info
-	dev_info(&pdev->dev, "PROM Info MAC Address: %pM\n", eprom_info.eaddr);
-	u8 eaddr[6];
-	// memcpy_fromio(eaddr, priv->mb->eaddr, ETH_ALEN);
-	// bytecopy(eaddr, priv->mb->eaddr, ETH_ALEN);
-
-	// eaddr[0] = *(volatile u8 *)(eprom+8);
-	// eaddr[1] = *(volatile u8 *)(eprom+8+1);
-	// eaddr[2] = *(volatile u8 *)(eprom+8+2);
-	// eaddr[3] = *(volatile u8 *)(eprom+8+3);
-	// eaddr[4] = *(volatile u8 *)(eprom+8+4);
-	// eaddr[5] = *(volatile u8 *)(eprom+8+5);
-	// memcpy_fromio(eaddr, eprom+8, ETH_ALEN);
-	bytecopy(eaddr, eprom+8, ETH_ALEN);
-	dev_info(&pdev->dev, "EPROM Ethernet Chip MAC Address: %pM\n", eaddr);
-	dev_info(&pdev->dev, "EPROM BMAP Ethernet Chip MAC Address: %pM\n", eprom_bmap+8);
-
-	// eaddr[0] = mb_regs->eaddr[0];
-	// eaddr[1] = mb_regs->eaddr[1];
-	// eaddr[2] = mb_regs->eaddr[2];
-	// eaddr[3] = mb_regs->eaddr[3];
-	// eaddr[4] = mb_regs->eaddr[4];
-	// eaddr[5] = mb_regs->eaddr[5];
-
-	eaddr[0] = *mb_regs_eaddr;
-	eaddr[1] = *(mb_regs_eaddr+1);
-	eaddr[2] = *(mb_regs_eaddr+2);
-	eaddr[3] = *(mb_regs_eaddr+3);
-	eaddr[4] = *(mb_regs_eaddr+4);
-	eaddr[5] = *(mb_regs_eaddr+5);
-
-	dev_info(&pdev->dev, "read Ethernet Chip MAC Address: %pM\n", eaddr);
-
-	eaddr[0] = *(volatile u8 *)((void *)(priv->mb)+8);
-	eaddr[1] = *(volatile u8 *)((void *)(priv->mb)+8+1);
-	eaddr[2] = *(volatile u8 *)((void *)(priv->mb)+8+2);
-	eaddr[3] = *(volatile u8 *)((void *)(priv->mb)+8+3);
-	eaddr[4] = *(volatile u8 *)((void *)(priv->mb)+8+4);
-	eaddr[5] = *(volatile u8 *)((void *)(priv->mb)+8+5);
-
-	dev_info(&pdev->dev, "read2 Ethernet Chip MAC Address: %pM\n", eaddr);
-	// bytecopy(priv->mb->eaddr, eprom_info.eaddr, ETH_ALEN);
-	// bytecopy(eaddr, priv->mb->eaddr, ETH_ALEN);
-
-	*(volatile u8 *)(priv->mb->eaddr) = eprom_info.eaddr[0];
-	*(volatile u8 *)(priv->mb->eaddr+1) = eprom_info.eaddr[1];
-	*(volatile u8 *)(priv->mb->eaddr+2) = eprom_info.eaddr[2];
-	*(volatile u8 *)(priv->mb->eaddr+3) = eprom_info.eaddr[3];
-	*(volatile u8 *)(priv->mb->eaddr+4) = eprom_info.eaddr[4];
-	*(volatile u8 *)(priv->mb->eaddr+5) = eprom_info.eaddr[5];
-
-	eaddr[0] = *(volatile u8 *)((void *)(priv->mb)+8);
-	eaddr[1] = *(volatile u8 *)((void *)(priv->mb)+8+1);
-	eaddr[2] = *(volatile u8 *)((void *)(priv->mb)+8+2);
-	eaddr[3] = *(volatile u8 *)((void *)(priv->mb)+8+3);
-	eaddr[4] = *(volatile u8 *)((void *)(priv->mb)+8+4);
-	eaddr[5] = *(volatile u8 *)((void *)(priv->mb)+8+5);
-
-	dev_info(&pdev->dev, "read after write: Ethernet Chip MAC Address: %pM\n", eaddr);
-
-	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %hhx %hhx %hhx %hhx %hhx %hhx\n", priv->mb->eaddr[0], priv->mb->eaddr[1], priv->mb->eaddr[2], priv->mb->eaddr[3], priv->mb->eaddr[4], priv->mb->eaddr[5]);
-	// dev_info(&pdev->dev, "Ethernet Chip MAC Address: %pM\n", priv->mb->eaddr);
-
-	if (eprom_info.eaddr[0]|eprom_info.eaddr[1]|eprom_info.eaddr[2]|eprom_info.eaddr[3]|eprom_info.eaddr[4]|eprom_info.eaddr[5]) {
-		dev_info(&pdev->dev, "Using PROM MAC Address\n");
-		priv->mb->eaddr[0] = eprom_info.eaddr[0];
-		priv->mb->eaddr[1] = eprom_info.eaddr[1];
-		priv->mb->eaddr[2] = eprom_info.eaddr[2];
-		priv->mb->eaddr[3] = eprom_info.eaddr[3];
-		priv->mb->eaddr[4] = eprom_info.eaddr[4];
-		priv->mb->eaddr[5] = eprom_info.eaddr[5];
-	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %hhx %hhx %hhx %hhx %hhx %hhx\n", priv->mb->eaddr[0], priv->mb->eaddr[1], priv->mb->eaddr[2], priv->mb->eaddr[3], priv->mb->eaddr[4], priv->mb->eaddr[5]);
-	// dev_info(&pdev->dev, "Ethernet Chip MAC Address: %pM\n", priv->mb->eaddr);
-	bytecopy((void *)&priv->mb->eaddr[0], eprom_info.eaddr, ETH_ALEN);
-	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %hhx %hhx %hhx %hhx %hhx %hhx\n", priv->mb->eaddr[0], priv->mb->eaddr[1], priv->mb->eaddr[2], priv->mb->eaddr[3], priv->mb->eaddr[4], priv->mb->eaddr[5]);
-
-		// memcpy(priv->mb->eaddr, eprom_info.eaddr, ETH_ALEN);
+	/*
+	 * MAC address priority:
+	 * 1. PROM info (from boot loader)
+	 * 2. EEPROM at offset 8
+	 * 3. Random fallback
+	 */
+	if (is_valid_ether_addr(eprom_info.eaddr)) {
+		dev_info(&pdev->dev, "Using PROM MAC address: %pM\n", eprom_info.eaddr);
 		eth_hw_addr_set(ndev, (u8 *)eprom_info.eaddr);
-	}
-	// else if (priv->mb->eaddr[0]|priv->mb->eaddr[1]|priv->mb->eaddr[2]|priv->mb->eaddr[3]|priv->mb->eaddr[4]|priv->mb->eaddr[5]) {
-	// 	dev_info(&pdev->dev, "Using Ethernet Chip MAC Address\n");
-	// } 
-	else {
-		dev_info(&pdev->dev, "Missing Ethernet Chip and PROM MAC address. Assigning random address\n");
-		eth_hw_addr_random(ndev);
-		// ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
-	}
-	// ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
-	// eth_hw_addr_set(ndev, (u8 *)priv->mb->eaddr);
+		bytecopy((void *)priv->mb->eaddr, eprom_info.eaddr, ETH_ALEN);
+	} else if (eprom) {
+		u8 eaddr[ETH_ALEN];
 
-	// eth_hw_addr_set(ndev, (u8 *)eprom_info.eaddr);
-	dev_info(&pdev->dev, "Netdev MAC Address: %pM\n", ndev->dev_addr);
-	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %x %x %x %x %x %x\n", priv->mb->eaddr[0], priv->mb->eaddr[1], priv->mb->eaddr[2], priv->mb->eaddr[3], priv->mb->eaddr[4], priv->mb->eaddr[5]);
-	dev_info(&pdev->dev, "Ethernet Chip MAC Address: %pM\n", priv->mb->eaddr);
+		bytecopy(eaddr, eprom + 8, ETH_ALEN);
+		if (is_valid_ether_addr(eaddr)) {
+			dev_info(&pdev->dev, "Using EEPROM MAC address: %pM\n", eaddr);
+			eth_hw_addr_set(ndev, eaddr);
+			bytecopy((void *)priv->mb->eaddr, eaddr, ETH_ALEN);
+		} else {
+			goto use_random;
+		}
+	} else {
+use_random:
+		dev_info(&pdev->dev, "No valid MAC address found, using random\n");
+		eth_hw_addr_random(ndev);
+	}
+
+	dev_info(&pdev->dev, "MAC address: %pM\n", ndev->dev_addr);
 
 	err = register_netdev(ndev);
 	if (err) {
@@ -997,6 +906,11 @@ static int mb8795_probe(struct platform_device *pdev)
 		struct rxb *rx = (struct rxb *)&priv->rxbufs[i];
 
 		rx->skb = mb_new_skb(ndev);
+		if (!rx->skb) {
+			dev_err(&pdev->dev, "Failed to allocate RX buffer %d\n", i);
+			err = -ENOMEM;
+			goto err_out_free_rxbufs;
+		}
 		rx->p_data = virt_to_phys(rx->skb->data);
 		rx->len = 0;  /* is filled in by chain handler */
 
@@ -1018,6 +932,11 @@ static int mb8795_probe(struct platform_device *pdev)
 
 	return 0;
 
+err_out_free_rxbufs:
+	while (--i >= 0) {
+		if (priv->rxbufs[i].skb)
+			dev_kfree_skb(priv->rxbufs[i].skb);
+	}
 // err_out_unregister_netdev:
 // 	unregister_netdev(ndev);
 // err_out_free_irq:
