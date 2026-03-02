@@ -91,6 +91,6 @@ void set_timer_csr_bits(u8 csr);
 
 extern void next_sched_init(void);
 extern void next_poweroff(void);
-extern int next_hwclk(int, struct rtc_time*);
+extern int next_hwclk(int op, struct rtc_time *t);
 
 #endif //NEXT_RTC_H
