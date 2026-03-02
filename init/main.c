@@ -1132,10 +1132,21 @@ void start_kernel(void)
 	perf_event_init();
 	profile_init();
 	call_function_init();
+#if defined(CONFIG_NEXT_DEBUG)
+#define NEXT_DEBUG_ADDR 0x0200f004
+volatile unsigned long *next_debug = ioremap(NEXT_DEBUG_ADDR, sizeof(unsigned long));
+#define NEXT_DEBUG_MACRO(val) (*next_debug = val)
+#else
+#define NEXT_DEBUG_MACRO(val)
+#endif
+NEXT_DEBUG_MACRO(0x67);
 	WARN(!irqs_disabled(), "Interrupts were enabled early\n");
+NEXT_DEBUG_MACRO(0x68);
 
 	early_boot_irqs_disabled = false;
+NEXT_DEBUG_MACRO(0x69);
 	local_irq_enable();
+NEXT_DEBUG_MACRO(0x70);
 
 	kmem_cache_init_late();
 
@@ -1172,8 +1183,11 @@ void start_kernel(void)
 	acpi_early_init();
 	if (late_time_init)
 		late_time_init();
+NEXT_DEBUG_MACRO(0x78);
 	sched_clock_init();
+NEXT_DEBUG_MACRO(0x79);
 	calibrate_delay();
+NEXT_DEBUG_MACRO(0x80);
 
 	arch_cpu_finalize_init();
 
@@ -1204,10 +1218,13 @@ void start_kernel(void)
 
 	acpi_subsystem_init();
 	arch_post_acpi_subsys_init();
+NEXT_DEBUG_MACRO(0x107);
 	kcsan_init();
+NEXT_DEBUG_MACRO(0x108);
 
 	/* Do the rest non-__init'ed, we're now alive */
 	rest_init();
+NEXT_DEBUG_MACRO(0x109); // should not be reached
 
 	/*
 	 * Avoid stack canaries in callers of boot_init_stack_canary for gcc-10
