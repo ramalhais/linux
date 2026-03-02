@@ -128,10 +128,10 @@ struct mb8795regs {
 // #define NEXT_RXBUF(x) ((x+1)%NRXBUFS)
 
 // #define MAX_DMASIZE 4096
-// #define	DMA_ENDALIGNMENT	16	// DMA must start(Previous) and end on quad longword //default
+// #define DMA_ENDALIGNMENT	16	// DMA must start(Previous) and end on quad longword //default
 // #define ENDMA_ENDALIGNMENT	32	// Ethernet DMA is very special
-// #define	DMA_ENDALIGN(type, addr) ((type)(((unsigned)(addr)+DMA_ENDALIGNMENT-1)&~(DMA_ENDALIGNMENT-1))) // default
-// #define	ENDMA_ENDALIGN(type, addr) ((type)((((unsigned)(addr)+ENDMA_ENDALIGNMENT-1)&~(DMA_ENDALIGNMENT-1))|0x80000000)) // TX with end of packet bit?
+// #define DMA_ENDALIGN(type, addr) ((type)(((unsigned)(addr)+DMA_ENDALIGNMENT-1)&~(DMA_ENDALIGNMENT-1))) // default
+// #define ENDMA_ENDALIGN(type, addr) ((type)((((unsigned)(addr)+ENDMA_ENDALIGNMENT-1)&~(DMA_ENDALIGNMENT-1))|0x80000000)) // TX with end of packet bit?
 
 struct mb8795_private {
 	// spinlock_t lock;
@@ -301,7 +301,7 @@ static void setup_rxdma(struct net_device *ndev)
 	rxd->csr = DMA_SETENABLE|DMA_SETTMEM|DMA_SETCHAIN;
 }
 
-// We set up the dma engine to start recieving the next
+// We set up the dma engine to start receiving the next
 // packet while we go off and queue the packet that
 // this int was for. this way we find another chain
 // int waiting for us when we're done with this one
@@ -485,8 +485,6 @@ static irqreturn_t mb8795_txdmaint(int irq, void *dev_id)
 	dumpdmaregs(txd, priv->is_turbo);
 #endif
 
-	// We're in an interrupt?
-	// dev->interrupt=1;
 	if (priv->mb->txstat&(TSTAT_TXAVAIL|TSTAT_TXDONE)) {
 		priv->mb->txstat = TSTAT_CLEAR;
 		priv->mb->txmask = 0;
@@ -505,10 +503,6 @@ static irqreturn_t mb8795_txdmaint(int irq, void *dev_id)
 
 	priv->stats.tx_packets++;
 	priv->stats.tx_bytes += priv->txlen;
-	// dev->tbusy=0;
-	// mark_bh(NET_BH);
-
-	// dev->interrupt=0;
 
 	local_irq_restore(flags);
 	return IRQ_HANDLED;
@@ -532,28 +526,6 @@ static int mb8795_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 #ifdef DEBUGME_TX
 	pr_info("\nstart_xmit p=%p len=%d txstat=%x ", skb->data, skb->len, priv->mb->txstat);
 #endif
-
-// 	// check for xmit timeout ?
-// 	if (dev->tbusy) {
-// 		int tickssince = jiffies-dev->trans_start;
-// #ifdef	DEBUGME_TX
-// 		printk("st ");
-// #endif
-// 		if (tickssince < 20)  // o/~ big wheel keep on turnin' o/~
-// 			return 1;
-
-// 		printk("xmit timeout, we're bummed\n");
-// 		// should reset
-// 		dev->tbusy = 0;
-// 		return 0;
-// 	}
-
-// 	// we only have 1 tx buffer, perhaps should have a ring in memory
-// 	//	filled in by txdone int..
-// 	if (test_and_set_bit(0, (void *)&dev->tbusy) != 0) {
-// 		printk("%s: Transmitter access conflict.\n", dev->name);
-// 		return 1;
-// 	}
 
 	memcpy(priv->txbuf, skb->data, skb->len);
 	// flush_page_to_ram((unsigned long)priv->txbuf&~(PAGE_SIZE-1));
@@ -593,7 +565,7 @@ static int mb8795_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 	// really splatting that much over the net.. I need
 	// an analyzer :)
 
-	// try: eth_skb_pad(struct sk_buff *skb) and remove the +15 below? No 15 is magic and also in Previous.
+	// try: eth_skb_pad(struct sk_buff *skb) and remove the +15 below? No!, 15 is magic and also in Previous.
 	// The 0x80000000 is also some kind of magic (bit 31(highest bit)) End Of Packet.
 	// txd->end	= (priv->p_txbuf+TXBUFLEN+15) | 0x80000000;
 	txd->end = (priv->p_txbuf + priv->txlen + (priv->is_turbo ? 0 : MB_MAGIC_PADDING)) | MB_TX_EOP; //dd_limit should align to 16 TX and 32bytes on RX
@@ -607,7 +579,6 @@ static int mb8795_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 	pr_info("\n");
 #endif
 
-	// dev->trans_start = jiffies;
 	txd->csr = DMA_SETENABLE;
 	if (priv->is_turbo)
 		priv->mb->txmode |= TXM_TURBOSTART;
@@ -650,26 +621,14 @@ static int mb8795_stop(struct net_device *ndev)
 	pr_info("in %s\n", __func__);
 #endif
 
-	// dev->start = 0;
-	// dev->tbusy = 1;
-
 	// Should really free skbs here too :)
 
 	mb8795_reset(ndev);
-
-	// next_intmask_disable(NEXT_IRQ_ENETR_DMA-NEXT_IRQ_BASE);
-	// next_intmask_disable(NEXT_IRQ_ENETX_DMA-NEXT_IRQ_BASE);
-	// next_intmask_disable(NEXT_IRQ_ENETR-NEXT_IRQ_BASE);
-	// next_intmask_disable(NEXT_IRQ_ENETX-NEXT_IRQ_BASE);
 
 	free_irq(NEXT_IRQ_ENETR_DMA, priv->irq_rx_dma);
 	free_irq(NEXT_IRQ_ENETX_DMA, priv->irq_tx_dma);
 	free_irq(NEXT_IRQ_ENETR, priv->irq_rx);
 	free_irq(NEXT_IRQ_ENETX, priv->irq_tx);
-	// free_irq(IRQ_AUTO_6, priv->irq_rx_dma);
-	// free_irq(IRQ_AUTO_6, priv->irq_tx_dma);
-	// free_irq(IRQ_AUTO_3, priv->irq_rx);
-	// free_irq(IRQ_AUTO_3, priv->irq_tx);
 
 	return 0;
 }
@@ -688,10 +647,6 @@ static int mb8795_open(struct net_device *ndev)
 	// ether_addr_copy((u8 *)priv->mb->eaddr, (u8 *)ndev->dev_addr);
 	// ether_addr_copy((u8 *)ndev->dev_addr, (u8 *)priv->mb->eaddr);
 
-	// dev->tbusy = 0;
-	// dev->interrupt = 0;
-	// dev->start = 1;
-
 	setup_rxdma(ndev);
 #ifdef DEBUGME_RX
 	pr_info("open():");
@@ -704,30 +659,22 @@ static int mb8795_open(struct net_device *ndev)
 	priv->irq_rx_dma = priv;
 	priv->irq_tx_dma = priv;
 
-	// if (request_irq(IRQ_AUTO_3, mb8795_rxint, IRQF_SHARED, "NeXT Ethernet Receive", priv->irq_rx)) {
 	if (request_irq(NEXT_IRQ_ENETR, mb8795_rxint, 0, "Ethernet RX", priv->irq_rx)) {
 		pr_err("Failed to register interrupt for NeXT Ethernet RX\n");
 		goto err_out_irq_rx;
 	}
-	// if (request_irq(IRQ_AUTO_3, mb8795_txint, IRQF_SHARED, "NeXT Ethernet Transmit", priv->irq_tx)) {
 	if (request_irq(NEXT_IRQ_ENETX, mb8795_txint, 0, "Ethernet TX", priv->irq_tx)) {
 		pr_err("Failed to register interrupt for NeXT Ethernet TX\n");
 		goto err_out_irq_tx;
 	}
-	// if (request_irq(IRQ_AUTO_6, mb8795_rxdmaint, IRQF_SHARED, "NeXT Ethernet DMA Receive", priv->irq_rx_dma)) {
 	if (request_irq(NEXT_IRQ_ENETR_DMA, mb8795_rxdmaint, 0, "Ethernet RX DMA", priv->irq_rx_dma)) {
 		pr_err("Failed to register interrupt for NeXT Ethernet RX DMA\n");
 		goto err_out_irq_rx_dma;
 	}
-	// if (request_irq(IRQ_AUTO_6, mb8795_txdmaint, IRQF_SHARED, "NeXT Ethernet DMA Transmit", priv->irq_tx_dma)) {
 	if (request_irq(NEXT_IRQ_ENETX_DMA, mb8795_txdmaint, 0, "Ethernet TX DMA", priv->irq_tx_dma)) {
 		pr_err("Failed to register interrupt for NeXT Ethernet TX DMA\n");
 		goto err_out_irq_tx_dma;
 	}
-	// next_intmask_enable(NEXT_IRQ_ENETR-NEXT_IRQ_BASE);
-	// next_intmask_enable(NEXT_IRQ_ENETX-NEXT_IRQ_BASE);
-	// next_intmask_enable(NEXT_IRQ_ENETR_DMA-NEXT_IRQ_BASE);
-	// next_intmask_enable(NEXT_IRQ_ENETX_DMA-NEXT_IRQ_BASE);
 
 	// enable interrupts
 	// I couldn't get the chip to stop giving us tons of errors,
@@ -757,13 +704,10 @@ static int mb8795_open(struct net_device *ndev)
 	return 0;
 
 err_out_irq_tx_dma:
-	// free_irq(IRQ_AUTO_3, priv->irq_tx_dma);
 	free_irq(NEXT_IRQ_ENETX_DMA, priv->irq_tx_dma);
 err_out_irq_rx_dma:
-	// free_irq(IRQ_AUTO_6, priv->irq_rx_dma);
 	free_irq(NEXT_IRQ_ENETR_DMA, priv->irq_rx_dma);
 err_out_irq_tx:
-	// free_irq(IRQ_AUTO_6, priv->irq_tx);
 	free_irq(NEXT_IRQ_ENETX, priv->irq_tx);
 err_out_irq_rx:
 	return -EAGAIN;
@@ -787,7 +731,7 @@ static const struct net_device_ops mb8795_ndev_ops = {
 	.ndo_set_mac_address	= eth_mac_addr
 };
 
-void inline bytecopy(void *d, void *s, size_t n)
+inline void bytecopy(void *d, void *s, size_t n)
 {
     while (n--) {
         *(volatile u8 *)d++ = *(volatile u8 *)s++;
@@ -798,16 +742,14 @@ static int mb8795_probe(struct platform_device *pdev)
 {
 	struct net_device *ndev;
 	struct mb8795_private *priv;
-	// volatile struct bmap_chip *bmap = (void __iomem *)NEXT_BMAP;
-	struct bmap_chip *bmap = ioremap(NEXT_BMAP, sizeof(struct bmap_chip));
-	// char *eprom = (void __iomem *)NEXT_EPROM_BMAP;
+	// struct bmap_chip *bmap = ioremap(NEXT_BMAP, sizeof(struct bmap_chip));
 	char *eprom = ioremap(NEXT_EPROM, NEXT_EPROM_SIZE);
 	char *eprom_bmap = ioremap(NEXT_EPROM_BMAP, NEXT_EPROM_SIZE);
 	int err;
 	int i;
 
 	dev_info(&pdev->dev, "Probing\n");
-	dev_info(&pdev->dev, "bmap->bm_sid=0x%x, bmap->bm_lo=0x%x\n", bmap->bm_sid, bmap->bm_lo);
+	// dev_info(&pdev->dev, "bmap->bm_sid=0x%x, bmap->bm_lo=0x%x\n", bmap->bm_sid, bmap->bm_lo);
 
 	ndev = alloc_etherdev(sizeof(struct mb8795_private));
 	if (!ndev) {
@@ -823,18 +765,19 @@ static int mb8795_probe(struct platform_device *pdev)
 
 	// Kick BMAP
 	// if (machine_type == NeXT_X15) // cube040?
-	if (!priv->is_turbo) {
-		dev_info(&pdev->dev, "Kicking BMAP\n");
-		bmap->bm_lo = 0;
-		dev_info(&pdev->dev, "BMAP kicked\n");
-	}
+	// if (!priv->is_turbo) {
+	// 	dev_info(&pdev->dev, "Kicking BMAP\n");
+	// 	bmap->bm_lo = 0;
+	// 	dev_info(&pdev->dev, "BMAP kicked\n");
+	// }
 
 	struct mb8795regs *mb_regs = (struct mb8795regs __iomem *)NEXT_ETHER;
 	volatile u8 *mb_regs_eaddr = mb_regs->eaddr;
-	priv->mb = (void __iomem *)NEXT_ETHER;
+	// priv->mb = (void __iomem *)NEXT_ETHER; //was working on hardware and previous
 	// priv->mb = ioremap(0x02000000+0x00100000+0x00006000, sizeof(struct mb8795regs));
-	// priv->mb = ioremap(NEXT_ETHER, sizeof(struct mb8795regs));
+	priv->mb = ioremap(NEXT_ETHER, sizeof(struct mb8795regs));
 	// priv->mb = ioremap_wt(NEXT_ETHER, sizeof(struct mb8795regs));
+
 	// work-around bug?
 	priv->mb->txmode = TXM_LOOP_DISABLE;
 	mdelay(10);
@@ -848,20 +791,18 @@ static int mb8795_probe(struct platform_device *pdev)
 	priv->mb->txmode = priv->is_turbo ? TXM_TURBO : TXM_LOOP_DISABLE;
 	priv->mb->rxmode = RXM_DISABLE;
 
-	// priv->rxdma = (struct next_dma_channel *)NEXT_CSR_ETHER_RX;
-	// priv->txdma = (struct next_dma_channel *)NEXT_CSR_ETHER_TX;
 	priv->rxdma = ioremap(NEXT_CSR_ETHER_RX, sizeof(struct next_dma_channel));
 	priv->txdma = ioremap(NEXT_CSR_ETHER_TX, sizeof(struct next_dma_channel));
 
 	// FIXME: TEST kicking bmap a second time after ioremap
-	if (!priv->is_turbo) {
-		dev_info(&pdev->dev, "Kicking BMAP\n");
-		bmap->bm_lo = 0;
-		dev_info(&pdev->dev, "BMAP kicked\n");
-		// and resetting again
-			priv->mb->reset = RST_RESET;
+	// if (!priv->is_turbo) {
+	// 	dev_info(&pdev->dev, "Kicking BMAP\n");
+	// 	bmap->bm_lo = 0;
+	// 	dev_info(&pdev->dev, "BMAP kicked\n");
+	// 	// and resetting again
+	// 		priv->mb->reset = RST_RESET;
 
-	}
+	// }
 
 	// dev_info(&pdev->dev, "rxdma->csr=0x%x rxdma->turbo_rx_saved_start=0x%x rxdma->start=0x%x txdma->csr=0x%x txdma->start=0x%x\n", &priv->rxdma->csr, &priv->rxdma->turbo_rx_saved_start, &priv->rxdma->start, &priv->txdma->csr, &priv->txdma->start);
 

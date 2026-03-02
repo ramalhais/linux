@@ -1233,6 +1233,13 @@ config NEXT_SCSI
 	  This is the driver for the onboard SCSI host adapter of
 	  NeXT Computer/cube/station.
 
+config NEXT_SCSI_DEBUG
+	bool "NeXT SCSI debugging"
+	default n
+	depends on NEXT_SCSI
+	help
+	  Enable debug information for NeXT SCSI.
+
 config SCSI_DEBUG
 	tristate "SCSI debugging host and device simulator"
 	depends on SCSI

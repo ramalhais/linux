@@ -1,6 +1,18 @@
 #!/bin/bash -x
 
-GCC_SUFFIX="-13"
+# sudo apt install ccache
+export PATH="/usr/lib/ccache:$PATH"
+# Recommended for cross-compiling kernels / embedded
+#export CCACHE_COMPRESS=1
+#export CCACHE_SLOPPINESS=time_macros
+# delete cache and zeroe statistics
+#ccache -Cz
+
+#GCC_SUFFIX="-9"
+GCC_SUFFIX="-10"
+#GCC_SUFFIX="-12"
+#GCC_SUFFIX="-13"
+#GCC_SUFFIX="-14"
 SCRIPT_DIR=$(dirname $(readlink -f ${BASH_SOURCE[0]}))
 
 # Needed for network boot, because PROM uses the addr on the aout or macho header.
@@ -35,7 +47,7 @@ export _BUILDROOT_OVERLAY_DIR=$_BUILDROOT_DIR/linux-modules/
 # cp defconfig arch/m68k/configs/next_defconfig
 
 ### Setup NeXT config
-[ ! -f .config ] && make next_defconfig
+[ ! -f .config ] && make next_defconfig && scripts/config --enable NEXT_DEBUG && scripts/config --disable NEXT_SCSI
 
 #
 # Kernel Modules
@@ -111,7 +123,8 @@ m68k-linux-gnu-objcopy --strip-unneeded --output-target=binary ${SCRIPT_DIR}/vml
 
 if [ -z $KERN_LOADADDR ]; then
 	MEM_BASE=4000000
-	KERN_LOADADDR=$(m68k-linux-gnu-objdump -D ${SCRIPT_DIR}/vmlinux|grep '<_stext>:'|cut -f1 -d' ')
+	#KERN_LOADADDR=$(m68k-linux-gnu-objdump -D ${SCRIPT_DIR}/vmlinux|grep '<_stext>:'|cut -f1 -d' ')
+	KERN_LOADADDR=$(m68k-linux-gnu-objdump --all-headers ${SCRIPT_DIR}/vmlinux|grep _stext|cut -f1 -d' ')
 
 	IS_OFFSET=$(echo "ibase=16; ${KERN_LOADADDR} < ${MEM_BASE}" | bc)
 	if [ $IS_OFFSET -eq 1 ] && [ $ADD_OFFSET -eq 1 ]; then
@@ -140,8 +153,8 @@ ${SCRIPT_DIR}/arch/m68k/tools/next/aout ${SCRIPT_DIR}/vmlinux.binary_$DATE ${SCR
 ln -sf ${SCRIPT_DIR}/vmlinux.aout_$DATE ~/next/tftp/private/tftpboot/boot
 
 ### Save patch
-BASE_BRANCH=linux-6.9.y
-git diff $BASE_BRANCH > ../linux-$BASE_BRANCH-NeXT-$DATE.patch
+BASE_BRANCH=linux-6.18.y
+git diff $BASE_BRANCH > ../NeXT-$BASE_BRANCH-to-$(git branch --show-current)-$DATE.patch
 # git tag NeXT-$(date +%F-%H.%M.%S)
 # git push --tags
 
@@ -150,3 +163,6 @@ cp .config ../.config-NeXT-$DATE
 
 ### Show generated assembly code
 # m68k-linux-gnu-objdump -D vmlinux|less
+
+### Get serial output from Previous emulator log
+#cat log|grep 'Channel A: Sending'|cut -d' ' -f5|sed -e 's/\n//g'|xxd -r -p
