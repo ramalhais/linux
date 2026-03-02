@@ -57,6 +57,11 @@ const struct linux_logo * __ref fb_find_logo(int depth)
 		/* SuperH Linux logo */
 		logo = &logo_superh_mono;
 #endif
+#ifdef CONFIG_LOGO_NEXT_GRAY_VGA16
+		/* NeXT Penguin logo on m68k */
+		if (MACH_IS_NEXT)
+			logo = &logo_next_gray_vga16;
+#endif
 	}
 	
 	if (depth >= 4) {
@@ -85,7 +90,7 @@ const struct linux_logo * __ref fb_find_logo(int depth)
 			logo = &logo_mac_clut224;
 #endif
 #ifdef CONFIG_LOGO_NEXT_CLUT224
-		/* NeXT Linux logo on m68k */
+		/* NeXT Penguin logo on m68k */
 		if (MACH_IS_NEXT)
 			logo = &logo_next_clut224;
 #endif

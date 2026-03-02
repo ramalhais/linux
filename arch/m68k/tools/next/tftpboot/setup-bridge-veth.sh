@@ -47,3 +47,9 @@ echo 1 > /proc/sys/net/ipv4/ip_forward
 iptables -I FORWARD -i $BRIDGE_IF -j ACCEPT
 iptables -I FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
 iptables -t nat -I POSTROUTING -o $HOST_IF -j MASQUERADE
+
+# To allow Previous to use veth0guest run:
+# sudo setcap cap_net_raw,cap_net_admin+eip ~ramalhais/next/previous-trunk/src/previous
+
+# If you don't want to give special permissions to the Previous binary but have audio working
+# sudo --preserve-env=DISPLAY,XDG_RUNTIME_DIR,DBUS_SESSION_BUS_ADDRESS ~ramalhais/next/previous-trunk/src/previous

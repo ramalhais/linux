@@ -276,22 +276,17 @@
 #  endif
 #endif
 
+#undef MMU_PRINT
 #undef MMU_NOCACHE_KERNEL
+#undef DEBUG
 
+#if defined(CONFIG_NEXT_DEBUG)
 #define MMU_PRINT
 //#define DEBUG 1
 
-#ifdef CONFIG_NEXT
-
-//#define DEBUG_QEMU 1
-
-#if defined(DEBUG_QEMU)
-#define  DEBUG_QEMU_ADDR #0x0200f004 // Previous debug
-//#define DEBUG_QEMU_ADDR #0x02004200
-#define  DEBUG_QEMU_ADDR_FF #0xff00f004 // Previous debug mmu_map'ed
-#endif // DEBUG_QEMU
-
-#endif // CONFIG_NEXT
+#define  NEXT_DEBUG_ADDR #0x0200f004 // Previous debug
+//#define NEXT_DEBUG_ADDR #0x02004200 // QEMU debug
+#endif
 
 /*
  * For the head.S console, there are three supported fonts, 6x11, 8x16 and 8x8.
@@ -606,8 +601,8 @@ ENTRY(__start)
 
 #ifdef CONFIG_NEXT
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a0
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a0
 	movel	#1, %a0@
 #endif
 
@@ -618,8 +613,8 @@ ENTRY(__start)
 	// FIXME NeXT: this is done below. maybe remove this?
 	//movew   #0x2700,%sr
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a0
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a0
 	movel	#2, %a0@
 #endif
 
@@ -631,7 +626,7 @@ ENTRY(__start)
 	movc	%cacr,%d0
 	tstl	%d0
 	// If read back 0, this is not an 030
-	jeq		L(detected_not_030)
+	jeq	L(detected_not_030)
 
 	// Else, this is an 030
 	lea	%pc@(m68k_cputype),%a1
@@ -659,7 +654,7 @@ L(detected_not_030):
 	movc	%cacr,%d0
 	tstl	%d0
 	// If read back 0, this is not an 040/060 and by exclusion, it's an 020
-	jeq		L(detected_020)
+	jeq	L(detected_020)
 
 	// Else, this is an 040 or 060
 
@@ -677,7 +672,7 @@ L(detected_not_030):
 	movc	%cacr,%d0
 	tstl	%d0
 	// If read back 0, this is not an 060 and by exclusion, it's an 040
-	jeq		L(detected_040)
+	jeq	L(detected_040)
 
 	// Else, it's an 060
 	// There's no 060 NeXT, but i'll leave it here so that other machines can use it.
@@ -690,7 +685,7 @@ L(detected_not_030):
 	lea	%pc@(m68k_mmutype),%a1
 	movel   &MMU_68060,%a1@
 
-	jra		L(detect_done)
+	jra	L(detect_done)
 
 L(detected_040):
 	lea	%pc@(m68k_cputype),%a1
@@ -709,7 +704,7 @@ L(detected_040):
 	movec   %d0,%cacr
 	.chip 68k
 
-	jra		L(detect_done)
+	jra	L(detect_done)
 
 L(detected_020):
  	// There's no 020 NeXT, but i'll leave it here so that other machines can use it.
@@ -732,8 +727,8 @@ L(detect_done):
  */
 	lea	%pc@(_stext),%sp
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a0
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a0
 	movel	#7, %a0@
 #endif
 
@@ -741,8 +736,8 @@ L(detect_done):
  * Record the CPU and machine type.
  */
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a0;
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a0;
 	movel	#8, %a0@
 #endif
 
@@ -895,8 +890,8 @@ L(test_notvirt):
 #endif /* CONFIG_060_WRITETHROUGH */
 1:
 	movew	#_PAGE_CACHE040,%d0
+
 	movel	#_PAGE_CACHE040W,%d1
-//	movel	#_PAGE_NOCACHE_S,%d1 // FIXME: NeXT: test no cache for pagetables
 
 L(save_cachetype):
 	/* Save cache mode for supervisor mode and page tables
@@ -907,17 +902,17 @@ L(save_cachetype):
 	movel	%d1,%a0@
 
 /*
- * raise interrupt level (disable interrupts)
+ * raise interrupt level
  */
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0xE, %a4@
 #endif
 
 	movew	#0x2700,%sr
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0xF, %a4@
 #endif
 
@@ -1035,48 +1030,47 @@ L(gvtdone):
 L(nothp):
 #endif
 
-
 #ifdef CONFIG_NEXT
 	is_not_next(L(not_next_prom))
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a0
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a0
 	movel	#3, %a0@
 #endif
 
 	/* get the pointer to the info the prom left behind */
-	movec   %vbr,%a0
-	movel   %a0@(4),%a1
+	movec	%vbr,%a0
+	movel	%a0@(4),%a1
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	%a0, %a4@ /* print vbr address in vbr register */
 
-	movel	DEBUG_QEMU_ADDR, %a4
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	%a1, %a4@ /* print prom_info address at vbr address+4. this should be vbr address+0x400 (256*4bytes=1k=0x400)*/
 
-	movel	DEBUG_QEMU_ADDR, %a4
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#4, %a4@
 #endif
 
-	lea     %pc@(prom_info),%a2
+	lea	%pc@(prom_info),%a2
 
 	is_040(L(prom_040))
 
 	// 030
 	// FIXME NeXT: why lower size on 030?
-	movel   #200,%d1
+	movel	#200,%d1
 	jbra	L(detect_prom_done)
 
 L(prom_040):
 	// FIXME NeXT: why lower size on 040?
-	movel   #235,%d1  /* sizeof(struct prom_info) = 960 bytes. 960/sizeof(long)=240  */
+	movel	#235,%d1  /* sizeof(struct prom_info) = 960 bytes. 960/sizeof(long)=240  */
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	%d1, %a4@
 
-	movel	DEBUG_QEMU_ADDR, %a4
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#5, %a4@
 #endif
 
@@ -1084,38 +1078,38 @@ L(detect_prom_done):
 
 	// Copy prom_info
 1:
-#if defined(DEBUG_QEMU)
+#if defined(CONFIG_NEXT_DEBUG)
 	movel	%a1@, %a4@ /* print 4bytes*/
 #endif
-	movel   %a1@+,%a2@+
-	dbra    %d1,1b
+	movel	%a1@+,%a2@+
+	dbra	%d1,1b
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	%a1, %a4@
 
-	movel	DEBUG_QEMU_ADDR, %a4
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	%a2, %a4@
 #endif
 
 	// grab the first 6 bytes of the eprom containing the mac address
-	movel   #0x1000008,%a0
-	lea     %pc@(eprom_info),%a1
-	movel   #6,%d1
+	movel	#0x1000008,%a0
+	lea	%pc@(eprom_info),%a1
+	movel	#6,%d1
 
 	is_040(L(eprom_040))
 
 	jbra	L(eprom_done)
 
 L(eprom_040):
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#6, %a4@
 #endif
 
 1:
-	moveb   %a0@+,%a1@+
-	dbra    %d1,1b  
+	moveb	%a0@+,%a1@+
+	dbra	%d1,1b
 
 L(eprom_done):
 
@@ -1127,15 +1121,15 @@ L(not_next_prom):
  * Initialize serial port
  */
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x10, %a4@
 #endif
 
 	jbsr	L(serial_init)
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x11, %a4@
 #endif
 
@@ -1153,13 +1147,13 @@ L(not_next_prom):
 L(nocon):
 #endif /* CONFIG_MAC */
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x12, %a4@
 #endif
 
-	puts	"\nStarting Linux...\n"
-	
+	putc	'\n'
+	putc	'A'
 	leds	0x2
 	// Why are all these empty on 030 you ask? 030 has cputype=0, and 020/030 don't have cachemode (0)
 	dputn	%pc@(L(cputype))
@@ -1170,8 +1164,8 @@ L(nocon):
 /*
  * Save physical start address of kernel
  */
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x13, %a4@
 #endif
 
@@ -1193,22 +1187,20 @@ L(nocon):
  *	First map the first 4, 8, or 16 MB of kernel code & data
  */
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x14, %a4@
 #endif
 
 #ifdef CONFIG_NEXT
 	is_not_next(L(not_next_mem))
 
-	lea     %pc@(prom_info),%a2
-	// prom_info.simm_info[0].end is at byte offset 204
-	movel	%a2@(204), %d0
-	// prom_info.simm_info[0].start is at byte offset 200
-	movel	%a2@(200), %d1
+	lea	%pc@(prom_info),%a2
+	movel	%a2@(204), %d0	// prom_info.simm_info[0].end is at byte offset 204
+	movel	%a2@(200), %d1	// prom_info.simm_info[0].start is at byte offset 200
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x15, %a4@
 	movel	%d0, %a4@
 	movel	%d1, %a4@
@@ -1219,8 +1211,8 @@ L(nocon):
 	addl	#0x000fffff, %d0
 	andl	#0xfff00000, %d0
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x16, %a4@
 	movel	%d0, %a4@
 #endif
@@ -1248,8 +1240,8 @@ L(detect_mem_done):
 
 	putc	'C'
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x15, %a4@
 #endif
 
@@ -1582,8 +1574,8 @@ L(notapollo):
 #ifdef CONFIG_NEXT
 	is_not_next(L(notnext))
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x16, %a4@
 #endif
 
@@ -1595,12 +1587,13 @@ L(notapollo):
 	putc	'3'
 	// Map 030 NeXT IO space: Map 16MB logical 0xff00.0000 to physical 0x0200.0000
 	// FIXME: Should probably use ioremap()
-//	mmu_map	#0xff000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE030
+	//mmu_map_eq #0x02000000,#0x01000000,#_PAGE_NOCACHE030 // test mapping 16MB
+	//mmu_map #0x02000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE030
 	mmu_map_eq #0x02000000,#0x0011c000,#_PAGE_NOCACHE030 // 0x0011c000 = 0x00100000(BMAP offset (on an 030?)) + 0x0001c000(device space size)
+	//mmu_map	#0xff000000,#0x02000000,#0x0011c000,#_PAGE_NOCACHE030
 
-
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x17, %a4@
 #endif
 
@@ -1623,22 +1616,22 @@ L(notapollo):
 	movec	%d0,%dtt1
 	.chip	68k
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x18, %a4@
 #endif
 
-
-//	mmu_map #0x2c000000,#0x2c000000,#0x00040000,#_PAGE_NOCACHE_S // Nextstation Color framebuffer?
-//	mmu_map #0xd0000000,#0xd0000000,#0x00040000,#_PAGE_NOCACHE_S // Nextstation Color framebuffer?
-//	mmu_map #0x0b000000,#0x0b000000,#0x00040000,#_PAGE_NOCACHE_S // NeXT_X15 framebuffer? 030 Cube? all mono?
+	// mmu_map #0x2c000000,#0x2c000000,#0x00040000,#_PAGE_NOCACHE_S // Nextstation Color framebuffer?
+	// mmu_map #0xd0000000,#0xd0000000,#0x00040000,#_PAGE_NOCACHE_S // Nextstation Color framebuffer?
+	// mmu_map #0x0b000000,#0x0b000000,#0x00040000,#_PAGE_NOCACHE_S // NeXT_X15 framebuffer? 030 Cube? all mono?
 
 	// Map 040 NeXT IO space: Map 16MB logical 0xff00.0000 to physical 0x0200.0000
 	// FIXME: Should probably use ioremap()
-//	mmu_map_tt       #0,#0x02000000,#0x0011c000,#_PAGE_NOCACHE_S // 0x0011c000 = 0x00100000(BMAP offset) + 0x0001c000(device space size)
-//	mmu_map_eq          #0x02000000,#0x0011c000,#_PAGE_NOCACHE_S // 0x0011c000 = 0x00100000(BMAP offset) + 0x0001c000(device space size)
-	mmu_map #0x02000000,#0x02000000,#0x0011c000,#_PAGE_NOCACHE_S
-//	mmu_map #0xff000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
+	mmu_map_tt #0,#0x02000000,#0x0011c000,#_PAGE_NOCACHE_S // 0x0011c000 = 0x00100000(BMAP offset) + 0x0001c000(device space size)
+	// mmu_map_eq #0x02000000,#0x01000000,#_PAGE_NOCACHE_S // test mapping
+	// mmu_map #0x02000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
+	// mmu_map_eq #0x02000000,#0x0011c000,#_PAGE_NOCACHE_S // 0x0011c000 = 0x00100000(BMAP offset) + 0x0001c000(device space size)
+	// mmu_map #0xff000000,#0x02000000,#0x0011c000,#_PAGE_NOCACHE_S
 
 	jbra	L(mmu_init_done)
 
@@ -1674,8 +1667,8 @@ L(mmu_fixup):
 	/* first fix the page at the start of the kernel, that
 	 * contains also kernel_pg_dir.
 	 */
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x19, %a4@
 #endif
 
@@ -1697,8 +1690,8 @@ L(mmu_fixup):
 	cmpl	%a0,%a1
 	jgt	1b
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x1A, %a4@
 #endif
 
@@ -1855,21 +1848,18 @@ L(mmu_fixup_done):
 #ifdef CONFIG_NEXT
 	is_not_next(1f)
 
-	/*
-	 * Fixup mg_putc address before printing
-	 */
-
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR_FF, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0xFF, %a4@
 #endif
 
+	// Fixup mg_putc address before printing
 	// FIXME NeXT: not working
-//	lea 	%pc@(L(mg_putc)),%a1
+//	lea	%pc@(L(mg_putc)),%a1
 //	orl	#0xff000000,%a1@
 
-#if defined(DEBUG_QEMU)
-//	movel	DEBUG_QEMU_ADDR_FF, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+//	movel	NEXT_DEBUG_ADDR, %a4
 //	movel	#0x1C, %a4@
 //	movel	%a1, %a4@
 //	movel	%a1@, %a4@
@@ -1928,8 +1918,8 @@ L(cache_done):
 	putc	'J'
 #endif
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR_FF, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x1D, %a4@
 #endif
 
@@ -1940,8 +1930,8 @@ L(cache_done):
 	lea	init_task,%curptr
 	lea	init_thread_union+THREAD_SIZE,%sp
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR_FF, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x1E, %a4@
 #endif
 
@@ -1954,8 +1944,8 @@ L(cache_done):
 /*
  * The new 64bit printf support requires an early exception initialization.
  */
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR_FF, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x1F, %a4@
 #endif
 
@@ -1969,10 +1959,20 @@ L(cache_done):
 #endif
 	leds	0x55
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR_FF, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x20, %a4@
 #endif
+
+	is_not_next(L(tt_disable_not_next))
+	.chip	68040
+	move	#0,%d0
+	movec	%d0,%itt0
+	movec	%d0,%dtt0
+	movec	%d0,%itt1
+	movec	%d0,%dtt1
+	.chip	68k
+L(tt_disable_not_next):
 
 	// All done here. No more ASM! Moving on to init/main.c .
 	jbsr	start_kernel
@@ -2889,8 +2889,8 @@ func_return	mmu_temp_map
 
 func_start	mmu_engage,%d0-%d2/%a0-%a3
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x21, %a4@
 #endif
 
@@ -2905,8 +2905,8 @@ func_start	mmu_engage,%d0-%d2/%a0-%a3
 	movel	%a0@+,%a1@+
 	dbra	%d0,1b
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x22, %a4@
 #endif
 
@@ -2918,8 +2918,8 @@ func_start	mmu_engage,%d0-%d2/%a0-%a3
 	clrl	%a1@+
 	dbra	%d0,1b
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x23, %a4@
 #endif
 
@@ -2937,8 +2937,8 @@ func_start	mmu_engage,%d0-%d2/%a0-%a3
 	mmu_temp_map	%a0,%a0
 	mmu_temp_map	%a0,%a1
 1:
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x24, %a4@
 #endif
 
@@ -2948,8 +2948,8 @@ func_start	mmu_engage,%d0-%d2/%a0-%a3
 	is_not_040_or_060(L(mmu_engage_030))
 
 L(mmu_engage_040):
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x25, %a4@
 #endif
 
@@ -2962,14 +2962,14 @@ L(mmu_engage_040):
 	movec	%a3,%srp
 	movel	#TC_ENABLE+TC_PAGE4K,%d0
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x26, %a4@
 #endif
 
 	movec	%d0,%tc		/* enable the MMU */
 
-	// why :l? because after MMU is enabled, we need to jump to an absolute address (0x01000 based as linked in vmlinux.lds)
+	// why :l? because after MMU is enabled, we need to jump to an absolute address (0x13000 based as linked in vmlinux.lds)
 	jmp	1f:l
 1:	nop
 	movec	%a2,%srp
@@ -3010,8 +3010,8 @@ L(mmu_engage_cleanup):
 	subl	#PAGE_OFFSET,%d2
 	subl	%d2,%a2
 
-#if defined(DEBUG_QEMU)
-//	movel	DEBUG_QEMU_ADDR_FF, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+//	movel	NEXT_DEBUG_ADDR, %a4
 //	lea		%pc@(L(kernel_pgdir_ptr)),%a0
 //	movel	%a0,%a4@
 #endif
@@ -3042,7 +3042,7 @@ func_start	mmu_get_root_table_entry,%d0/%a1
 	 * we simply search for the last entry.
 	 */
 #ifdef CONFIG_NEXT
-	lea     %pc@(_end),%a0
+	lea	%pc@(_end),%a0
 #else
 	get_bi_record	BI_LAST
 #endif
@@ -3345,8 +3345,8 @@ func_start	serial_init,%d0/%d1/%a0/%a1
 	 *		d0 = init data for serial port
 	 */
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 	movel	#0x27, %a4@
 #endif
 
@@ -3498,21 +3498,23 @@ L(serial_init_not_mvme16x):
 #endif
 
 #ifdef CONFIG_NEXT
+	is_not_next(L(serial_init_not_next))
+
 #define MG_PUTC_OFFSET 734
-	lea     %pc@(prom_info+MG_PUTC_OFFSET),%a0
-	lea 	%pc@(L(mg_putc)),%a1
+	lea	%pc@(prom_info+MG_PUTC_OFFSET),%a0
+	lea	%pc@(L(mg_putc)),%a1
 	movel	%a0@,%a1@
 
-#if defined(DEBUG_QEMU)
-	movel	DEBUG_QEMU_ADDR, %a4
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
 
-	lea		%pc@(prom_info), %a1
+	lea	%pc@(prom_info), %a1
 	movel	%a1, %a4@
 
-	lea		%pc@(prom_info+MG_PUTC_OFFSET), %a1
+	lea	%pc@(prom_info+MG_PUTC_OFFSET), %a1
 	movel	%a1, %a4@
 
-	lea		%pc@(L(mg_putc)), %a1
+	lea	%pc@(L(mg_putc)), %a1
 	movel	%a1, %a4@
 
 	movel	%a1@, %a4@
@@ -3521,6 +3523,8 @@ L(serial_init_not_mvme16x):
 #endif
 
 	jra	L(serial_init_done)
+
+L(serial_init_not_next):
 #endif
 
 L(serial_init_done):
@@ -3741,20 +3745,39 @@ func_start	serial_putc,%d0/%d1/%a0/%a1
 #endif
 
 #ifdef CONFIG_NEXT
-	is_not_next(3f)
+	is_not_next(L(serial_putc_not_next))
 
-	// call mg_putc function
+	// This assumes serial has been setup by either the PROM or the bootloader. 9600 8N1
+#define ZS_PORTB_CTRL	0x02018000
+#define ZS_PORTA_CTRL	0x02018001
+#define ZS_DATA_OFFSET	2
+#define RR0_TXEMPTY_BIT	2
+
+	// serial output on port B
+	movel	#ZS_PORTB_CTRL,%a1
+	is_not_040_or_060(3f)
+	addl	#0x100000,%a1		// Add 0x100000 for access through BMAP on 68040 NeXTs
+3:	btst	#RR0_TXEMPTY_BIT,%a1@
+	jeq	3b
+	moveb	%d0,%a1@(ZS_DATA_OFFSET)
+
+	// serial output on port A
+	movel	#ZS_PORTA_CTRL,%a1
+	is_not_040_or_060(4f)
+	addl	#0x100000,%a1		// Add 0x100000 for access through BMAP on 68040 NeXTs
+4:	btst	#RR0_TXEMPTY_BIT,%a1@
+	jeq	4b
+	moveb	%d0,%a1@(ZS_DATA_OFFSET)
+
+	// Use PROM mg_putc for screen output
 	movel 	%pc@(L(mg_putc)),%a1
-
- 	// copy argument from d0 to stack and decrement stack pointer, as argument for mg_putc
-	movel	%d0,%sp@-
-
-	jsr		%a1@
-	// remove the previous argument (4 bytes) from the stack (increment stack pointer)
-	addql #4,%sp
+	movel	%d0,%sp@-		// copy argument from d0 to stack and decrement stack pointer, as argument for mg_putc
+	jsr	%a1@			// call mg_putc function
+	addql #4,%sp			// remove the previous argument (4 bytes) from the stack (increment stack pointer)
 
 	jbra	L(serial_putc_done)
-3:
+
+L(serial_putc_not_next):
 #endif
 
 L(serial_putc_done):

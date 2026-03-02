@@ -92,9 +92,10 @@ int main(int argc, char**argv) {
 		printf("Info: Wrote header: %d bytes\n", whbytes);
 		int bytes_written = 0;
 		// FIXME: write all bytes at once. This is slow as hell.
+		#define BUFFER_SIZE (16*1024)
 		while (bytes_written < text_size) {
-			char buf[512];
-			int rbytes = read(fd_binary, &buf, 512);
+			char buf[BUFFER_SIZE];
+			int rbytes = read(fd_binary, &buf, BUFFER_SIZE);
 			if (rbytes<=0) {
 				printf("Warning: read() returned no data.\n");
 				break;

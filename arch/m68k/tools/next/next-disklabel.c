@@ -188,7 +188,7 @@ int write_dl(struct next68k_disklabel *dl, FILE *diskf) {
 	struct stat buffer;
 	fstat(disk_fd, &buffer);
 	off_t disk_size = buffer.st_size;
-	printf("Disk size is %ld\n", disk_size);
+	printf("Disk size is %jd\n", (intmax_t)disk_size);
 
 	bzero(dl->cd_label, NEXT68K_LABEL_CPULBLLEN);
 	strncpy(dl->cd_label, "New Disk", NEXT68K_LABEL_CPULBLLEN-1);

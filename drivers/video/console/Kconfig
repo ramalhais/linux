@@ -53,6 +53,7 @@ config DUMMY_CONSOLE_COLUMNS
 	int "Initial number of console screen columns"
 	depends on DUMMY_CONSOLE && !(ARCH_FOOTBRIDGE && VGA_CONSOLE)
 	default 160 if PARISC
+	default 140 if NEXT
 	default 80
 	help
 	  On PA-RISC, the default value is 160, which should fit a 1280x1024
@@ -63,6 +64,7 @@ config DUMMY_CONSOLE_ROWS
 	int "Initial number of console screen rows"
 	depends on DUMMY_CONSOLE && !(ARCH_FOOTBRIDGE && VGA_CONSOLE)
 	default 64 if PARISC
+	default 52 if NEXT
 	default 30 if ARM
 	default 25
 	help

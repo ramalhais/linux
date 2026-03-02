@@ -36,12 +36,14 @@ char *next_machine_names[] = {
 	"NeXTcube Turbo"
 };
 
-void next_get_model(char *model) {
+static void next_get_model(char *model)
+{
 #define MODEL_MAX 80
        strncpy(model, next_machine_names[prom_info.mach_type], MODEL_MAX-1);
 }
 
-void __init next_meminit(void) {
+static void __init next_meminit(void)
+{
 	int i;
 	unsigned int len;
 
@@ -76,13 +78,13 @@ void __init next_meminit(void) {
 	}
 }
 
-void next_get_hardware_list(struct seq_file *m)
+static void next_get_hardware_list(struct seq_file *m)
 {
 	seq_printf(m, "Interrupt Mask: 0x%x\n", next_intmask);
 	seq_printf(m, "Interrupt Status: 0x%x\n", next_intstat);
 }
 
-void next_halt(void) {
+static void next_halt(void) {
 	// FIXME: bad kernel trap
 	char command[] = "-h";
 
@@ -90,12 +92,13 @@ void next_halt(void) {
 	asm("trap #13");
 }
 
-void next_reset(void) {
+static void next_reset(void) {
 	// FIXME: bad kernel trap
 	asm("movl #0, %d0");
 	asm("trap #13");
 }
 
+void __init config_next(void);
 void __init config_next(void)
 {
 	next_meminit();
@@ -105,8 +108,9 @@ void __init config_next(void)
 	mach_get_model	= next_get_model;
 	mach_get_hardware_list = next_get_hardware_list;
 	mach_hwclk	= next_hwclk;
-	mach_halt	= next_halt;
 	mach_reset	= next_reset;
+	mach_halt	= next_halt;
+
 	register_platform_power_off(next_poweroff);
 
 //#ifdef CONFIG_HEARTBEAT // Example: LED as heartbeat
@@ -116,6 +120,7 @@ void __init config_next(void)
 //extern int (*mach_set_rtc_pll)(struct rtc_pll_info *);
 //extern unsigned long (*mach_hd_init) (unsigned long, unsigned long);
 //extern void (*mach_hd_setup)(char *, int *);
+//extern void (*mach_l2_flush) (int);
 //extern void (*mach_beep) (unsigned int, unsigned int);
 
 //	mach_max_dma_address = 0xffffffff;

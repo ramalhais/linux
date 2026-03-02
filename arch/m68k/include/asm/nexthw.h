@@ -33,10 +33,8 @@ extern char *next_machine_names[];
 
 /* this needs to deal with the bmap on non turbo 040s.. */
 
-#define NEXT_IO_VIRT	0xff000000 // MMU mapped in head.S to physical 0x0200.0000
-#define NEXT_IO_PHYS	0x02000000
-#define	NEXT_IO_SIZE	0x0001c000
-#define NEXT_IO_BASE	NEXT_IO_PHYS//NEXT_IO_VIRT
+#define NEXT_IO_BASE	0x02000000 // I/O physical address
+#define NEXT_IO_SIZE	0x0001c000 // 0x20000 according to previous.
 
 #define NEXT_SLOT 0x0
 
@@ -66,7 +64,7 @@ extern char *next_machine_names[];
 #define NEXT_MON		(NEXT_IO_BASE + NEXT_SLOT + 0xe000)
 #define NEXT_PRINTER		(NEXT_IO_BASE + NEXT_SLOT + 0xf000)
 
-// BMAP register
+// BMAP register (don't use on turbos)
 #define NEXT_BMAP		(NEXT_IO_BASE + NEXT_SLOT + 0xc0000)
 
 // Device registers
@@ -186,6 +184,32 @@ struct bmap_chip {
 
 #define DMA_STATUS_MASK	(DMA_ENABLED|DMA_SUPDATE|DMA_CINT|DMA_BUSERR)
 #define DMA_CMD_MASK	(DMA_SETENABLE|DMA_SETCHAIN|DMA_CLEARCHAINI|DMA_RESET|DMA_INITDMA)
+
+// flpctl (floppy control register NEXT_FLOPPY). Write Only.
+#define FLC_EJECT	0x80	/* eject disk */
+#define FLC_DS0		0x40	/* density select bit 0 - inverted. Old Cube prototypes only. */
+#define FLC_82077_SEL	0x40	/* set = 82077, clear = 53C90A */
+#define FLC_DRIVEID	0x04	/* Drive present. True LOW. */
+#define FLC_MID1	0x02	/* Media ID bit 1 */
+#define FLC_MID0	0x01	/* Media ID bit 0 */
+				/* values for MID bits in fd_extern.h
+				* (FD_MID_xxx) */
+#define FLC_MID_MASK	(FLC_MID1|FLC_MID0)
+
+// hardware registers on the (Intel?) 82077
+struct fd_cntrl_regs {
+	u_char	sra;	/* (R/O) status register A */
+	u_char	srb;	/* (R/O) status register B */
+	u_char	dor;	/* (R/W) digital output register */
+	u_char	rsvd3;	/* reserved */
+	u_char	msr;	/* (R/O) main status register */
+#define dsr	msr	/* (W/O) data rate select register */
+	u_char	fifo;	/* (R/W) data FIFO */
+	u_char	rsvd6;	/* reserved */
+	u_char	dir;	/* (R/O) digital input register */
+#define ccr	dir	/* (W/O) configuration control reg */
+	u_char	flpctl;	/* (W/O) control (not in 82077) */
+};
 
 // this is copied from memory that is initialized by the next prom at boot
 struct prom_info {

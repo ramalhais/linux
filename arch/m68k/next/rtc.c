@@ -68,7 +68,6 @@ void set_timer_csr_bits(u8 csr) {
 static irqreturn_t next_tick(int irq, void *dev_id)
 {
 	unsigned long flags;
-
 	local_irq_save(flags);
 
 	// if (!next_irq_pending(NEXT_IRQ_TIMER)) {
@@ -76,7 +75,8 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 	// 	return IRQ_NONE;
 	// }
 
-	// write_timer_ticks(TIMER_HZ/HZ); // atempt to set the ticks back
+	// *(volatile u8 *)(timerp+TIMER_R_CSR); // Reading CSR clears the interrupt. Trying this to bypass turbo not working. FAIL
+	// write_timer_ticks(TIMER_HZ/HZ); // atempt to set the ticks back. doesn't seem necessary
 	set_timer_csr_bits((u8)TIM_RESTART); // retrigger timer
 	clk_total += TIMER_HZ/HZ;
 	legacy_timer_tick(1);
@@ -87,7 +87,7 @@ static irqreturn_t next_tick(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-uint16_t next_nvram_checksum(struct nvram_settings *nv)
+static uint16_t next_nvram_checksum(struct nvram_settings *nv)
 {
 	uint16_t *nvp = (uint16_t *)nv;
 	uint32_t sum = 0;
@@ -104,7 +104,7 @@ uint16_t next_nvram_checksum(struct nvram_settings *nv)
 	return (sum & 0xffff);
 }
 
-void next_nvram_print(struct nvram_settings *nv)
+static void next_nvram_print(struct nvram_settings *nv)
 {
 	uint16_t checksum;
 
@@ -143,19 +143,19 @@ void next_nvram_print(struct nvram_settings *nv)
 	pr_info("calculated_checksum_inv=0x%x\n", (~checksum)&0xffff);
 }
 
-void next_nvram_read(int offset, int size, uint8_t *data)
+static void next_nvram_read(int offset, int size, uint8_t *data)
 {
 	for (int i = 0; i < size; i++)
 		data[i] = rtc_read(RTC_RAM+offset+i);
 }
 
-void next_nvram_write(int offset, int size, uint8_t *data)
+static void next_nvram_write(int offset, int size, uint8_t *data)
 {
 	for (int i = 0; i < size; i++)
 		rtc_write(RTC_RAM+offset+i, data[i]);
 }
 
-void next_nvram_fix(void)
+static void next_nvram_fix(void)
 {
 	struct nvram_settings nv;
 
@@ -190,28 +190,18 @@ void next_sched_init(void)
 	);
 
 	scr2 = ioremap(NEXT_SCR2, sizeof(unsigned int));
-	timerp = ioremap(NEXT_TIMER, 5); // FIXME: we only need to map 5bytes. maybe round to 8 or 16?
+	timerp = ioremap(NEXT_TIMER, 8); // FIXME: we only need to map 5bytes. maybe round to 8 or 16?
 	next_nvram_fix();
 
 	/* could also get this from the prom i think */
 	clocktype = (rtc_read(RTC_STATUS) & RTC_IS_NEW) ? N_C_NEW : N_C_OLD;
-	pr_info("RTC: %s\n", rtcs[clocktype].chipname);
-
-// #define NEXT_DEBUG(val) *(volatile unsigned long *)(0xff00f004)=val
-// NEXT_DEBUG(0x20);
+	pr_info("NeXT RTC: %s\n", rtcs[clocktype].chipname);
 
 	if (request_irq(NEXT_IRQ_TIMER, next_tick, IRQF_TIMER, "Timer", next_tick)) {
-// NEXT_DEBUG(0x21);
 		pr_err("Failed to register NeXT timer interrupt\n");
 	}
-	// if (request_irq(IRQ_AUTO_6, next_tick, IRQF_TIMER|IRQF_SHARED, "NeXT timer tick", next_tick)) {
-	// 	pr_err("Failed to register NeXT timer tick interrupt\n");
-	// }
 
-	// next_intmask_enable(NEXT_IRQ_TIMER-NEXT_IRQ_BASE);
-
-	// if (__timer_csr) {	// Reading CSR clears the interrupt
-	if (*(volatile u8 *)(timerp+TIMER_R_CSR)) {
+	if (*(volatile u8 *)(timerp+TIMER_R_CSR)) { // Reading CSR clears the interrupt
 		set_timer_csr(0);
 	}
 
@@ -222,7 +212,7 @@ void next_sched_init(void)
 
 /* usec timer, way cool */
 
-unsigned long next_gettimeoffset(void)
+static unsigned long next_gettimeoffset(void)
 {
 	/* oh, we have run out of ticks */
 	if (next_irq_pending(NEXT_IRQ_TIMER))
@@ -236,7 +226,7 @@ static u64 next_read_clk(struct clocksource *cs)
 	return clk_total + next_gettimeoffset();
 }
 
-int next_hwclk_old(int op, struct rtc_time *t)
+static int next_hwclk_old(int op, struct rtc_time *t)
 {
 	if (!op) {
 		t->tm_sec	= bcd2bin(rtc_read(R_O_SEC));
@@ -265,7 +255,7 @@ int next_hwclk_old(int op, struct rtc_time *t)
 	return 0;
 }
 
-int next_hwclk_new(int op, struct rtc_time *t)
+static int next_hwclk_new(int op, struct rtc_time *t)
 {
 	time64_t now;
 
@@ -319,7 +309,7 @@ void next_poweroff(void)
 			do {} while (0);    \
 	} while (0)
 
-void rtc_write_reg(u_char reg, int towrite)
+static void rtc_write_reg(u_char reg, int towrite)
 {
 	int i, scrtmp;
 
