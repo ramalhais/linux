@@ -21,8 +21,6 @@
 
 /* supplied by the boot prom software */
 struct prom_info prom_info;
-/* yanked from the eprom chip */
-struct eprom_info eprom_info;
 
 char *next_machine_names[] = {
 	"NeXT Computer",
