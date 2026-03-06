@@ -1092,29 +1092,7 @@ L(detect_prom_done):
 	movel	%a2, %a4@
 #endif
 
-	// grab the first 6 bytes of the eprom containing the mac address
-	movel	#0x1000008,%a0
-	lea	%pc@(eprom_info),%a1
-	movel	#6,%d1
-
-	is_040(L(eprom_040))
-
-	jbra	L(eprom_done)
-
-L(eprom_040):
-#if defined(CONFIG_NEXT_DEBUG)
-	movel	NEXT_DEBUG_ADDR, %a4
-	movel	#6, %a4@
-#endif
-
-1:
-	moveb	%a0@+,%a1@+
-	dbra	%d1,1b
-
-L(eprom_done):
-
 L(not_next_prom):
-
 #endif // CONFIG_NEXT
 
 /*
@@ -1585,12 +1563,20 @@ L(notapollo):
 
 	// 030
 	putc	'3'
-	// Map 030 NeXT IO space: Map 16MB logical 0xff00.0000 to physical 0x0200.0000
-	// FIXME: Should probably use ioremap()
-	//mmu_map_eq #0x02000000,#0x01000000,#_PAGE_NOCACHE030 // test mapping 16MB
-	//mmu_map #0x02000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE030
-	mmu_map_eq #0x02000000,#0x0011c000,#_PAGE_NOCACHE030 // 0x0011c000 = 0x00100000(BMAP offset (on an 030?)) + 0x0001c000(device space size)
-	//mmu_map	#0xff000000,#0x02000000,#0x0011c000,#_PAGE_NOCACHE030
+
+	// .chip	68030
+	// moveq	#0,%d0
+	// pmove	%d0,%tt0
+	// pmove	%d0,%tt1
+	// .chip	68k
+
+	// Map 68030 NeXT I/O space at 0x0200.0000. This will be disabled later before start_kernel
+	mmu_map_tt	#0,#0x02000000,#0x01000000,#_PAGE_NOCACHE030
+	// mmu_map_tt	#0,#0x02000000,#0x0011c000,#_PAGE_NOCACHE030 // 0x0011c000 = 0x00100000(BMAP offset) + 0x0001c000(device space size)
+	// mmu_map_eq	#0x02000000,#0x01000000,#_PAGE_NOCACHE030 // test mapping 16MB
+	// mmu_map	#0x02000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE030
+	// mmu_map_eq	#0x02000000,#0x0011c000,#_PAGE_NOCACHE030 // 0x0011c000 = 0x00100000(BMAP offset (on an 030?)) + 0x0001c000(device space size)
+	// mmu_map	#0xff000000,#0x02000000,#0x0011c000,#_PAGE_NOCACHE030
 
 #if defined(CONFIG_NEXT_DEBUG)
 	movel	NEXT_DEBUG_ADDR, %a4
@@ -1621,17 +1607,16 @@ L(notapollo):
 	movel	#0x18, %a4@
 #endif
 
-	// mmu_map #0x2c000000,#0x2c000000,#0x00040000,#_PAGE_NOCACHE_S // Nextstation Color framebuffer?
-	// mmu_map #0xd0000000,#0xd0000000,#0x00040000,#_PAGE_NOCACHE_S // Nextstation Color framebuffer?
-	// mmu_map #0x0b000000,#0x0b000000,#0x00040000,#_PAGE_NOCACHE_S // NeXT_X15 framebuffer? 030 Cube? all mono?
-
-	// Map 040 NeXT IO space: Map 16MB logical 0xff00.0000 to physical 0x0200.0000
+	// Map 68040 NeXT I/O space at 0x0200.0000. This will be disabled later before start_kernel
 	// FIXME: Should probably use ioremap()
-	mmu_map_tt #0,#0x02000000,#0x0011c000,#_PAGE_NOCACHE_S // 0x0011c000 = 0x00100000(BMAP offset) + 0x0001c000(device space size)
-	// mmu_map_eq #0x02000000,#0x01000000,#_PAGE_NOCACHE_S // test mapping
-	// mmu_map #0x02000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
-	// mmu_map_eq #0x02000000,#0x0011c000,#_PAGE_NOCACHE_S // 0x0011c000 = 0x00100000(BMAP offset) + 0x0001c000(device space size)
-	// mmu_map #0xff000000,#0x02000000,#0x0011c000,#_PAGE_NOCACHE_S
+	// mmu_map_tt #0,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
+	// mmu_map	#0x2c000000,#0x2c000000,#0x00040000,#_PAGE_NOCACHE_S // Nextstation Color framebuffer?
+	// mmu_map	#0xd0000000,#0xd0000000,#0x00040000,#_PAGE_NOCACHE_S // Nextstation Color framebuffer?
+	// mmu_map	#0x0b000000,#0x0b000000,#0x00040000,#_PAGE_NOCACHE_S // NeXT_X15 framebuffer? 030 Cube? all mono?
+	// mmu_map_eq	#0x02000000,#0x01000000,#_PAGE_NOCACHE_S // test mapping
+	// mmu_map	#0x02000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
+	mmu_map_eq	#0x02000000,#0x0011c000,#_PAGE_NOCACHE_S // 0x0011c000 = 0x00100000(BMAP offset) + 0x0001c000(device space size)
+	// mmu_map	#0xff000000,#0x02000000,#0x0011c000,#_PAGE_NOCACHE_S
 
 	jbra	L(mmu_init_done)
 
@@ -1964,15 +1949,32 @@ L(cache_done):
 	movel	#0x20, %a4@
 #endif
 
-	is_not_next(L(tt_disable_not_next))
-	.chip	68040
-	move	#0,%d0
-	movec	%d0,%itt0
-	movec	%d0,%dtt0
-	movec	%d0,%itt1
-	movec	%d0,%dtt1
-	.chip	68k
-L(tt_disable_not_next):
+// #ifdef CONFIG_NEXT
+// #define is_not_next_2(lab) cmpl &MACH_NEXT,%pc@(m68k_machtype); beq 1f; jmp lab; 1:
+// #define is_040_or_060_2(lab)	btst &CPUTYPE_0460,%pc@(L(cputype)+3); beq 1f; jmp lab; 1:
+
+// 	is_not_next(L(tt_disable_done))
+
+// 	is_040_or_060(L(tt_disable_040))
+
+// 	.chip	68030
+// 	move	#0,%d0
+// 	// pmove	%d0,%tt0
+// 	// pmove	%d0,%tt1
+// 	jra	L(tt_disable_done)
+// 	.chip	68k
+
+// L(tt_disable_040):
+// 	.chip	68040
+// 	move	#0,%d0
+// 	// movec	%d0,%itt0
+// 	// movec	%d0,%dtt0
+// 	// movec	%d0,%itt1
+// 	// movec	%d0,%dtt1
+// 	.chip	68k
+
+// L(tt_disable_done):
+// #endif
 
 	// All done here. No more ASM! Moving on to init/main.c .
 	jbsr	start_kernel
@@ -2984,6 +2986,10 @@ L(mmu_engage_040):
 L(mmu_engage_030_temp):
 	.space	12
 L(mmu_engage_030):
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
+	movel	#0x25, %a4@
+#endif
 	.chip	68030
 	lea	%pc@(L(mmu_engage_030_temp)),%a0
 	movel	#0x80000002,%a0@
@@ -2997,7 +3003,17 @@ L(mmu_engage_030):
 	 * 7 bit pointer index, 6 bit page table index.
 	 */
 	movel	#0x82c07760,%a0@(8)
+
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
+	movel	#0x26, %a4@
+#endif
+
 	pmove	%a0@(8),%tc	/* enable the MMU */
+#if defined(CONFIG_NEXT_DEBUG)
+	movel	NEXT_DEBUG_ADDR, %a4
+	movel	#0x27, %a4@
+#endif
 	jmp	1f:l
 1:	movel	%a2,%a0@(4)
 	movel	#0x0808,%d0
