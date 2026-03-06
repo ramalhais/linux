@@ -36,12 +36,10 @@ extern char *next_machine_names[];
 #define NEXT_IO_BASE	0x02000000 // I/O physical address
 #define NEXT_IO_SIZE	0x0001c000 // 0x20000 according to previous.
 
-#define NEXT_SLOT 0x0
+#define NEXT_SLOT	0x0
+#define NEXT_SLOT_BMAP	(prom_info.mach_type == NEXT_MACHINE_COMPUTER ? 0x0 : 0x100000)
 
-#define NEXT_SLOT_BMAP (prom_info.mach_type == NEXT_MACHINE_COMPUTER ? 0x0 : 0x100000)
-
-#define NEXT_EPROM		(NEXT_SLOT)
-#define NEXT_EPROM_BMAP		(NEXT_SLOT + 0x01000000)
+#define NEXT_EPROM		(prom_info.mach_type == NEXT_MACHINE_COMPUTER ? 0x0 : 0x1000000)
 #define	NEXT_EPROM_SIZE		(128*1024)
 
 // DMA CSR registers
@@ -141,7 +139,27 @@ struct bmap_chip {
 		: 24;
 };
 
-#define NEXT_IS_TURBO (prom_info.mach_type >= NEXT_MACHINE_STATION_TURBO)
+/* BMAP register bits */
+#define	BMAP_RML	0x80000000
+#define	BMAP_LO		0x40000000
+#define	BMAP_RSE	0x10000000
+#define	BMAP_PAREN	0x80000000
+#define	BMAP_ASEN	0x80000000
+#define	BMAP_TC_AS	0x00000000
+#define	BMAP_TC_AST	0x20000000
+#define	BMAP_TC_CLK	0x40000000
+#define	BMAP_TC_AD31	0x60000000
+#define	BMAP_SCYC	0x10000000
+#define	BMAP_A31	0x80000000
+#define	BMAP_BWE	0x80000000
+#define	BMAP_TPE_RXSEL	0x80000000
+#define	BMAP_RESET	0x40000000
+#define	BMAP_HEARTBEAT	0x20000000
+#define	BMAP_TPE_ILBC	0x10000000
+#define	BMAP_TPE	(BMAP_TPE_RXSEL | BMAP_TPE_ILBC)
+
+#define NEXT_IS_TURBO	(prom_info.mach_type >= NEXT_MACHINE_STATION_TURBO)
+#define NEXT_IS_030	(prom_info.mach_type == NEXT_MACHINE_COMPUTER)
 
 // SCSI
 #define ESPCTRL_CLKMASK     0xc0    /* clock selection bits */
@@ -349,10 +367,5 @@ struct prom_info {
 };
 
 extern struct prom_info prom_info;
-
-struct eprom_info {
-	unsigned char eaddr[6];
-};
-extern struct eprom_info eprom_info;
 
 #endif // _ASM_NEXTHW_H_
