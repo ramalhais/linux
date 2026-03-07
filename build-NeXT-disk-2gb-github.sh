@@ -33,10 +33,6 @@ sudo mount $LOOPDEV $MOUNTP
 #sudo debootstrap --variant=minbase --include sysvinit-core,libpam-elogind --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
 #sudo sed -i -e 's/systemd systemd-sysv //g' $MOUNTP/debootstrap/required
 sudo debootstrap --include debian-ports-archive-keyring --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
-echo "### LOG /debootstrap/debootstrap.log ###"
-cat /debootstrap/debootstrap.log
-echo "### LOG END /debootstrap/debootstrap.log ###"
-
 sudo cp $(which qemu-m68k-static ) $MOUNTP
 
 export _USER=user
