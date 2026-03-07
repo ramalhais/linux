@@ -9,10 +9,10 @@ export PATH="/usr/lib/ccache:$PATH"
 #ccache -Cz
 
 #GCC_SUFFIX="-9"
-GCC_SUFFIX="-10"
+#GCC_SUFFIX="-10"
 #GCC_SUFFIX="-12"
 #GCC_SUFFIX="-13"
-#GCC_SUFFIX="-14"
+GCC_SUFFIX="-14"
 SCRIPT_DIR=$(dirname $(readlink -f ${BASH_SOURCE[0]}))
 
 # Needed for network boot, because PROM uses the addr on the aout or macho header.
