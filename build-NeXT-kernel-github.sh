@@ -3,7 +3,7 @@ set -e
 
 export ARCH=m68k
 export CROSS_COMPILE=m68k-linux-gnu-
-export GCC_SUFFIX=-10
+export GCC_SUFFIX=-14
 
 NPROCS=$[$(nproc)*2]
 
