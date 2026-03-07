@@ -32,7 +32,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install -y gcc-10-m68k-linux-gnu make gcc flex bison debootstrap qemu-user-static && echo CPUS=$(nproc)
+          sudo apt install -y gcc-14-m68k-linux-gnu make gcc-14 flex bison debootstrap qemu-user-static && echo CPUS=$(nproc)
 
       - name: Build Kernel
         run: |
