@@ -33,27 +33,30 @@ sudo mount $LOOPDEV $MOUNTP
 #sudo debootstrap --variant=minbase --include sysvinit-core,libpam-elogind --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
 #sudo sed -i -e 's/systemd systemd-sysv //g' $MOUNTP/debootstrap/required
 sudo debootstrap --include debian-ports-archive-keyring,debian-archive-keyring --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
-echo "### LOG $MOUNTP/debootstrap/debootstrap.log ###"
-cat $MOUNTP/debootstrap/debootstrap.log
-echo "### LOG END $MOUNTP/debootstrap/debootstrap.log ###"
 sudo cp $(which qemu-m68k-static ) $MOUNTP
 
 export _USER=user
 export _PASSWORD=jobssucks
 export _HOST=next
 
-sudo mount --make-rslave --rbind /proc $MOUNTP/proc
-sudo mount --make-rslave --rbind /sys $MOUNTP/sys
-sudo mount --make-rslave --rbind /dev $MOUNTP/dev
-sudo mount --make-rslave --rbind /run $MOUNTP/run
+# sudo mount --make-rslave --rbind /proc $MOUNTP/proc
+# sudo mount --make-rslave --rbind /sys $MOUNTP/sys
+# sudo mount --make-rslave --rbind /dev $MOUNTP/dev
+# sudo mount --make-rslave --rbind /run $MOUNTP/run
 
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 
 echo "proc /proc proc defaults 0 0" >> /etc/fstab
 echo "devtmpfs /dev devtmpfs defaults 0 0" >> /etc/fstab
 echo "sysfs /sys sysfs defaults 0 0" >> /etc/fstab
+mount -a
 
 /debootstrap/debootstrap --second-stage
+
+echo "### LOG /debootstrap/debootstrap.log ###"
+cat /debootstrap/debootstrap.log
+echo "### LOG END /debootstrap/debootstrap.log ###"
+
 apt --fix-broken -y install
 apt-get update
 apt-get -y upgrade
