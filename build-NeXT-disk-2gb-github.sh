@@ -49,7 +49,9 @@ sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 echo "proc /proc proc defaults 0 0" >> /etc/fstab
 echo "devtmpfs /dev devtmpfs defaults 0 0" >> /etc/fstab
 echo "sysfs /sys sysfs defaults 0 0" >> /etc/fstab
-mount -a
+mount /proc
+mount /dev
+mount /sys
 
 /debootstrap/debootstrap --second-stage
 
@@ -146,7 +148,9 @@ apt -y --purge --allow-remove-essential install sysvinit-core libpam-elogind dbu
 # apt-mark hold systemd systemd-sysv
 
 apt clean
-
+umount /proc
+umount /dev
+umount /sys
 EOF
 
 sudo umount $MOUNTP
