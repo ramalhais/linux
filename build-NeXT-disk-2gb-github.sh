@@ -120,6 +120,10 @@ cat > /root/.xinitrc <<EOF2
 xev &
 EOF2
 
+umount /proc
+umount /dev
+umount /sys
+
 EOF
 
 #sudo umount $MOUNTP/run
@@ -141,6 +145,10 @@ sudo mkdir -p $MOUNTP
 sudo mount $LOOPDEV $MOUNTP
 
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
+
+mount /proc
+mount /dev
+mount /sys
 
 # apt -y libpam-elogind
 # apt -y install sysvinit-core rsyslog
