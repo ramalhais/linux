@@ -52,6 +52,7 @@ echo "sysfs /sys sysfs defaults 0 0" >> /etc/fstab
 mount /proc
 mount /dev
 mount /sys
+mount
 
 cat /etc/machine-id
 
@@ -61,6 +62,7 @@ echo "### LOG /debootstrap/debootstrap.log ###"
 cat /debootstrap/debootstrap.log
 echo "### LOG END /debootstrap/debootstrap.log ###"
 
+apt install --reinstall systemd/stable
 apt --fix-broken -y install
 apt-get update
 apt-get -y upgrade
@@ -122,10 +124,12 @@ cat > /root/.xinitrc <<EOF2
 xev &
 EOF2
 
-umount /proc
-umount /dev
-umount /sys
+apt clean
 
+umount -f /proc
+umount -f /dev
+umount -f /sys
+echo "### BUILD $DISK END ###"
 EOF
 
 #sudo umount $MOUNTP/run
@@ -158,9 +162,11 @@ apt -y --purge --allow-remove-essential install sysvinit-core libpam-elogind dbu
 # apt-mark hold systemd systemd-sysv
 
 apt clean
-umount /proc
-umount /dev
-umount /sys
+
+umount -f /proc
+umount -f /dev
+umount -f /sys
+echo "### BUILD $DISK END ###"
 EOF
 
 sudo umount $MOUNTP
