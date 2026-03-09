@@ -56,7 +56,7 @@ echo "### LOG /debootstrap/debootstrap.log ###"
 cat /debootstrap/debootstrap.log
 echo "### LOG END /debootstrap/debootstrap.log ###"
 
-apt install --reinstall systemd/stable
+#systemd-machine-id-setup
 apt --fix-broken -y install
 apt-get update
 apt-get -y upgrade
