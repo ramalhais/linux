@@ -21,7 +21,7 @@ curl -v -L -o arch/m68k/tools/next/netbsd-boot-next.aout https://github.com/rama
 
 # Compile Kernel
 make next_defconfig
-make -j$NPROCS
+time make -j$NPROCS
 
 # DATE=$(date +%F-%H.%M.%S)
 # KERNELVER=$(make kernelversion)
