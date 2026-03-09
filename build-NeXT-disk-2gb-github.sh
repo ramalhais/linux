@@ -49,12 +49,6 @@ sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -x -i <<EOF
 echo "proc /proc proc defaults 0 0" >> /etc/fstab
 echo "devtmpfs /dev devtmpfs defaults 0 0" >> /etc/fstab
 echo "sysfs /sys sysfs defaults 0 0" >> /etc/fstab
-mount /proc
-mount /dev
-mount /sys
-mount
-
-cat /etc/machine-id
 
 /debootstrap/debootstrap --second-stage
 
@@ -126,9 +120,6 @@ EOF2
 
 apt clean
 
-umount -f /proc
-umount -f /dev
-umount -f /sys
 echo "### BUILD $DISK END ###"
 EOF
 
@@ -152,10 +143,6 @@ sudo mount $LOOPDEV $MOUNTP
 
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 
-mount /proc
-mount /dev
-mount /sys
-
 # apt -y libpam-elogind
 # apt -y install sysvinit-core rsyslog
 apt -y --purge --allow-remove-essential install sysvinit-core libpam-elogind dbus-x11 systemd-sysv-
@@ -163,9 +150,6 @@ apt -y --purge --allow-remove-essential install sysvinit-core libpam-elogind dbu
 
 apt clean
 
-umount -f /proc
-umount -f /dev
-umount -f /sys
 echo "### BUILD $DISK END ###"
 EOF
 
