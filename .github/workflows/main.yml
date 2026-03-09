@@ -34,6 +34,9 @@ jobs:
           sudo apt update
           sudo apt install -y gcc-14-m68k-linux-gnu make gcc-14 flex bison debootstrap qemu-user-static && echo CPUS=$(nproc)
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+
       - name: Build Kernel
         run: |
           cd $GITHUB_WORKSPACE
