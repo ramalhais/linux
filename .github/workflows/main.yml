@@ -41,6 +41,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           set -e
+          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
           ./build-NeXT-kernel-github.sh
           echo "DATE=$(date +%F-%H.%M.%S)" >> $GITHUB_ENV
           echo "KERNELVER=$(make kernelversion)" >> $GITHUB_ENV
