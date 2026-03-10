@@ -89,6 +89,7 @@ jobs:
             linux-next-20mb-sparse.disk.tar.gz
             linux-next-2gb-sparse.disk.tar.gz
             linux-next-2gb-debian-systemd.disk.tar.gz
+            linux-next-2gb-debian-sysvinit.disk.tar.gz
 
       # - name: Create Release
       #   id: create_release
