@@ -58,10 +58,20 @@ jobs:
           set -e
           ./build-NeXT-disk-2gb-github.sh
 
+      - name: Create new Git tag
+        run: |
+          git tag build/${{ env.BRANCH }}_${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
+          git push origin build/${{ env.BRANCH }}_${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
+        # env:
+        #   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
+        # env:
+        #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: ${{ env.BRANCH }}-${{ env.DATE }}-${{ env.KERNELVER }}-${{ github.sha }}
+          tag_name: build/${{ env.BRANCH }}_${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
+          name: ${{ env.BRANCH }}_${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
           files: |
             vmlinux-NeXT.aout
             vmlinux-NeXT.macho
