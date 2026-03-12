@@ -79,7 +79,7 @@ jobs:
             vmlinux-NeXT.macho-simpkern
             vmlinux
             vmlinux.stripped
-            .config#.config
+            .config
             arch/m68k/tools/next/aout
             arch/m68k/tools/next/macho
             arch/m68k/tools/next/next-disklabel
