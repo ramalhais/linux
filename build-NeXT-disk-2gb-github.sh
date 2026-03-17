@@ -50,6 +50,9 @@ echo "proc /proc proc defaults 0 0" >> /etc/fstab
 echo "devtmpfs /dev devtmpfs defaults 0 0" >> /etc/fstab
 echo "sysfs /sys sysfs defaults 0 0" >> /etc/fstab
 
+mount -a
+apt install -y debian-ports-archive-keyring
+
 /debootstrap/debootstrap --second-stage
 
 echo "### LOG /debootstrap/debootstrap.log ###"
@@ -120,6 +123,7 @@ EOF2
 
 apt clean
 
+umount -a
 echo "### BUILD $DISK END ###"
 EOF
 
@@ -143,12 +147,14 @@ sudo mount $LOOPDEV $MOUNTP
 
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 
+mount -a
 # apt -y libpam-elogind
 # apt -y install sysvinit-core rsyslog
 apt -y --purge --allow-remove-essential install sysvinit-core libpam-elogind dbus-x11 systemd-sysv-
 # apt-mark hold systemd systemd-sysv
 
 apt clean
+umount -a
 
 echo "### BUILD $DISK END ###"
 EOF
