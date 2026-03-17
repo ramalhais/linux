@@ -125,6 +125,8 @@ EOF2
 apt clean
 
 umount -a
+lsof /dev
+umount -f /dev
 mount
 echo "### BUILD $DISK END ###"
 EOF
@@ -134,7 +136,8 @@ EOF
 #sudo umount $MOUNTP/sys
 #sudo umount $MOUNTP/proc
 
-sudo umount $MOUNTP
+lsof $MOUNTP
+sudo umount $MOUNTP || sudo umount -f $MOUNTP
 sudo losetup -d $LOOPDEV
 tar zcvf $DISK.tar.gz --sparse $DISK
 
