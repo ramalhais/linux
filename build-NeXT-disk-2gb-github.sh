@@ -124,10 +124,11 @@ EOF2
 
 apt clean
 
-umount -a
 lsof /dev
+umount /dev
 umount -f /dev
-mount
+umount /sys
+umount /proc
 echo "### BUILD $DISK END ###"
 EOF
 
@@ -136,8 +137,7 @@ EOF
 #sudo umount $MOUNTP/sys
 #sudo umount $MOUNTP/proc
 
-lsof $MOUNTP
-sudo umount $MOUNTP || sudo umount -f $MOUNTP
+sudo umount $MOUNTP
 sudo losetup -d $LOOPDEV
 tar zcvf $DISK.tar.gz --sparse $DISK
 
@@ -160,8 +160,10 @@ apt -y --purge --allow-remove-essential install sysvinit-core libpam-elogind dbu
 # apt-mark hold systemd systemd-sysv
 
 apt clean
-umount -a
-mount
+umount /dev
+umount -f /dev
+umount /sys
+umount /proc
 
 echo "### BUILD $DISK END ###"
 EOF
