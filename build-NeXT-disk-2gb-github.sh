@@ -45,14 +45,12 @@ export _HOST=next
 # sudo mount --make-rslave --rbind /run $MOUNTP/run
 
 # sudo script -qc "chroot $MOUNTP /qemu-m68k-static /bin/sh" /dev/null
-sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -x <<EOF
+sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i -x <<EOF
 
 echo "proc /proc proc defaults 0 0" >> /etc/fstab
 echo "devtmpfs /dev devtmpfs defaults 0 0" >> /etc/fstab
 echo "sysfs /sys sysfs defaults 0 0" >> /etc/fstab
 
-mount /proc
-mount
 apt install -y debian-ports-archive-keyring lsof
 
 /debootstrap/debootstrap --second-stage
@@ -62,6 +60,8 @@ cat /debootstrap/debootstrap.log
 echo "### LOG END /debootstrap/debootstrap.log ###"
 
 #systemd-machine-id-setup
+mount /proc
+mount
 apt --fix-broken -y install
 apt-get update
 apt-get -y upgrade
