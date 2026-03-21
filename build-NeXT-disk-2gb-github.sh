@@ -44,8 +44,8 @@ export _HOST=next
 # sudo mount --make-rslave --rbind /dev $MOUNTP/dev
 # sudo mount --make-rslave --rbind /run $MOUNTP/run
 
-# sudo script -qc "chroot $MOUNTP /qemu-m68k-static /bin/sh" /dev/null
-sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i -x <<EOF
+#sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i -x <<EOF
+sudo script -qc "chroot $MOUNTP /qemu-m68k-static /bin/sh -i -x" /dev/null <<EOF
 
 echo "proc /proc proc defaults 0 0" >> /etc/fstab
 echo "devtmpfs /dev devtmpfs defaults 0 0" >> /etc/fstab
