@@ -44,13 +44,14 @@ export _HOST=next
 # sudo mount --make-rslave --rbind /dev $MOUNTP/dev
 # sudo mount --make-rslave --rbind /run $MOUNTP/run
 
-sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -x -i <<EOF
+# sudo script -qc "chroot $MOUNTP /qemu-m68k-static /bin/sh" /dev/null
+sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -x <<EOF
 
 echo "proc /proc proc defaults 0 0" >> /etc/fstab
 echo "devtmpfs /dev devtmpfs defaults 0 0" >> /etc/fstab
 echo "sysfs /sys sysfs defaults 0 0" >> /etc/fstab
 
-mount -a
+mount /proc
 mount
 apt install -y debian-ports-archive-keyring lsof
 
@@ -124,10 +125,6 @@ EOF2
 
 apt clean
 
-lsof /dev
-umount /dev
-umount -f /dev
-umount /sys
 umount /proc
 echo "### BUILD $DISK END ###"
 EOF
@@ -152,7 +149,7 @@ sudo mount $LOOPDEV $MOUNTP
 
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 
-mount -a
+mount /proc
 mount
 # apt -y libpam-elogind
 # apt -y install sysvinit-core rsyslog
@@ -160,9 +157,6 @@ apt -y --purge --allow-remove-essential install sysvinit-core libpam-elogind dbu
 # apt-mark hold systemd systemd-sysv
 
 apt clean
-umount /dev
-umount -f /dev
-umount /sys
 umount /proc
 
 echo "### BUILD $DISK END ###"
