@@ -155,7 +155,7 @@ ${SCRIPT_DIR}/arch/m68k/tools/next/aout ${SCRIPT_DIR}/vmlinux.binary_$DATE ${SCR
 ln -sf ${SCRIPT_DIR}/vmlinux.aout_$DATE ~/next/tftp/private/tftpboot/boot
 
 ### Save patch
-BASE_BRANCH=linux-6.18.y
+BASE_BRANCH=linux-7.0.y
 git diff $BASE_BRANCH > ../NeXT-$BASE_BRANCH-to-$(git branch --show-current)-$DATE.patch
 # git tag NeXT-$(date +%F-%H.%M.%S)
 # git push --tags

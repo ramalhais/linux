@@ -6,6 +6,7 @@ on:
       - NeXT
       - linux-6.9.y-NeXT-2-WIP
       - linux-6.18.y-NeXT2
+      - linux-7.0.y-NeXT
   # pull_request:
   #   branches: [ "NeXT" ]
 
