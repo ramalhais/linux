@@ -1615,7 +1615,7 @@ L(notapollo):
 	// mmu_map	#0x0b000000,#0x0b000000,#0x00040000,#_PAGE_NOCACHE_S // NeXT_X15 framebuffer? 030 Cube? all mono?
 	// mmu_map_eq	#0x02000000,#0x01000000,#_PAGE_NOCACHE_S // test mapping
 	// mmu_map	#0x02000000,#0x02000000,#0x01000000,#_PAGE_NOCACHE_S
-	mmu_map_eq	#0x02000000,#0x0011c000,#_PAGE_NOCACHE_S // 0x0011c000 = 0x00100000(BMAP offset) + 0x0001c000(device space size)
+	mmu_map_eq	#0x02000000,#0x0011c000,#_PAGE_NOCACHE_S // 0x0011c000 = 0x00100000(BMAP offset) + 0x0001c000(device space size) # was working
 	// mmu_map	#0xff000000,#0x02000000,#0x0011c000,#_PAGE_NOCACHE_S
 
 	jbra	L(mmu_init_done)

@@ -84,6 +84,7 @@ apt -y install sudo
 usermod --append --groups sudo $_USER
 
 apt -y install \
+systemd-sysv \
 ntpsec-ntpdate \
 wget \
 curl \
