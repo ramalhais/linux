@@ -104,7 +104,7 @@ make -C ${SCRIPT_DIR}/arch/m68k/tools/next/
 # Copy netbsd bootloader
 #cp ~/next/netbsd-obj/netbsd-boot-next.aout ${SCRIPT_DIR}/arch/m68k/tools/next/ || touch ${SCRIPT_DIR}/arch/m68k/tools/next/netbsd-boot-next.aout
 # Get netbsd bootloader
-curl -v -L -o ${SCRIPT_DIR}/arch/m68k/tools/next/netbsd-boot-next.aout https://github.com/ramalhais/netbsd-boot-NeXT/releases/latest/download/netbsd-boot-next.aout
+curl -L -o ${SCRIPT_DIR}/arch/m68k/tools/next/netbsd-boot-next.aout https://github.com/ramalhais/netbsd-boot-NeXT/releases/latest/download/netbsd-boot-next.aout
 
 #
 # Kernel image
