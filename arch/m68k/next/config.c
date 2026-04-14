@@ -51,7 +51,7 @@ static void __init next_meminit(void)
 			printk("SIMM bank %d: Empty", i);
 			continue;
 		}
-		m68k_memory[m68k_num_memory].addr=prom_info.simm_info[i].start;
+		m68k_memory[m68k_num_memory].addr = prom_info.simm_info[i].start;
 
 		/*
 		* round len up to the nearest meg as it seems
@@ -82,7 +82,8 @@ static void next_get_hardware_list(struct seq_file *m)
 	seq_printf(m, "Interrupt Status: 0x%x\n", next_intstat);
 }
 
-static void next_halt(void) {
+static void next_halt(void)
+{
 	// FIXME: bad kernel trap
 	char command[] = "-h";
 
@@ -90,7 +91,8 @@ static void next_halt(void) {
 	asm("trap #13");
 }
 
-static void next_reset(void) {
+static void next_reset(void)
+{
 	// FIXME: bad kernel trap
 	asm("movl #0, %d0");
 	asm("trap #13");
@@ -122,4 +124,35 @@ void __init config_next(void)
 //extern void (*mach_beep) (unsigned int, unsigned int);
 
 //	mach_max_dma_address = 0xffffffff;
+}
+
+void __init config_next_post_paging(void);
+void __init config_next_post_paging(void)
+{
+	// if (CPU_IS_020_OR_030) {
+	// 	asm volatile ("\n"
+	// 		"	moveq	#0,%%d0\n"
+	// 		"	.chip	68030\n"
+	// 		"	pmove	%%d0,%%tt0\n"
+	// 		"	.chip	68k"
+	// 		: /* no outputs */
+	// 		: /* no inputs */
+	// 		: "d0");
+	// }
+	// 		// "	pmove	%%d0,%%tt1\n"
+
+	if (CPU_IS_040_OR_060) {
+		asm volatile ("\n"
+			"	moveq	#0,%%d0\n"
+			"	.chip	68040\n"
+			"	movec	%%d0,%%itt1\n"
+			"	movec	%%d0,%%dtt1\n"
+			"	.chip	68k"
+			: /* no outputs */
+			: /* no inputs */
+			: "d0");
+	}
+			// "	movec	%%d0,%%itt0\n"
+			// "	movec	%%d0,%%dtt0\n"
+
 }

@@ -359,6 +359,11 @@ void __init setup_arch(char **cmdline_p)
 	nf_init();
 #endif
 
+// #ifdef CONFIG_NEXT
+// 	if (MACH_IS_NEXT)
+// 		config_next_post_paging();
+// #endif
+
 #ifdef CONFIG_ATARI
 	if (MACH_IS_ATARI)
 		atari_stram_reserve_pages((void *)availmem);

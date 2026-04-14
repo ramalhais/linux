@@ -7,6 +7,8 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <linux/fs.h>
 
 // #define DEBUG
 
@@ -128,7 +130,7 @@ void print_part(struct next68k_partition *part)
 
 void print_dl(struct next68k_disklabel *dl)
 {
-	printf("cd_version\t\t0x%x (%d)\t%c%c%c%c\n",	ntohl(dl->cd_version), ntohl(dl->cd_version), dl->cd_version&0xff, dl->cd_version>>8&0xff, dl->cd_version>>16&0xff, dl->cd_version>>24&0xff);
+	printf("cd_version\t\t0x%x (%d)\t%4s\n",	ntohl(dl->cd_version), ntohl(dl->cd_version), (char *)&dl->cd_version);
 	printf("cd_label_blkno\t\t0x%x (%d)\n",		ntohl(dl->cd_label_blkno), ntohl(dl->cd_label_blkno));
 	printf("cd_size\t\t0x%x (%d)\n",		ntohl(dl->cd_size), ntohl(dl->cd_size));
 	printf("cd_label\t\t%s\n",			dl->cd_label);
@@ -187,11 +189,16 @@ int write_dl(struct next68k_disklabel *dl, FILE *diskf) {
 	long disk_fd = fileno(diskf);
 	struct stat buffer;
 	fstat(disk_fd, &buffer);
-	off_t disk_size = buffer.st_size;
+	off_t disk_size;
+	if (S_ISREG(buffer.st_mode)) {
+		disk_size = buffer.st_size;
+	} else {
+		ioctl(disk_fd, BLKGETSIZE64, &disk_size);
+	}
 	printf("Disk size is %jd\n", (intmax_t)disk_size);
 
 	bzero(dl->cd_label, NEXT68K_LABEL_CPULBLLEN);
-	strncpy(dl->cd_label, "New Disk", NEXT68K_LABEL_CPULBLLEN-1);
+	strncpy(dl->cd_label, "Linux", NEXT68K_LABEL_CPULBLLEN-1);
 
 	dl->cd_version = *(uint32_t *)"dlV3";
 	// dl->cd_version = htonl(NEXT68K_LABEL_CD_V3);
@@ -236,27 +243,57 @@ int write_dl(struct next68k_disklabel *dl, FILE *diskf) {
 		dl->cd_partitions[part].cp_offset = htonl(-1);
 	}
 
-	dl->cd_partitions[0].cp_offset = htonl(0);
-	// dl->cd_partitions[0].cp_size = htonl(ntohl(dl->cd_ntracks)*ntohl(dl->cd_nsectors)*ntohl(dl->cd_ncylinders)-ntohs(dl->cd_front));
-	dl->cd_partitions[0].cp_size = htonl(disk_size/ntohl(dl->cd_secsize)-ntohs(dl->cd_front));
-	dl->cd_partitions[0].cp_bsize = htons(8192); // ignore?
-	dl->cd_partitions[0].cp_fsize = htons(1024); // ignore?
-	dl->cd_partitions[0].cp_opt = 't'; // 't'ime or 's'pace optimization. ignore?
-	dl->cd_partitions[0].cp_pad1 = 0;
-	dl->cd_partitions[0].cp_cpg = htons(16); // ignore?
-	dl->cd_partitions[0].cp_density = htons(4096); // ignore?
-	dl->cd_partitions[0].cp_minfree = 0; // ignore?
-	dl->cd_partitions[0].cp_newfs = 0; // avoid auto-formatting in NeXTstep
+	int part = 0;
+	uint32_t swap_size_bytes = 128*1024*1024;
+	uint32_t root_size_bytes = disk_size-swap_size_bytes-(ntohs(dl->cd_front)*ntohl(dl->cd_secsize));	// Rest of space after dl->cd_front sectors keeping space for swap_size_bytes
 
-	bzero(dl->cd_partitions[0].cp_mountpt, NEXT68K_LABEL_MAXMPTLEN);
-	strncpy(dl->cd_partitions[0].cp_mountpt, "/", NEXT68K_LABEL_MAXMPTLEN-1); // ignore?
+	printf("Creating root partition 1: %u bytes\n", root_size_bytes);
+	dl->cd_partitions[part].cp_offset = htonl(0);
+	// dl->cd_partitions[part].cp_size = htonl(ntohl(dl->cd_ntracks)*ntohl(dl->cd_nsectors)*ntohl(dl->cd_ncylinders)-ntohs(dl->cd_front));
+	// dl->cd_partitions[part].cp_size = htonl(((disk_size-SWAP_SIZE_BYTES)/ntohl(dl->cd_secsize))-ntohs(dl->cd_front));
+	dl->cd_partitions[part].cp_size = htonl(root_size_bytes/ntohl(dl->cd_secsize));
+	dl->cd_partitions[part].cp_bsize = htons(8192); // ignore?
+	dl->cd_partitions[part].cp_fsize = htons(1024); // ignore?
+	dl->cd_partitions[part].cp_opt = 't'; // 't'ime or 's'pace optimization. ignore?
+	dl->cd_partitions[part].cp_pad1 = 0;
+	dl->cd_partitions[part].cp_cpg = htons(16); // ignore?
+	dl->cd_partitions[part].cp_density = htons(4096); // ignore?
+	dl->cd_partitions[part].cp_minfree = 0; // ignore?
+	dl->cd_partitions[part].cp_newfs = 0; // avoid auto-formatting in NeXTstep
 
-	dl->cd_partitions[0].cp_automnt = 0; // avoid auto-mounting in NeXTstep
+	bzero(dl->cd_partitions[part].cp_mountpt, NEXT68K_LABEL_MAXMPTLEN);
+	strncpy(dl->cd_partitions[part].cp_mountpt, "/", NEXT68K_LABEL_MAXMPTLEN-1); // ignore?
 
-	bzero(dl->cd_partitions[0].cp_type, NEXT68K_LABEL_MAXFSTLEN);
-	strncpy(dl->cd_partitions[0].cp_type, "ext2", NEXT68K_LABEL_MAXFSTLEN-1); // ignore?
+	dl->cd_partitions[part].cp_automnt = 0; // avoid auto-mounting in NeXTstep
 
-	dl->cd_partitions[0].cp_pad2 = 0;
+	bzero(dl->cd_partitions[part].cp_type, NEXT68K_LABEL_MAXFSTLEN);
+	strncpy(dl->cd_partitions[part].cp_type, "linux", NEXT68K_LABEL_MAXFSTLEN-1); // ignore?
+
+	dl->cd_partitions[part].cp_pad2 = 0;
+
+	// Create swap
+	part = 1;
+	printf("Creating swap partition 2: %u bytes\n", swap_size_bytes);
+	dl->cd_partitions[part].cp_offset = dl->cd_partitions[part-1].cp_size;
+	dl->cd_partitions[part].cp_size = htonl(swap_size_bytes/ntohl(dl->cd_secsize));
+	dl->cd_partitions[part].cp_bsize = htons(8192); // ignore?
+	dl->cd_partitions[part].cp_fsize = htons(1024); // ignore?
+	dl->cd_partitions[part].cp_opt = 't'; // 't'ime or 's'pace optimization. ignore?
+	dl->cd_partitions[part].cp_pad1 = 0;
+	dl->cd_partitions[part].cp_cpg = htons(16); // ignore?
+	dl->cd_partitions[part].cp_density = htons(4096); // ignore?
+	dl->cd_partitions[part].cp_minfree = 0; // ignore?
+	dl->cd_partitions[part].cp_newfs = 0; // avoid auto-formatting in NeXTstep
+
+	bzero(dl->cd_partitions[part].cp_mountpt, NEXT68K_LABEL_MAXMPTLEN);
+	strncpy(dl->cd_partitions[part].cp_mountpt, "none", NEXT68K_LABEL_MAXMPTLEN-1); // ignore?
+
+	dl->cd_partitions[part].cp_automnt = 0; // avoid auto-mounting in NeXTstep
+
+	bzero(dl->cd_partitions[part].cp_type, NEXT68K_LABEL_MAXFSTLEN);
+	strncpy(dl->cd_partitions[part].cp_type, "swap", NEXT68K_LABEL_MAXFSTLEN-1); // ignore?
+
+	dl->cd_partitions[part].cp_pad2 = 0;
 
 	if (ntohl(dl->cd_version) == NEXT68K_LABEL_CD_V3)
 		dl->cd_un.CD_v3_checksum = htons(checksum(dl, false));
