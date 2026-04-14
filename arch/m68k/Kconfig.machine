@@ -142,6 +142,63 @@ config VIRT
 	  This options enable a pure virtual machine based on m68k,
 	  VIRTIO MMIO devices and GOLDFISH interfaces (TTY, RTC, PIC).
 
+config NEXT
+	bool "NeXT support"
+	depends on MMU
+	# depends on !LD_DEAD_CODE_DATA_ELIMINATION
+	# imply MMU_MOTOROLA
+	imply M68030
+	imply M68040
+	imply LEGACY_TIMER_TICK # for legacy_timer_tick() in rtc.c
+	select TTY # for INPUT input_register_device() etc in kbd.c
+	select VT # for INPUT input_register_device() etc in kbd.c
+	imply EARLY_PRINTK # earlyconsole using PROM mg_putc()
+	select RTC_CLASS
+	# imply RTC_LIB # for rtc_tm_to_time64 in rtc.c
+	imply RTC_DRV_GENERIC
+	# upto here it minimal boots
+
+	select FB
+	imply FB_NEXT
+	# imply FB_CORE
+	# imply FB_DEVICE
+	# imply CONFIG_DUMMY_CONSOLE
+	imply FRAMEBUFFER_CONSOLE
+	imply VT_HW_CONSOLE_BINDING
+	# upto here it gives a black screen
+
+	select PRINTK
+	# upto here it gives messages
+
+	select BLOCK
+	imply PARTITION_ADVANCED
+	imply NEXT_PARTITION
+
+	select NET
+	imply NETDEVICES
+	imply ETHERNET
+	imply NEXT_NET
+
+	imply SCSI
+	imply SCSI_LOWLEVEL
+	imply NEXT_SCSI
+
+	imply PRINTK_TIME
+	imply LOGO
+	imply LOGO_LINUX_MONO
+	imply LOGO_NEXT_CLUT224
+	# remove CONFIG_LOGO_LINUX_VGA16
+	# remove CONFIG_LOGO_LINUX_CLUT224
+
+	help
+	  This option enables support for the NeXT series of
+	  computers. If you plan to use this kernel on a NeXT, say Y here
+	  otherwise say N.
+
+config NEXT_DEBUG
+	bool "NeXT debugging"
+	depends on NEXT
+
 config PILOT
 	bool
 

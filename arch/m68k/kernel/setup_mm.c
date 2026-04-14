@@ -46,6 +46,9 @@
 #ifdef CONFIG_SUN3X
 #include <asm/dvma.h>
 #endif
+#ifdef CONFIG_NEXT
+#include <asm/nexthw.h>
+#endif
 #include <asm/macintosh.h>
 #include <asm/natfeat.h>
 #include <asm/config.h>
@@ -206,7 +209,7 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
 void __init setup_arch(char **cmdline_p)
 {
 	/* The bootinfo is located right after the kernel */
-	if (!CPU_IS_COLDFIRE)
+	if (!CPU_IS_COLDFIRE && !MACH_IS_NEXT)
 		m68k_parse_bootinfo((const struct bi_record *)_end);
 
 	if (CPU_IS_040)
@@ -246,6 +249,15 @@ void __init setup_arch(char **cmdline_p)
 #endif /* CONFIG_BOOTPARAM */
 	process_uboot_commandline(&m68k_command_line[0], CL_SIZE);
 	*cmdline_p = m68k_command_line;
+
+#ifdef CONFIG_NEXT
+	if (MACH_IS_NEXT) {
+		if (strlen(m68k_command_line))
+			strncpy(m68k_command_line+strlen(m68k_command_line), " ", 1);
+		strncpy(m68k_command_line+strlen(m68k_command_line), (char *)prom_info.inputline, CL_SIZE-strlen(m68k_command_line)-1);
+	}
+#endif
+
 	memcpy(boot_command_line, *cmdline_p, CL_SIZE);
 	/*
 	 * Initialise the static keys early as they may be enabled by the
@@ -310,6 +322,11 @@ void __init setup_arch(char **cmdline_p)
 		config_sun3x();
 		break;
 #endif
+#ifdef CONFIG_NEXT
+	case MACH_NEXT:
+		config_next();
+		break;
+#endif
 #ifdef CONFIG_COLDFIRE
 	case MACH_M54XX:
 	case MACH_M5441X:
@@ -341,6 +358,11 @@ void __init setup_arch(char **cmdline_p)
 #ifdef CONFIG_NATFEAT
 	nf_init();
 #endif
+
+// #ifdef CONFIG_NEXT
+// 	if (MACH_IS_NEXT)
+// 		config_next_post_paging();
+// #endif
 
 #ifdef CONFIG_ATARI
 	if (MACH_IS_ATARI)

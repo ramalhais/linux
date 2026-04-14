@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - NeXT
+      - linux-6.9.y-NeXT-2-WIP
+      - linux-6.18.y-NeXT2
+  # pull_request:
+  #   branches: [ "NeXT" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04 #ubuntu-latest # ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          uname -a
+          lsb_release -a
+          sudo apt update
+          sudo apt install -y gcc-14-m68k-linux-gnu make gcc-14 flex bison debootstrap qemu-user-static && echo CPUS=$(nproc)
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+
+      - name: Build Kernel
+        run: |
+          cd $GITHUB_WORKSPACE
+          set -e
+          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+          ./build-NeXT-kernel-github.sh
+          echo "DATE=$(date +%F-%H.%M.%S)" >> $GITHUB_ENV
+          echo "KERNELVER=$(make kernelversion)" >> $GITHUB_ENV
+          echo "BRANCH=${{ github.head_ref || github.ref_name }}" >> $GITHUB_ENV
+
+      - name: Build tiny Disk Image
+        run: |
+          cd $GITHUB_WORKSPACE
+          set -e
+          ./build-NeXT-disk-20mb-github.sh
+
+      - name: Build 2GB Disk Image
+        run: |
+          cd $GITHUB_WORKSPACE
+          set -e
+          ./build-NeXT-disk-2gb-github.sh
+
+      - name: Create new Git tag
+        run: |
+          git tag build/${{ env.BRANCH }}_${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
+          git push origin build/${{ env.BRANCH }}_${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2.6.0
+        with:
+          tag_name: build/${{ env.BRANCH }}_${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
+          name: ${{ env.BRANCH }}_${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
+          files: |
+            vmlinux-NeXT.aout
+            vmlinux-NeXT.macho
+            vmlinux-NeXT.macho-simpkern
+            vmlinux
+            vmlinux.stripped
+            .config
+            arch/m68k/tools/next/aout
+            arch/m68k/tools/next/macho
+            arch/m68k/tools/next/next-disklabel
+            arch/m68k/tools/next/aout.m68k
+            arch/m68k/tools/next/macho.m68k
+            arch/m68k/tools/next/next-disklabel.m68k
+            linux-next-20mb-sparse.disk.tar.gz
+            linux-next-2gb-sparse.disk.tar.gz
+            linux-next-2gb-debian-systemd.disk.tar.gz
+            linux-next-2gb-debian-sysvinit.disk.tar.gz

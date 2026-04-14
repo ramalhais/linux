@@ -124,6 +124,13 @@ config MSDOS_PARTITION
 	help
 	  Say Y here.
 
+config NEXT_PARTITION
+	bool "NextStep/OpenStep partitions support" if PARTITION_ADVANCED
+	default n
+	help
+	  Used on NeXT Computer/cube/station.
+	  Say N unless you have a NeXT.
+
 config BSD_DISKLABEL
 	bool "BSD disklabel (FreeBSD partition tables) support"
 	depends on PARTITION_ADVANCED && MSDOS_PARTITION
