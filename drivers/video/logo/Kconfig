@@ -42,6 +42,7 @@ config LOGO_LINUX_VGA16_FILE
 	string "16-color logo .ppm file"
 	depends on LOGO_LINUX_VGA16
 	default "drivers/video/logo/logo_superh_vga16.ppm" if SUPERH
+	default "drivers/video/logo/logo_linux_vga16.ppm" if NEXT
 	default "drivers/video/logo/logo_linux_vga16.ppm"
 	help
 	  Takes a path to a logo in the portable pixmap file format (.ppm),
@@ -66,6 +67,7 @@ config LOGO_LINUX_CLUT224_FILE
 	default "drivers/video/logo/logo_sgi_clut224.ppm" if SGI_IP22 || SGI_IP27 || SGI_IP32
 	default "drivers/video/logo/logo_sun_clut224.ppm" if SPARC
 	default "drivers/video/logo/logo_superh_clut224.ppm" if SUPERH
+	default "drivers/video/logo/logo_next_clut224.ppm" if NEXT
 	default "drivers/video/logo/logo_linux_clut224.ppm"
 	help
 	  Takes a path to a 224-color logo in the portable pixmap file
