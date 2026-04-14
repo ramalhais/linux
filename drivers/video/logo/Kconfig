@@ -42,7 +42,7 @@ config LOGO_LINUX_VGA16_FILE
 	string "16-color logo .ppm file"
 	depends on LOGO_LINUX_VGA16
 	default "drivers/video/logo/logo_superh_vga16.ppm" if SUPERH
-	default "drivers/video/logo/logo_linux_vga16.ppm" if NEXT
+	default "drivers/video/logo/logo_next_gray_vga16.ppm" if NEXT
 	default "drivers/video/logo/logo_linux_vga16.ppm"
 	help
 	  Takes a path to a logo in the portable pixmap file format (.ppm),
