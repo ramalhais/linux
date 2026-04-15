@@ -6,6 +6,9 @@ nod /dev/loop0 644 0 0 b 7 0
 
 dir /bin 755 1000 1000
 slink /bin/sh busybox 777 0 0
+# http://ftp.de.debian.org/debian-ports/pool-m68k/main/b/busybox/busybox-static_1.37.0-10.1_m68k.deb
+# ar xv busybox-static_1.37.0-10.1_m68k.deb
+# tar Jxvf data.tar.xz ./usr/bin/busybox
 file /bin/busybox arch/m68k/tools/next/initramfs/busybox 755 0 0
 
 dir /proc 755 0 0
@@ -27,6 +30,7 @@ file /bin/next-disklabel arch/m68k/tools/next/next-disklabel.m68k 755 0 0
 file /bin/aout arch/m68k/tools/next/aout.m68k 755 0 0
 file /bin/macho arch/m68k/tools/next/macho.m68k 755 0 0
 file /bin/simpkern arch/m68k/tools/next/simpkern.m68k 755 0 0
+# https://github.com/ramalhais/netbsd-boot-NeXT/releases/latest/download/netbsd-boot-next.aout
 file /netbsd-boot-next.aout arch/m68k/tools/next/netbsd-boot-next.aout 755 0 0
 
 #file /bin/tcpdump arch/m68k/tools/next/initramfs/tcpdump 755 0 0

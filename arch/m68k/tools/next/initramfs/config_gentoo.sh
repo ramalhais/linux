@@ -62,6 +62,11 @@ echo
 echo "Creating ext2 filesystem in $ROOT_PARTITION with LABEL=$ROOT_PARTITION_LABEL"
 mke2fs -m0 -L"$ROOT_PARTITION_LABEL" -r0 $ROOT_PARTITION
 
+SWAP_PARTITION=${DEVICE}2
+echo
+echo "Creating swap in $SWAP_PARTITION"
+mkswap -L swap $SWAP_PARTITION
+
 echo
 echo "Mounting $ROOT_PARTITION in $MOUNT_DIR"
 mkdir -p $MOUNT_DIR
@@ -92,7 +97,30 @@ echo
 echo "Fixing login timeout"
 sed -i 's/\(LOGIN_TIMEOUT\).*/\1\t120/g' $MOUNT_DIR/etc/login.defs
 
+export _USER=user
+export _PASSWORD=jobssucks
+
+chroot $MOUNT_DIR /bin/bash <<EOF
+
+passwd <<EOF2
+${_PASSWORD}
+${_PASSWORD}
+EOF2
+
+useradd --create-home --no-user-group --shell /bin/bash $_USER
+passwd $_USER <<EOF2
+${_PASSWORD}
+${_PASSWORD}
+EOF2
+
+cat >> /etc/fstab <<EOF2
+LABEL=/		/	auto	defaults	0 1
+LABEL=swap	none	swap	sw		0 0
+EOF2
+
+EOF
+
+INIT=/sbin/init
 echo
 echo "Switching root to $MOUNT_DIR using $INIT"
-INIT=/sbin/init
 exec switch_root $MOUNT_DIR $INIT
