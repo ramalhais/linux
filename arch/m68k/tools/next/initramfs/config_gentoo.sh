@@ -60,7 +60,8 @@ umount $MOUNT_DIR &>/dev/null || true
 
 echo
 echo "Creating ext2 filesystem in $ROOT_PARTITION with LABEL=$ROOT_PARTITION_LABEL"
-mke2fs -m0 -L"$ROOT_PARTITION_LABEL" -r0 $ROOT_PARTITION
+# netbsd bootloader only support ext2 revision 0
+mke2fs-static -m0 -r0 -L"$ROOT_PARTITION_LABEL" -r0 $ROOT_PARTITION
 
 SWAP_PARTITION=${DEVICE}2
 echo

@@ -267,7 +267,7 @@ int write_dl(struct next68k_disklabel *dl, FILE *diskf) {
 	dl->cd_partitions[part].cp_automnt = 0; // avoid auto-mounting in NeXTstep
 
 	bzero(dl->cd_partitions[part].cp_type, NEXT68K_LABEL_MAXFSTLEN);
-	strncpy(dl->cd_partitions[part].cp_type, "linux", NEXT68K_LABEL_MAXFSTLEN-1); // ignore?
+	strncpy(dl->cd_partitions[part].cp_type, "ext2", NEXT68K_LABEL_MAXFSTLEN-1); // ignore?
 
 	dl->cd_partitions[part].cp_pad2 = 0;
 
