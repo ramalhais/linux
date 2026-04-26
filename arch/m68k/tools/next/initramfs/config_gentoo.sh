@@ -51,9 +51,10 @@ fi
 
 echo
 echo "Creating NeXTSTEP disklabel and partition in disk $SD and installing NetBSD bootloader onto the bootsector"
-next-disklabel $DEVICE -c -b netbsd-boot-next.aout
+next-disklabel $DEVICE -c
+next-disklabel $DEVICE -b netbsd-boot-next.aout
 
-ROOT_PARTITION=${DEVICE}1
+ROOT_PARTITION=${DEVICE}3
 ROOT_PARTITION_LABEL=/
 MOUNT_DIR=/mnt/target
 umount $MOUNT_DIR &>/dev/null || true
@@ -61,22 +62,31 @@ umount $MOUNT_DIR &>/dev/null || true
 echo
 echo "Creating ext2 filesystem in $ROOT_PARTITION with LABEL=$ROOT_PARTITION_LABEL"
 # netbsd bootloader only support ext2 revision 0
-mke2fs-static -m0 -r0 -L"$ROOT_PARTITION_LABEL" -r0 $ROOT_PARTITION
+mke2fs -m0 -r0 -L"$ROOT_PARTITION_LABEL" -r0 $ROOT_PARTITION
 
 SWAP_PARTITION=${DEVICE}2
 echo
 echo "Creating swap in $SWAP_PARTITION"
 mkswap -L swap $SWAP_PARTITION
 
+BOOT_PARTITION=${DEVICE}1
 echo
-echo "Mounting $ROOT_PARTITION in $MOUNT_DIR"
+echo "Creating vfat boot partition in $BOOT_PARTITION"
+mkdosfs -n BOOT $BOOT_PARTITION
+
+echo
+echo "Mounting root partition $ROOT_PARTITION in $MOUNT_DIR"
 mkdir -p $MOUNT_DIR
 mount $ROOT_PARTITION $MOUNT_DIR
 
+echo "Mounting boot partition $BOOT_PARTITION in $MOUNT_DIR/boot"
+mkdir -p $MOUNT_DIR/boot
+mount $BOOT_PARTITION $MOUNT_DIR/boot
+
 echo
-echo "Downloading NeXT linux kernel"
+echo "Downloading NeXT linux kernel to boot partition"
 VMLINUX_URL=https://github.com/ramalhais/linux/releases/latest/download/vmlinux
-time wget $VMLINUX_URL -O $MOUNT_DIR/vmlinux
+time wget $VMLINUX_URL -O $MOUNT_DIR/boot/vmlinux
 
 echo
 echo "Downloading Gentoo stage3 to $MOUNT_DIR"
@@ -117,6 +127,7 @@ EOF2
 cat >> /etc/fstab <<EOF2
 LABEL=/		/	auto	defaults	0 1
 LABEL=swap	none	swap	sw		0 0
+LABEL=BOOT	/boot	auto	defaults	0 0
 EOF2
 
 EOF
