@@ -17,7 +17,7 @@ file /bin/busybox arch/m68k/tools/next/initramfs/busybox 755 0 0
 # make LDFLAGS="-static"
 # cp ./misc/mke2fs ~/next/linux/arch/m68k/tools/next/initramfs/mke2fs-static
 # m68k-linux-gnu-strip arch/m68k/tools/next/initramfs/mke2fs-static
-file /bin/mke2fs-static arch/m68k/tools/next/initramfs/mke2fs-static 755 0 0
+#file /bin/mke2fs-static arch/m68k/tools/next/initramfs/mke2fs-static 755 0 0
 
 dir /proc 755 0 0
 dir /sys 755 0 0
