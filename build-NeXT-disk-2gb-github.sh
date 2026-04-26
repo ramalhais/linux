@@ -165,7 +165,7 @@ DISK=linux-next-2gb-debian-sysvinit.disk
 mv $ORIG_DISK $DISK
 
 LOOPDEV=$(sudo losetup -f | head -1)
-sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK
+sudo losetup --offset=$(( (160+65536+131072)*1024 )) $LOOPDEV $DISK
 sudo mkdir -p $MOUNTP
 sudo mount $LOOPDEV $MOUNTP
 
