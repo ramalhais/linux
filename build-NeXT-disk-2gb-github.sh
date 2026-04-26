@@ -8,16 +8,36 @@ FS_LABEL=/
 DISK=linux-next-2gb-sparse.disk
 
 dd if=/dev/zero of=$DISK bs=2G count=1 conv=sparse
-LOOPDEV=$(sudo losetup -f | head -1)
-sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK
+
+# Create disklabel/partitions and install boot sector
 arch/m68k/tools/next/next-disklabel $DISK -c
 arch/m68k/tools/next/next-disklabel $DISK -b arch/m68k/tools/next/netbsd-boot-next.aout
+
+# boot partition
+LOOPDEV=$(sudo losetup -f | head -1)
+sudo losetup --offset=$(( 160*1024 )) --sizelimit=$(( 65536*1024 )) $LOOPDEV $DISK
+sudo mkfs.vfat -n boot $LOOPDEV
+sudo mkdir -p $MOUNTP/boot
+sudo mount $LOOPDEV $MOUNTP/boot
+sudo cp vmlinux.stripped $MOUNTP/boot/vmlinux
+sudo umount $MOUNTP/boot
+sudo losetup -d $LOOPDEV
+
+# swap partition
+LOOPDEV=$(sudo losetup -f | head -1)
+sudo losetup --offset=$(( (160+65536)*1024 )) --sizelimit=$(( 131072*1024 )) $LOOPDEV $DISK
+sudo mkswap -L swap $LOOPDEV
+sudo losetup -d $LOOPDEV
+
+LOOPDEV=$(sudo losetup -f | head -1)
+sudo losetup --offset=$(( (160+65536+131072)*1024 )) $LOOPDEV $DISK
 sudo mkfs.ext2 -m0 -L$FS_LABEL -r0 $LOOPDEV
 sudo mkdir -p $MOUNTP
 sudo mount $LOOPDEV $MOUNTP
 sudo cp vmlinux.stripped $MOUNTP/vmlinux
 sudo umount $MOUNTP
 sudo losetup -d $LOOPDEV
+
 tar zcvf $DISK.tar.gz --sparse $DISK
 
 # Build debian disk image
@@ -25,8 +45,9 @@ ORIG_DISK=$DISK
 DISK=linux-next-2gb-debian-systemd.disk
 mv $ORIG_DISK $DISK
 
+# Mount root partition
 LOOPDEV=$(sudo losetup -f | head -1)
-sudo losetup --offset=$((160*1024)) $LOOPDEV $DISK
+sudo losetup --offset=$(( (160+65536+131072)*1024 )) $LOOPDEV $DISK
 sudo mkdir -p $MOUNTP
 sudo mount $LOOPDEV $MOUNTP
 
