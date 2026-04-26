@@ -43,7 +43,7 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           set -e
-          ./build-NeXT-disk-20mb-github.sh
+          ./build-NeXT-disk-tiny-github.sh
 
       - name: Build 2GB Disk Image
         run: |
