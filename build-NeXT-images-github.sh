@@ -1,6 +1,10 @@
 #!/bin/bash -x
 set -e
 
+export _USER=user
+export _PASSWORD=jobssucks
+export _HOST=next
+
 DISK_BASE_SMALL=linux-next-small.disk
 ./build-NeXT-disk-github.sh $DISK_BASE_SMALL 256M
 DISK_BASE=linux-next.disk
@@ -25,10 +29,6 @@ sudo mount $LOOPDEV $MOUNT_DIR
 #sudo sed -i -e 's/systemd systemd-sysv //g' $MOUNT_DIR/debootstrap/required
 sudo debootstrap --include debian-ports-archive-keyring,debian-archive-keyring --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNT_DIR http://deb.debian.org/debian-ports
 sudo cp $(which qemu-m68k-static ) $MOUNT_DIR
-
-export _USER=user
-export _PASSWORD=jobssucks
-export _HOST=next
 
 # sudo mount --make-rslave --rbind /proc $MOUNT_DIR/proc
 # sudo mount --make-rslave --rbind /sys $MOUNT_DIR/sys
@@ -184,9 +184,6 @@ sudo mount $LOOPDEV $MOUNT_DIR
 
 sudo cp $(which qemu-m68k-static ) $MOUNT_DIR
 
-export _USER=user
-export _PASSWORD=jobssucks
-
 # sudo mount --make-rslave --rbind /proc $MOUNT_DIR/proc
 # sudo mount --make-rslave --rbind /sys $MOUNT_DIR/sys
 # sudo mount --make-rslave --rbind /dev $MOUNT_DIR/dev
@@ -201,16 +198,16 @@ echo "Downloading Gentoo stage3 to $MOUNT_DIR"
 # https://web.archive.org/web/*/https://distfiles.gentoo.org/releases/m68k/autobuilds/*
 STAGE3_URL=https://web.archive.org/web/20250726145816/https://distfiles.gentoo.org/releases/m68k/autobuilds/20250716T155236Z/stage3-m68k-openrc-20250716T155236Z.tar.xz
 # wget $STAGE3_URL -O - | tar Jxf - -C $MOUNT_DIR
-time wget $STAGE3_URL -O $MOUNT_DIR/stage3
+sudo time wget $STAGE3_URL -O $MOUNT_DIR/stage3
 
 echo
 echo "Extracting Gentoo stage3 to $MOUNT_DIR"
-time tar $TAR_OPTS Jxf $MOUNT_DIR/stage3 -C $MOUNT_DIR
-rm $MOUNT_DIR/stage3
+sudo time tar $TAR_OPTS Jxf $MOUNT_DIR/stage3 -C $MOUNT_DIR
+sudo rm $MOUNT_DIR/stage3
 
 echo
 echo "Fixing login timeout"
-sed -i 's/\(LOGIN_TIMEOUT\).*/\1\t120/g' $MOUNT_DIR/etc/login.defs
+sudo sed -i 's/\(LOGIN_TIMEOUT\).*/\1\t120/g' $MOUNT_DIR/etc/login.defs
 
 #sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x <<EOF
 sudo script -qc "chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x" /dev/null <<EOF
@@ -229,7 +226,7 @@ EOF2
 cat >> /etc/fstab <<EOF2
 LABEL=/		/	auto	defaults	0 1
 LABEL=swap	none	swap	sw		0 0
-LABEL=BOOT	/boot	auto	defaults	0 0
+LABEL=boot	/boot	auto	defaults	0 0
 EOF2
 
 EOF
