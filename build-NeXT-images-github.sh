@@ -1,56 +1,25 @@
 #!/bin/bash -x
 set -e
 
+DISK=linux-next-small.disk
+./build-NeXT-disk-github.sh $DISK 256M
+DISK=linux-next.disk
+./build-NeXT-disk-github.sh $DISK 2G
+
 MOUNTP=/mnt/target
-FS_LABEL=/
-
-# Build 2GB empty bootable disk image
-DISK=linux-next-2gb-sparse.disk
-
-dd if=/dev/zero of=$DISK bs=2G count=1 conv=sparse
-
-# Create disklabel/partitions and install boot sector
-arch/m68k/tools/next/next-disklabel $DISK -c
-arch/m68k/tools/next/next-disklabel $DISK -b arch/m68k/tools/next/netbsd-boot-next.aout
-
-# boot partition
-LOOPDEV=$(sudo losetup -f | head -1)
-sudo losetup --offset=$(( 160*1024 )) --sizelimit=$(( 65536*1024 )) $LOOPDEV $DISK
-sudo mkfs.vfat -n boot $LOOPDEV
-sudo mkdir -p $MOUNTP/boot
-sudo mount $LOOPDEV $MOUNTP/boot
-sudo cp vmlinux.stripped $MOUNTP/boot/vmlinux
-sudo umount $MOUNTP/boot
-sudo losetup -d $LOOPDEV
-
-# swap partition
-LOOPDEV=$(sudo losetup -f | head -1)
-sudo losetup --offset=$(( (160+65536)*1024 )) --sizelimit=$(( 131072*1024 )) $LOOPDEV $DISK
-sudo mkswap -L swap $LOOPDEV
-sudo losetup -d $LOOPDEV
-
-# root partition
-LOOPDEV=$(sudo losetup -f | head -1)
-SECTORS=$(arch/m68k/tools/next/next-disklabel $DISK | grep "Partition 2" --text -A2 | grep cp_size | sed 's/.*(\(.*\))/\1/g')
-sudo losetup --offset=$(( (160+65536+131072)*1024 )) --sizelimit=$(( $SECTORS*1024 )) $LOOPDEV $DISK
-sudo mkfs.ext2 -m0 -L$FS_LABEL -r0 $LOOPDEV
 sudo mkdir -p $MOUNTP
-sudo mount $LOOPDEV $MOUNTP
-sudo cp vmlinux.stripped $MOUNTP/vmlinux
-sudo umount $MOUNTP
-sudo losetup -d $LOOPDEV
-
-tar zcvf $DISK.tar.gz --sparse $DISK
 
 # Build debian disk image
 ORIG_DISK=$DISK
-DISK=linux-next-2gb-debian-systemd.disk
-mv $ORIG_DISK $DISK
+DISK=linux-next-debian-systemd.disk
+cp $ORIG_DISK $DISK
 
 # Mount root partition
+PARTITION=2
 LOOPDEV=$(sudo losetup -f | head -1)
-sudo losetup --offset=$(( (160+65536+131072)*1024 )) $LOOPDEV $DISK
-sudo mkdir -p $MOUNTP
+OFFSET=$(arch/m68k/tools/next/next-disklabel $DISK | grep "Partition $PARTITION" --text -A1 | grep cp_offset | sed 's/.*(\(.*\))/\1/g')
+SECTORS=$(arch/m68k/tools/next/next-disklabel $DISK | grep "Partition $PARTITION" --text -A2 | grep cp_size | sed 's/.*(\(.*\))/\1/g')
+sudo losetup --offset=$(( (160+$OFFSET)*1024 )) --sizelimit=$(( $SECTORS*1024 )) $LOOPDEV $DISK
 sudo mount $LOOPDEV $MOUNTP
 
 #sudo debootstrap --variant=minbase --include sysvinit-core,libpam-elogind --verbose --no-check-gpg --arch=m68k --foreign unstable $MOUNTP http://deb.debian.org/debian-ports
@@ -158,20 +127,11 @@ EOF
 #sudo umount $MOUNTP/sys
 #sudo umount $MOUNTP/proc
 
-sudo umount $MOUNTP
-sudo losetup -d $LOOPDEV
 tar zcvf $DISK.tar.gz --sparse $DISK
 
-ORIG_DISK=$DISK
-DISK=linux-next-2gb-debian-sysvinit.disk
-mv $ORIG_DISK $DISK
 
-LOOPDEV=$(sudo losetup -f | head -1)
-SECTORS=$(arch/m68k/tools/next/next-disklabel $DISK | grep "Partition 2" --text -A2 | grep cp_size | sed 's/.*(\(.*\))/\1/g')
-sudo losetup --offset=$(( (160+65536+131072)*1024 )) --sizelimit=$(( $SECTORS*1024 )) $LOOPDEV $DISK
-sudo mkdir -p $MOUNTP
-sudo mount $LOOPDEV $MOUNTP
 
+# sysvinit
 sudo chroot $MOUNTP /qemu-m68k-static /bin/sh -i <<EOF
 
 mount /proc
@@ -189,4 +149,9 @@ EOF
 
 sudo umount $MOUNTP
 sudo losetup -d $LOOPDEV
+
+ORIG_DISK=$DISK
+DISK=linux-next-debian-sysvinit.disk
+mv $ORIG_DISK $DISK
+
 tar zcvf $DISK.tar.gz --sparse $DISK
