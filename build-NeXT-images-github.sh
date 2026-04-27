@@ -194,9 +194,9 @@ echo "Downloading Gentoo stage3 to $MOUNT_DIR"
 # TAR_OPTS="--exclude /usr/lib/python3.12/test"
 # TAR_OPTS+=" --exclude /usr/share/sgml"
 # STAGE3_URL=https://mirrors.xmission.com/gentoo/releases/m68k/autobuilds/20240501T163628Z/stage3-m68k-openrc-20240501T163628Z.tar.xz
-# STAGE3_URL=https://mirror.cs.odu.edu/gentoo-distfiles/releases/m68k/autobuilds/20250322T105044Z/stage3-m68k-openrc-20250322T105044Z.tar.xz
+STAGE3_URL=https://mirror.cs.odu.edu/gentoo-distfiles/releases/m68k/autobuilds/20250322T105044Z/stage3-m68k-openrc-20250322T105044Z.tar.xz
 # https://web.archive.org/web/*/https://distfiles.gentoo.org/releases/m68k/autobuilds/*
-STAGE3_URL=https://web.archive.org/web/20250726145816/https://distfiles.gentoo.org/releases/m68k/autobuilds/20250716T155236Z/stage3-m68k-openrc-20250716T155236Z.tar.xz
+# STAGE3_URL=https://web.archive.org/web/20250726145816/https://distfiles.gentoo.org/releases/m68k/autobuilds/20250716T155236Z/stage3-m68k-openrc-20250716T155236Z.tar.xz
 # wget $STAGE3_URL -O - | tar Jxf - -C $MOUNT_DIR
 sudo time wget $STAGE3_URL -O $MOUNT_DIR/stage3
 
