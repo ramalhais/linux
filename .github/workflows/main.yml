@@ -77,7 +77,7 @@ jobs:
             arch/m68k/tools/next/macho.m68k
             arch/m68k/tools/next/next-disklabel.m68k
             arch/m68k/tools/next/netbsd-boot-next.aout
-            linux-next-20mb-sparse.disk.tar.gz
+            linux-next-tiny-sparse.disk.tar.gz
             linux-next-2gb-sparse.disk.tar.gz
             linux-next-2gb-debian-systemd.disk.tar.gz
             linux-next-2gb-debian-sysvinit.disk.tar.gz
