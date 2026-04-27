@@ -224,9 +224,9 @@ ${_PASSWORD}
 EOF2
 
 cat >> /etc/fstab <<EOF2
-LABEL=/		/	auto	defaults	0 1
-LABEL=swap	none	swap	sw		0 0
-LABEL=boot	/boot	auto	defaults	0 0
+LABEL=/     /      auto defaults  0 1
+LABEL=swap  none   swap sw        0 0
+LABEL=boot  /boot  auto defaults  0 0
 EOF2
 
 EOF
