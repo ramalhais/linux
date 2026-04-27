@@ -7,7 +7,7 @@ sudo mkdir -p $MOUNTP
 DISK=$1
 SIZE=$2
 
-dd if=/dev/zero of=$DISK bs=256M count=1 conv=sparse
+dd if=/dev/zero of=$DISK bs=$SIZE count=1 conv=sparse
 arch/m68k/tools/next/next-disklabel $DISK -c
 arch/m68k/tools/next/next-disklabel $DISK -b arch/m68k/tools/next/netbsd-boot-next.aout
 
