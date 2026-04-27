@@ -200,16 +200,16 @@ sudo cp $(which qemu-m68k-static ) $MOUNT_DIR
 echo
 echo "Downloading Gentoo stage3 to $MOUNT_DIR"
 # https://web.archive.org/web/*/https://distfiles.gentoo.org/releases/m68k/autobuilds/*
-# STAGE3_URL=https://mirrors.xmission.com/gentoo/releases/m68k/autobuilds/20240501T163628Z/stage3-m68k-openrc-20240501T163628Z.tar.xz
-STAGE3_URL=https://web.archive.org/web/20250401024836/https://distfiles.gentoo.org/releases/m68k/autobuilds/20250322T105044Z/stage3-m68k-openrc-20250322T105044Z.tar.xz
+STAGE3_URL=https://mirrors.xmission.com/gentoo/releases/m68k/autobuilds/20240501T163628Z/stage3-m68k-openrc-20240501T163628Z.tar.xz
+# STAGE3_URL=https://web.archive.org/web/20250401024836/https://distfiles.gentoo.org/releases/m68k/autobuilds/20250322T105044Z/stage3-m68k-openrc-20250322T105044Z.tar.xz
 # STAGE3_URL=https://web.archive.org/web/20250726145816/https://distfiles.gentoo.org/releases/m68k/autobuilds/20250716T155236Z/stage3-m68k-openrc-20250716T155236Z.tar.xz
 # STAGE3_URL=https://distfiles.gentoo.org/releases/m68k/autobuilds/20260424T160106Z/stage3-m68k_a32-t64-openrc-20260424T160106Z.tar.xz
 # wget $STAGE3_URL -O - | tar Jxf - -C $MOUNT_DIR
-sudo time wget $STAGE3_URL -O $MOUNT_DIR/stage3
+sudo wget $STAGE3_URL -O $MOUNT_DIR/stage3
 
 echo
 echo "Extracting Gentoo stage3 to $MOUNT_DIR"
-sudo time tar $TAR_OPTS Jxf $MOUNT_DIR/stage3 -C $MOUNT_DIR
+sudo tar $TAR_OPTS Jxf $MOUNT_DIR/stage3 -C $MOUNT_DIR
 sudo rm $MOUNT_DIR/stage3
 
 echo
@@ -269,14 +269,15 @@ sudo cp $(which qemu-m68k-static ) $MOUNT_DIR
 echo
 echo "Downloading Gentoo stage3 to $MOUNT_DIR"
 # https://web.archive.org/web/*/https://distfiles.gentoo.org/releases/m68k/autobuilds/*
-STAGE3_URL=https://web.archive.org/web/20250329201041/https://distfiles.gentoo.org/releases/m68k/autobuilds/20250322T105044Z/stage3-m68k-systemd-20250322T105044Z.tar.xz
+STAGE3_URL=https://mirrors.xmission.com/gentoo/releases/m68k/autobuilds/20240501T163628Z/stage3-m68k-systemd-20240501T163628Z.tar.xz
+# STAGE3_URL=https://web.archive.org/web/20250329201041/https://distfiles.gentoo.org/releases/m68k/autobuilds/20250322T105044Z/stage3-m68k-systemd-20250322T105044Z.tar.xz
 # STAGE3_URL=https://distfiles.gentoo.org/releases/m68k/autobuilds/20260424T160106Z/stage3-m68k_a32-t64-systemd-20260424T160106Z.tar.xz
 # wget $STAGE3_URL -O - | tar Jxf - -C $MOUNT_DIR
-sudo time wget $STAGE3_URL -O $MOUNT_DIR/stage3
+sudo wget $STAGE3_URL -O $MOUNT_DIR/stage3
 
 echo
 echo "Extracting Gentoo stage3 to $MOUNT_DIR"
-sudo time tar $TAR_OPTS Jxf $MOUNT_DIR/stage3 -C $MOUNT_DIR
+sudo tar $TAR_OPTS Jxf $MOUNT_DIR/stage3 -C $MOUNT_DIR
 sudo rm $MOUNT_DIR/stage3
 
 echo
