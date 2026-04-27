@@ -12,7 +12,7 @@ arch/m68k/tools/next/next-disklabel $DISK -c
 arch/m68k/tools/next/next-disklabel $DISK -b arch/m68k/tools/next/netbsd-boot-next.aout
 
 # boot partition
-PARTITION=1
+PARTITION=0
 LABEL=boot
 LOOPDEV=$(sudo losetup -f | head -1)
 OFFSET=$(arch/m68k/tools/next/next-disklabel $DISK | grep "Partition $PARTITION" --text -A1 | grep cp_offset | sed 's/.*(\(.*\))/\1/g')
