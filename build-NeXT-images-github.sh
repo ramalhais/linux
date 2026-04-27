@@ -10,9 +10,8 @@ MOUNT_DIR=/mnt/target
 sudo mkdir -p $MOUNT_DIR
 
 # Build debian systemd (default) disk image
-ORIG_DISK=$DISK
 DISK=linux-next-debian-systemd.disk
-cp $ORIG_DISK $DISK
+cp $DISK_BASE $DISK
 
 # Mount root partition
 PARTITION=2
@@ -160,9 +159,8 @@ tar zcvf $DISK.tar.gz --sparse $DISK
 
 # gentoo image
 # Build debian systemd (default) disk image
-ORIG_DISK=$DISK_BASE
 DISK=linux-next-gentoo-openrc.disk
-cp $ORIG_DISK $DISK
+cp $DISK_BASE $DISK
 
 # Mount root partition
 PARTITION=2
