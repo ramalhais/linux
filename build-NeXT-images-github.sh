@@ -13,7 +13,11 @@ DISK_BASE=linux-next.disk
 MOUNT_DIR=/mnt/target
 sudo mkdir -p $MOUNT_DIR
 
+
+
+#
 # Build debian systemd (default) disk image
+#
 DISK=linux-next-debian-systemd.disk
 cp $DISK_BASE $DISK
 
@@ -134,7 +138,9 @@ tar zcvf $DISK.tar.gz --sparse $DISK
 
 
 
+#
 # debian sysvinit based on systemd image
+#
 ORIG_DISK=$DISK
 DISK=linux-next-debian-sysvinit.disk
 mv $ORIG_DISK $DISK
@@ -170,7 +176,9 @@ tar zcvf $DISK.tar.gz --sparse $DISK
 
 
 
+#
 # gentoo openrc image
+#
 DISK=linux-next-gentoo-openrc.disk
 cp $DISK_BASE $DISK
 
@@ -194,9 +202,77 @@ echo "Downloading Gentoo stage3 to $MOUNT_DIR"
 # TAR_OPTS="--exclude /usr/lib/python3.12/test"
 # TAR_OPTS+=" --exclude /usr/share/sgml"
 # STAGE3_URL=https://mirrors.xmission.com/gentoo/releases/m68k/autobuilds/20240501T163628Z/stage3-m68k-openrc-20240501T163628Z.tar.xz
-STAGE3_URL=https://mirror.cs.odu.edu/gentoo-distfiles/releases/m68k/autobuilds/20250322T105044Z/stage3-m68k-openrc-20250322T105044Z.tar.xz
+# STAGE3_URL=https://mirror.cs.odu.edu/gentoo-distfiles/releases/m68k/autobuilds/20250322T105044Z/stage3-m68k-openrc-20250322T105044Z.tar.xz
 # https://web.archive.org/web/*/https://distfiles.gentoo.org/releases/m68k/autobuilds/*
 # STAGE3_URL=https://web.archive.org/web/20250726145816/https://distfiles.gentoo.org/releases/m68k/autobuilds/20250716T155236Z/stage3-m68k-openrc-20250716T155236Z.tar.xz
+STAGE3_URL=https://distfiles.gentoo.org/releases/m68k/autobuilds/20260424T160106Z/stage3-m68k_a32-t64-openrc-20260424T160106Z.tar.xz
+# wget $STAGE3_URL -O - | tar Jxf - -C $MOUNT_DIR
+sudo time wget $STAGE3_URL -O $MOUNT_DIR/stage3
+
+echo
+echo "Extracting Gentoo stage3 to $MOUNT_DIR"
+sudo time tar $TAR_OPTS Jxf $MOUNT_DIR/stage3 -C $MOUNT_DIR
+sudo rm $MOUNT_DIR/stage3
+
+echo
+echo "Fixing login timeout"
+sudo sed -i 's/\(LOGIN_TIMEOUT\).*/\1\t120/g' $MOUNT_DIR/etc/login.defs
+
+#sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x <<EOF
+sudo script -qc "chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x" /dev/null <<EOF
+
+passwd <<EOF2
+${_PASSWORD}
+${_PASSWORD}
+EOF2
+
+useradd --create-home --no-user-group --shell /bin/bash $_USER
+passwd $_USER <<EOF2
+${_PASSWORD}
+${_PASSWORD}
+EOF2
+
+cat >> /etc/fstab <<EOF2
+LABEL=/     /      auto defaults  0 1
+LABEL=swap  none   swap sw        0 0
+LABEL=boot  /boot  auto defaults  0 0
+EOF2
+
+EOF
+
+sudo umount $MOUNT_DIR
+sudo losetup -d $LOOPDEV
+sudo sync
+
+tar zcvf $DISK.tar.gz --sparse $DISK
+
+
+#
+# gentoo systemd image
+#
+DISK=linux-next-gentoo-systemd.disk
+cp $DISK_BASE $DISK
+
+# Mount root partition
+PARTITION=2
+LOOPDEV=$(sudo losetup -f | head -1)
+OFFSET=$(arch/m68k/tools/next/next-disklabel $DISK | grep "Partition $PARTITION" --text -A1 | grep cp_offset | sed 's/.*(\(.*\))/\1/g')
+SECTORS=$(arch/m68k/tools/next/next-disklabel $DISK | grep "Partition $PARTITION" --text -A2 | grep cp_size | sed 's/.*(\(.*\))/\1/g')
+sudo losetup --offset=$(( (160+$OFFSET)*1024 )) --sizelimit=$(( $SECTORS*1024 )) $LOOPDEV $DISK
+sudo mount $LOOPDEV $MOUNT_DIR
+
+sudo cp $(which qemu-m68k-static ) $MOUNT_DIR
+
+# sudo mount --make-rslave --rbind /proc $MOUNT_DIR/proc
+# sudo mount --make-rslave --rbind /sys $MOUNT_DIR/sys
+# sudo mount --make-rslave --rbind /dev $MOUNT_DIR/dev
+# sudo mount --make-rslave --rbind /run $MOUNT_DIR/run
+
+echo
+echo "Downloading Gentoo stage3 to $MOUNT_DIR"
+# https://web.archive.org/web/*/https://distfiles.gentoo.org/releases/m68k/autobuilds/*
+#STAGE3_URL=https://web.archive.org/web/20250329201041/https://distfiles.gentoo.org/releases/m68k/autobuilds/20250322T105044Z/stage3-m68k-systemd-20250322T105044Z.tar.xz
+STAGE3_URL=https://distfiles.gentoo.org/releases/m68k/autobuilds/20260424T160106Z/stage3-m68k_a32-t64-systemd-20260424T160106Z.tar.xz
 # wget $STAGE3_URL -O - | tar Jxf - -C $MOUNT_DIR
 sudo time wget $STAGE3_URL -O $MOUNT_DIR/stage3
 
