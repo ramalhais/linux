@@ -26,7 +26,8 @@ sudo mkswap -L swap $LOOPDEV
 sudo losetup -d $LOOPDEV
 
 LOOPDEV=$(sudo losetup -f | head -1)
-sudo losetup --offset=$(( (160+65536+131072)*1024 )) $LOOPDEV $DISK
+SECTORS=$(arch/m68k/tools/next/next-disklabel $DISK | grep "Partition 2" --text -A2 | grep cp_size | sed 's/.*(\(.*\))/\1/g')
+sudo losetup --offset=$(( (160+65536+131072)*1024 )) --sizelimit=$(( $SECTORS*1024 )) $LOOPDEV $DISK
 sudo mkfs.ext2 -m0 -L$FS_LABEL -r0 $LOOPDEV
 sudo losetup -d $LOOPDEV
 
