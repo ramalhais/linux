@@ -126,11 +126,27 @@ EOF
 #sudo umount $MOUNT_DIR/sys
 #sudo umount $MOUNT_DIR/proc
 
+sudo umount $MOUNT_DIR
+sudo losetup -d $LOOPDEV
+sudo sync
+
 tar zcvf $DISK.tar.gz --sparse $DISK
 
 
 
 # debian sysvinit based on systemd image
+ORIG_DISK=$DISK
+DISK=linux-next-debian-sysvinit.disk
+mv $ORIG_DISK $DISK
+
+# Mount root partition
+PARTITION=2
+LOOPDEV=$(sudo losetup -f | head -1)
+OFFSET=$(arch/m68k/tools/next/next-disklabel $DISK | grep "Partition $PARTITION" --text -A1 | grep cp_offset | sed 's/.*(\(.*\))/\1/g')
+SECTORS=$(arch/m68k/tools/next/next-disklabel $DISK | grep "Partition $PARTITION" --text -A2 | grep cp_size | sed 's/.*(\(.*\))/\1/g')
+sudo losetup --offset=$(( (160+$OFFSET)*1024 )) --sizelimit=$(( $SECTORS*1024 )) $LOOPDEV $DISK
+sudo mount $LOOPDEV $MOUNT_DIR
+
 sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i <<EOF
 
 mount /proc
@@ -148,17 +164,13 @@ EOF
 
 sudo umount $MOUNT_DIR
 sudo losetup -d $LOOPDEV
-
-ORIG_DISK=$DISK
-DISK=linux-next-debian-sysvinit.disk
-mv $ORIG_DISK $DISK
+sudo sync
 
 tar zcvf $DISK.tar.gz --sparse $DISK
 
 
 
-# gentoo image
-# Build debian systemd (default) disk image
+# gentoo openrc image
 DISK=linux-next-gentoo-openrc.disk
 cp $DISK_BASE $DISK
 
@@ -224,5 +236,6 @@ EOF
 
 sudo umount $MOUNT_DIR
 sudo losetup -d $LOOPDEV
+sudo sync
 
 tar zcvf $DISK.tar.gz --sparse $DISK
