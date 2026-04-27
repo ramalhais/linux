@@ -76,3 +76,4 @@ jobs:
             linux-next-debian-systemd.disk.tar.gz
             linux-next-debian-sysvinit.disk.tar.gz
             linux-next-gentoo-openrc.disk.tar.gz
+            linux-next-gentoo-systemd.disk.tar.gz
