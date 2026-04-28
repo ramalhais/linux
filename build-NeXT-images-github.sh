@@ -39,8 +39,8 @@ sudo cp $(which qemu-m68k-static ) $MOUNT_DIR
 # sudo mount --make-rslave --rbind /dev $MOUNT_DIR/dev
 # sudo mount --make-rslave --rbind /run $MOUNT_DIR/run
 
-#sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x <<EOF
-sudo script -qc "chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x" /dev/null <<EOF
+# sudo script -qc "chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x" /dev/null <<EOF
+sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh <<EOF
 
 echo "proc /proc proc defaults 0 0" >> /etc/fstab
 echo "devtmpfs /dev devtmpfs defaults 0 0" >> /etc/fstab
@@ -153,7 +153,7 @@ SECTORS=$(arch/m68k/tools/next/next-disklabel $DISK | grep "Partition $PARTITION
 sudo losetup --offset=$(( (160+$OFFSET)*1024 )) --sizelimit=$(( $SECTORS*1024 )) $LOOPDEV $DISK
 sudo mount $LOOPDEV $MOUNT_DIR
 
-sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i <<EOF
+sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh <<EOF
 
 mount /proc
 mount
@@ -217,7 +217,7 @@ echo "Fixing login timeout"
 sudo sed -i 's/\(LOGIN_TIMEOUT\).*/\1\t120/g' $MOUNT_DIR/etc/login.defs
 
 # sudo script -qc "chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x" /dev/null <<EOF
-sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x <<EOF
+sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh <<EOF
 
 passwd <<EOF2
 ${_PASSWORD}
@@ -285,7 +285,7 @@ echo "Fixing login timeout"
 sudo sed -i 's/\(LOGIN_TIMEOUT\).*/\1\t120/g' $MOUNT_DIR/etc/login.defs
 
 # sudo script -qc "chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x" /dev/null <<EOF
-sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x <<EOF
+sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh <<EOF
 
 passwd <<EOF2
 ${_PASSWORD}
