@@ -216,8 +216,8 @@ echo
 echo "Fixing login timeout"
 sudo sed -i 's/\(LOGIN_TIMEOUT\).*/\1\t120/g' $MOUNT_DIR/etc/login.defs
 
-#sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x <<EOF
-sudo script -qc "chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x" /dev/null <<EOF
+# sudo script -qc "chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x" /dev/null <<EOF
+sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x <<EOF
 
 passwd <<EOF2
 ${_PASSWORD}
@@ -284,8 +284,8 @@ echo
 echo "Fixing login timeout"
 sudo sed -i 's/\(LOGIN_TIMEOUT\).*/\1\t120/g' $MOUNT_DIR/etc/login.defs
 
-#sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x <<EOF
-sudo script -qc "chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x" /dev/null <<EOF
+# sudo script -qc "chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x" /dev/null <<EOF
+sudo chroot $MOUNT_DIR /qemu-m68k-static /bin/sh -i -x <<EOF
 
 passwd <<EOF2
 ${_PASSWORD}
