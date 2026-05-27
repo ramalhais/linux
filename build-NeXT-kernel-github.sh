@@ -19,30 +19,53 @@ make -j$NPROCS -C arch/m68k/tools/next/
 # Get netbsd bootloader
 curl -v -L -o arch/m68k/tools/next/netbsd-boot-next.aout https://github.com/ramalhais/netbsd-boot-NeXT/releases/latest/download/netbsd-boot-next.aout
 
-# Compile Kernel
-make next_defconfig
-time make -j$NPROCS
-
 # DATE=$(date +%F-%H.%M.%S)
 # KERNELVER=$(make kernelversion)
 
-### Strip symbols
-m68k-linux-gnu-strip --strip-unneeded vmlinux -o vmlinux.stripped
+build-kernel() {
+	VARIANT=$1
 
-### Extract binary from ELF kernel image
-m68k-linux-gnu-objcopy --output-target=binary vmlinux vmlinux.binary
+	time make -j$NPROCS
 
-ADD_OFFSET=1
-if [ -z $KERN_LOADADDR ]; then
-        MEM_BASE=4000000
-        KERN_LOADADDR=$(m68k-linux-gnu-objdump -D vmlinux|grep '<_stext>:'|cut -f1 -d' ')
+	LINUX_BINARY_ELF_VARIANT=vmlinux-${VARIANT}
+	LINUX_NEXT_VARIANT=vmlinux-NeXT-${VARIANT}
 
-        IS_OFFSET=$(echo "ibase=16; ${KERN_LOADADDR} < ${MEM_BASE}" | bc)
-        if [ $IS_OFFSET -eq 1 ] && [ $ADD_OFFSET -eq 1 ]; then
-                KERN_LOADADDR=$(echo "obase=16; ibase=16; ${MEM_BASE}+${KERN_LOADADDR}" | bc)
-        fi
-fi
+	# Save original
+	cp vmlinux $LINUX_BINARY_ELF_VARIANT
 
-./arch/m68k/tools/next/aout vmlinux.binary vmlinux-NeXT.aout 0x${KERN_LOADADDR}
-./arch/m68k/tools/next/simpkern vmlinux.binary vmlinux-NeXT.macho-simpkern
-./arch/m68k/tools/next/macho vmlinux.binary vmlinux-NeXT.macho 0x${KERN_LOADADDR}
+	### Strip symbols
+	m68k-linux-gnu-strip --strip-unneeded $LINUX_BINARY_ELF_VARIANT -o $LINUX_BINARY_ELF_VARIANT.stripped
+
+	### Extract binary from ELF kernel image
+	LINUX_BINARY=$LINUX_BINARY_ELF_VARIANT.binary
+	m68k-linux-gnu-objcopy --strip-unneeded --output-target=binary $LINUX_BINARY_ELF_VARIANT $LINUX_BINARY
+
+	ADD_OFFSET=1
+	if [ -z $KERN_LOADADDR ]; then
+		MEM_BASE=4000000
+		# KERN_LOADADDR=$(m68k-linux-gnu-objdump -D $LINUX_BINARY_ELF_VARIANT | grep '<_stext>:' | cut -f1 -d' ')
+		KERN_LOADADDR=$(m68k-linux-gnu-objdump --all-headers $LINUX_BINARY_ELF_VARIANT | grep _stext | cut -f1 -d' ')
+
+		IS_OFFSET=$(echo "ibase=16; ${KERN_LOADADDR} < ${MEM_BASE}" | bc)
+		if [ $IS_OFFSET -eq 1 ] && [ $ADD_OFFSET -eq 1 ]; then
+			KERN_LOADADDR=$(echo "obase=16; ibase=16; ${MEM_BASE}+${KERN_LOADADDR}" | bc)
+		fi
+	fi
+
+	./arch/m68k/tools/next/aout $LINUX_BINARY $LINUX_NEXT_VARIANT.aout 0x${KERN_LOADADDR}
+	./arch/m68k/tools/next/simpkern $LINUX_BINARY $LINUX_NEXT_VARIANT.macho-simpkern
+	./arch/m68k/tools/next/macho $LINUX_BINARY $LINUX_NEXT_VARIANT.macho 0x${KERN_LOADADDR}
+}
+
+# Compile Kernel
+make next_defconfig
+build-kernel defconfig
+
+scripts/config --enable NEXT_DEBUG
+build-kernel debug
+
+scripts/config --enable NEXT_SCSI_DEBUG
+build-kernel debug_scsidebug
+
+scripts/config --disable NEXT_SCSI
+build-kernel debug_noscsi

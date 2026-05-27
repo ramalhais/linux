@@ -64,7 +64,7 @@ config DUMMY_CONSOLE_ROWS
 	int "Initial number of console screen rows"
 	depends on DUMMY_CONSOLE && !(ARCH_FOOTBRIDGE && VGA_CONSOLE)
 	default 64 if PARISC
-	default 52 if NEXT
+	default 69 if NEXT
 	default 30 if ARM
 	default 25
 	help
