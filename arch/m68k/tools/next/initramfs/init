@@ -47,6 +47,8 @@ for R in $ROOTP $ALT_ROOTS; do
 done
 
 if [ $MOUNTOK -eq 1 ]; then
+#	mount --bind /dev /mnt/dev
+	mount -t devtmpfs devtmpfs /mnt/dev
 	for I in $INITP $ALT_INITS; do
 		echo "Trying switch_root with INIT=$I"
 		[ -f /mnt$I ] || [ -L /mnt$I ] && exec switch_root /mnt $I $* || INIT=$I && continue
