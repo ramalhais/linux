@@ -15,9 +15,9 @@ for SD in $SDS; do
 	MODEL=$(cat $SD/device/model)
 	SECTORS=$(cat $SD/size)
 	BYTES=$(($SECTORS*512))
-	SIZE_GB=$(echo "scale=1;${BYTES}/1024/1024/1024" | bc)
+	SIZE_GB=$(echo "scale=1;${BYTES}/(1024*1024*1024)" | bc)
 	echo "$SD: $VENDOR $MODEL ${SIZE_GB}GB"
-	COUNT=$[$COUNT+1]
+	COUNT=$(($COUNT+1))
 done
 cd - >/dev/null
 
@@ -54,6 +54,17 @@ echo "Creating NeXTSTEP disklabel and partition in disk $SD and installing NetBS
 next-disklabel $DEVICE -c
 next-disklabel $DEVICE -b netbsd-boot-next.aout
 
+
+BOOT_PARTITION=${DEVICE}1
+echo
+echo "Creating vfat boot partition in $BOOT_PARTITION"
+mkdosfs -n BOOT $BOOT_PARTITION
+
+SWAP_PARTITION=${DEVICE}2
+echo
+echo "Creating swap in $SWAP_PARTITION"
+mkswap -L swap $SWAP_PARTITION
+
 ROOT_PARTITION=${DEVICE}3
 ROOT_PARTITION_LABEL=/
 MOUNT_DIR=/mnt/target
@@ -64,16 +75,6 @@ echo "Creating ext2 filesystem in $ROOT_PARTITION with LABEL=$ROOT_PARTITION_LAB
 # netbsd bootloader only support ext2 revision 0
 mke2fs -m0 -r0 -L"$ROOT_PARTITION_LABEL" -r0 $ROOT_PARTITION
 
-SWAP_PARTITION=${DEVICE}2
-echo
-echo "Creating swap in $SWAP_PARTITION"
-mkswap -L swap $SWAP_PARTITION
-
-BOOT_PARTITION=${DEVICE}1
-echo
-echo "Creating vfat boot partition in $BOOT_PARTITION"
-mkdosfs -n BOOT $BOOT_PARTITION
-
 echo
 echo "Mounting root partition $ROOT_PARTITION in $MOUNT_DIR"
 mkdir -p $MOUNT_DIR
@@ -82,6 +83,8 @@ mount $ROOT_PARTITION $MOUNT_DIR
 echo "Mounting boot partition $BOOT_PARTITION in $MOUNT_DIR/boot"
 mkdir -p $MOUNT_DIR/boot
 mount $BOOT_PARTITION $MOUNT_DIR/boot
+
+swapon -a
 
 echo
 echo "Downloading NeXT linux kernel to boot partition"

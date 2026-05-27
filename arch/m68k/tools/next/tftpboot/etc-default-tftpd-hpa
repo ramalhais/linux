@@ -1,5 +1,9 @@
 # /etc/default/tftpd-hpa
 
+# Warning: on recent systemd edit /usr/lib/systemd/system/tftpd-hpa.service
+# and comment out line
+# ProtectHome=yes
+
 TFTP_USERNAME="tftp"
 TFTP_DIRECTORY="/srv/tftp"
 TFTP_ADDRESS=":69"

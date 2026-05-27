@@ -20,7 +20,10 @@ SECTORS=$(arch/m68k/tools/next/next-disklabel $DISK | grep "Partition $PARTITION
 sudo losetup --offset=$(( (160+$OFFSET)*1024 )) --sizelimit=$(( $SECTORS*1024 )) $LOOPDEV $DISK
 sudo mkfs.vfat -n $LABEL $LOOPDEV
 sudo mount $LOOPDEV $MOUNTP
-sudo cp vmlinux.stripped $MOUNTP/vmlinux
+sudo cp vmlinux-defconfig.stripped $MOUNTP/vmlinux
+sudo cp vmlinux-debug.stripped $MOUNTP/vmlinuxd
+sudo cp vmlinux-debug_scsidebug.stripped $MOUNTP/vmlinuxdd
+sudo cp vmlinux-debug_noscsi.stripped $MOUNTP/vmlinuxdns
 sudo umount $MOUNTP
 sudo losetup -d $LOOPDEV
 
