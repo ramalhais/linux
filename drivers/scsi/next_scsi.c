@@ -99,7 +99,6 @@ static void next_scsi_dma_drain(struct esp *esp)
 
 //	udelay(20);
 	dprintk(KERN_ERR "dma_regs+1 =0x%x\n", *(volatile u8 *)(esp->dma_regs+1));
-	
 
 	#define ESP_FLUSH_MAX_TRIES 4 // 16/4 = DMA_ALIGNMENT/FIFO_ALIGNMENT
 	while ((try < ESP_FLUSH_MAX_TRIES) /*&& (scsi_dma->start > prev_addr)*/) {
