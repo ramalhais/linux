@@ -26,7 +26,7 @@ struct __attribute__ ((packed)) prom_info {
 	uint8_t inetntoa[18],inputline[128];
 
 	struct  mem_layout {
-        	uint32_t start,end;
+		uint32_t start,end;
 	} simm_info[NUMSIMMS];
 
 	uint32_t	base_ptr,brk_ptr;
@@ -72,9 +72,9 @@ struct __attribute__ ((packed)) prom_info {
 		alert_func,alert_conf_func,alloc_func,
 		boot_slider_func;
 	uint32_t	event_ptr;
-	
+
 	uint32_t	event_high;
-	
+
 	struct anim {
 		uint16_t	x,y;
 		uint32_t	icon_ptr;
@@ -89,11 +89,11 @@ struct __attribute__ ((packed)) prom_info {
 	int16_t	minor,seq;
 
 	uint32_t	anim_run_func;
-	
+
 	int16_t	major;
 
 	uint32_t	client_ether_addr_ptr;
-	
+
 	int32_t	cons_i,cons_o;
 
 	uint32_t	test_msg_ptr;
@@ -124,7 +124,7 @@ struct __attribute__ ((packed)) prom_info {
 
 	uint32_t	as_tune_func;
 	int32_t	moreflags;*/
-};      
+};
 
 int main() {
 /*	struct prom_info pi = {

@@ -42,7 +42,7 @@ DEVICE=/dev/$SD
 fdisk -l $DEVICE
 
 echo
-echo 
+echo
 read -p "Are you sure you want to use and erase disk $SD ? " CONFIRM
 if [ ${CONFIRM} != "y" ] && [ ${CONFIRM} != "yes" ]; then
 	echo "Cancelled. Exiting."
