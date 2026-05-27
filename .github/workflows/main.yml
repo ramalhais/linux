@@ -58,11 +58,26 @@ jobs:
           tag_name: build/${{ env.BRANCH }}_${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
           name: ${{ env.BRANCH }}_${{ env.DATE }}_${{ env.KERNELVER }}_${{ github.sha }}
           files: |
-            vmlinux-NeXT.aout
-            vmlinux-NeXT.macho
-            vmlinux-NeXT.macho-simpkern
-            vmlinux
-            vmlinux.stripped
+            vmlinux-NeXT-defconfig.aout
+            vmlinux-NeXT-defconfig.macho
+            vmlinux-NeXT-defconfig.macho-simpkern
+            vmlinux-NeXT-debug.aout
+            vmlinux-NeXT-debug.macho
+            vmlinux-NeXT-debug.macho-simpkern
+            vmlinux-NeXT-debug_scsidebug.aout
+            vmlinux-NeXT-debug_scsidebug.macho
+            vmlinux-NeXT-debug_scsidebug.macho-simpkern
+            vmlinux-NeXT-debug_noscsi.aout
+            vmlinux-NeXT-debug_noscsi.macho
+            vmlinux-NeXT-debug_noscsi.macho-simpkern
+            vmlinux-defconfig
+            vmlinux-debug
+            vmlinux-debug_scsidebug
+            vmlinux-debug_noscsi
+            vmlinux-defconfig.stripped
+            vmlinux-debug.stripped
+            vmlinux-debug_scsidebug.stripped
+            vmlinux-debug_noscsi.stripped
             .config
             arch/m68k/tools/next/aout
             arch/m68k/tools/next/macho
