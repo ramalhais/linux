@@ -4,11 +4,12 @@ ALT_INITS="/sbin/init /usr/sbin/init /init"
 
 echo "Running from initramfs: $0 with kernel parameters: $*"
 
-for ALIAS in $(busybox --list); do
-	if [ "$ALIAS" != "busybox" ] && [ "$ALIAS" != "sh" ]; then
-		ln -s busybox "/bin/$ALIAS"
-	fi
-done
+# for ALIAS in $(busybox --list); do
+# 	if [ "$ALIAS" != "busybox" ] && [ "$ALIAS" != "sh" ]; then
+# 		ln -s busybox "/bin/$ALIAS"
+# 	fi
+# done
+/bin/busybox --install -s /bin
 
 mount -t devtmpfs devtmpfs /dev
 mount -t proc proc /proc

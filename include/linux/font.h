@@ -151,6 +151,7 @@ extern const struct font_desc font_6x8;
 extern const struct font_desc font_7x14;
 extern const struct font_desc font_acorn_8x8;
 extern const struct font_desc font_mini_4x6;
+extern const struct font_desc font_ohlfs_8x12;
 extern const struct font_desc font_pearl_8x8;
 extern const struct font_desc font_sun_12x22;
 extern const struct font_desc font_sun_8x16;
