@@ -88,7 +88,7 @@ swapon $SWAP_PARTITION
 
 echo
 echo "Downloading NeXT linux kernel to boot partition"
-VMLINUX_URL=https://github.com/ramalhais/linux/releases/latest/download/vmlinux
+VMLINUX_URL=https://github.com/ramalhais/linux/releases/latest/download/vmlinux-defconfig
 time wget $VMLINUX_URL -O $MOUNT_DIR/boot/vmlinux
 
 echo
