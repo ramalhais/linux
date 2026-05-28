@@ -84,7 +84,7 @@ echo "Mounting boot partition $BOOT_PARTITION in $MOUNT_DIR/boot"
 mkdir -p $MOUNT_DIR/boot
 mount $BOOT_PARTITION $MOUNT_DIR/boot
 
-swapon -a
+swapon $SWAP_PARTITION
 
 echo
 echo "Downloading NeXT linux kernel to boot partition"
