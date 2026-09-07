@@ -1,0 +1,43 @@
+option domain-name "ramalhais.com";
+option domain-name-servers 192.168.111.1,8.8.8.8;
+
+default-lease-time 600;
+max-lease-time 7200;
+ddns-update-style none;
+
+allow booting;
+allow bootp;
+
+host next {
+  option host-name "next";
+  hardware ethernet 00:00:0f:00:f3:02;
+  fixed-address 192.168.111.10;
+  server-name "192.168.111.1";
+  filename "boot";
+  option root-path "192.168.111.1:/netbds/root";
+  always-reply-rfc1048 false;
+  always-broadcast true;
+  option broadcast-address 192.168.111.255;
+  next-server 192.168.111.1; # tftp server address
+}
+
+
+class "next" {
+  match if substring (option vendor-class-identifier, 0, 4) = "NeXT";
+}
+
+subnet 192.168.111.0 netmask 255.255.255.0 {
+  range dynamic-bootp 192.168.111.10 192.168.111.20;
+  option routers 192.168.111.1;
+#  pool {
+#    allow members of "next";
+#    always-reply-rfc1048 false;
+#    always-broadcast true;
+#    allow dynamic bootp clients;
+    #range dynamic-bootp 192.168.111.10 192.168.111.20;
+#    range 192.168.111.10 192.168.111.20;
+#    server-name "192.168.111.1";
+#    filename "boot";
+#  }
+}
+
