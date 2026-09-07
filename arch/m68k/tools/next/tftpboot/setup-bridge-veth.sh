@@ -25,9 +25,14 @@ ip link add $BRIDGE_IF type bridge
 ip addr add $BRIDGE_IP/24 dev $BRIDGE_IF
 ip link set $BRIDGE_IF up
 
+# configure tap
+ip tuntap add dev tap0 mode tap user ramalhais
+ip link set tap0 up
+
 # Add second nic and host virtual interface to bridge
 ip link set $SECOND_IF master $BRIDGE_IF
 ip link set $HOST_VIF master $BRIDGE_IF
+ip link set tap0 master br0
 
 # NeXT PROM doesn't do ARP. Match these to dhcpd.conf.
 sleep 1

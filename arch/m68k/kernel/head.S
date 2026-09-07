@@ -282,7 +282,7 @@
 
 #if defined(CONFIG_NEXT_DEBUG)
 #define MMU_PRINT
-//#define DEBUG 1
+//#define DEBUG
 
 #define  NEXT_DEBUG_ADDR #0x0200f004 // Previous debug
 //#define NEXT_DEBUG_ADDR #0x02004200 // QEMU debug
@@ -1588,7 +1588,7 @@ L(notapollo):
 1:	// 040
 	putc	'4'
 
-	// NeXT 040 PROM left us with:
+	// NeXT 040 PROM/NetBSD stand boot left us with:
 	// tt0: mapping for 0x0200.0000 -> 0x0200.0000.
 	// tt1: mapping for 0x0 -> 0x0
 	// Need to disable the tt1 0x0 transparent mapping, or it won't work because the kernel will relocate to 0x0.
