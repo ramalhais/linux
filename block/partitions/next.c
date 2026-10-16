@@ -54,7 +54,8 @@ int next_partition(struct parsed_partitions *state)
 
 		size = be32_to_cpu(part.size);
 
-		pr_info("Found NextStep partition [%d]: Offset:%ub(%us) Size:%ub(%us) Mount:%s, Filesystem: %s", pn,  (front_porch+offset)*bytes_per_sector, front_porch+offset, size*bytes_per_sector, size, part.mountpt, part.type);
+		pr_info("Found NextStep partition [%d]: Offset: %ub (%us) Size: %ub (%us) Mount: %s, Filesystem: %s",
+			pn, (front_porch+offset)*bytes_per_sector, front_porch+offset, size*bytes_per_sector, size, part.mountpt, part.type);
 
 		put_partition(state, pn+1, (front_porch+offset)*bytes_per_sector/LINUX_BLOCK_SIZE, size*bytes_per_sector/LINUX_BLOCK_SIZE);
 	}
