@@ -1,0 +1,720 @@
+diff --git a/hw/m68k/next-cube.c b/hw/m68k/next-cube.c
+index e0d4a94f9d..45ae0b4db7 100644
+--- a/hw/m68k/next-cube.c
++++ b/hw/m68k/next-cube.c
+@@ -27,8 +27,10 @@
+ #include "ui/console.h"
+ #include "target/m68k/cpu.h"
+ #include "migration/vmstate.h"
++#include "net/net.h"
++#include "qemu/log.h"
+ 
+-/* #define DEBUG_NEXT */
++#define DEBUG_NEXT
+ #ifdef DEBUG_NEXT
+ #define DPRINTF(fmt, ...) \
+     do { printf("NeXT: " fmt , ## __VA_ARGS__); } while (0)
+@@ -294,7 +296,7 @@ static uint32_t mmio_readl(NeXTPC *s, hwaddr addr)
+ {
+     switch (addr) {
+     case 0x7000:
+-        /* DPRINTF("Read INT status: %x\n", s->int_status); */
++//        DPRINTF("Read INT status: %x\n", s->int_status);
+         return s->int_status;
+ 
+     case 0x7800:
+@@ -733,6 +735,8 @@ static void next_irq(void *opaque, int number, int level)
+     M68kCPU *cpu = s->cpu;
+     int shift = 0;
+ 
++    DPRINTF("next_irq: irq=%d level=%d s->int_mask=%x s->int_status=%x\n", number, level, s->int_mask, s->int_status);
++
+     /* first switch sets interupt status */
+     /* DPRINTF("IRQ %i\n",number); */
+     switch (number) {
+@@ -788,7 +792,7 @@ static void next_irq(void *opaque, int number, int level)
+      */
+     if (s->int_mask & (1 << shift)) {
+         DPRINTF("%x interrupt masked @ %x\n", 1 << shift, cpu->env.pc);
+-        /* return; */
++        //return;
+     }
+ 
+     /* second switch triggers the correct interrupt */
+@@ -825,6 +829,8 @@ static void next_irq(void *opaque, int number, int level)
+         s->int_status &= ~(1 << shift);
+         cpu_reset_interrupt(CPU(cpu), CPU_INTERRUPT_HARD);
+     }
++
++    DPRINTF("next_irq: NEW s->int_mask=%x s->int_status=%x\n", s->int_mask, s->int_status);
+ }
+ 
+ static void next_escc_init(DeviceState *pcdev)
+@@ -939,6 +945,56 @@ static const TypeInfo next_pc_info = {
+     .class_init = next_pc_class_init,
+ };
+ 
++static void nextnet_irq(void *opaque, int n, int level)
++{
++    qemu_log_mask(LOG_GUEST_ERROR, "nextnet_irq: irq=%d level=%d\n", n, level);
++
++    switch (n) {
++    case NEXTNET_TX_I:
++        next_irq(opaque, NEXT_ENTX_I, level);
++        break;
++    case NEXTNET_RX_I:
++        next_irq(opaque, NEXT_ENRX_I, level);
++        break;
++    case NEXTNET_TX_I_DMA:
++        next_irq(opaque, NEXT_ENTX_DMA_I, level);
++        break;
++    case NEXTNET_RX_I_DMA:
++        next_irq(opaque, NEXT_ENRX_DMA_I, level);
++        break;
++    }
++}
++
++static void nextnet_init(NeXTPC *pcdev/*M68kCPU *cpu*/)
++{
++    DeviceState *dev;
++    SysBusDevice *sbd;
++    NICInfo *ni = &nd_table[0];
++    qemu_irq *net_irqs;
++    int i;
++
++    if (!ni->used) {
++        return;
++    }
++
++    qemu_check_nic_model(ni, TYPE_NEXT_NET);
++    dev = qdev_new(TYPE_NEXT_NET);
++    qdev_set_nic_properties(dev, ni);
++
++    sbd = SYS_BUS_DEVICE(dev);
++    sysbus_realize_and_unref(sbd, &error_fatal);
++    sysbus_mmio_map(sbd, 0, 0x02000110);
++    sysbus_mmio_map(sbd, 1, 0x02004100);
++    sysbus_mmio_map(sbd, 2, 0x02004310);
++    sysbus_mmio_map(sbd, 3, 0x02106000);
++
++    /* allocate TX/RX and DMA irqs */
++    net_irqs = qemu_allocate_irqs(nextnet_irq, pcdev, NEXTNET_NUM_IRQS);
++    for (i = 0; i < NEXTNET_NUM_IRQS; i++) {
++        sysbus_connect_irq(sbd, i, net_irqs[i]);
++    }
++}
++
+ static void next_cube_init(MachineState *machine)
+ {
+     M68kCPU *cpu;
+@@ -1021,12 +1077,14 @@ static void next_cube_init(MachineState *machine)
+     next_escc_init(pcdev);
+ 
+     /* TODO: */
+-    /* Network */
+     /* SCSI */
+ 
+     /* DMA */
+     memory_region_init_io(dmamem, NULL, &dma_ops, machine, "next.dma", 0x5000);
+     memory_region_add_subregion(sysmem, 0x02000000, dmamem);
++
++    /* Network */
++    nextnet_init(NEXT_PC(pcdev));
+ }
+ 
+ static void next_machine_class_init(ObjectClass *oc, void *data)
+diff --git a/hw/net/meson.build b/hw/net/meson.build
+index ebac261542..350a3e8aba 100644
+--- a/hw/net/meson.build
++++ b/hw/net/meson.build
+@@ -40,6 +40,7 @@ softmmu_ss.add(when: 'CONFIG_NPCM7XX', if_true: files('npcm7xx_emc.c'))
+ 
+ softmmu_ss.add(when: 'CONFIG_ETRAXFS', if_true: files('etraxfs_eth.c'))
+ softmmu_ss.add(when: 'CONFIG_COLDFIRE', if_true: files('mcf_fec.c'))
++softmmu_ss.add(when: 'CONFIG_NEXTCUBE', if_true: files('next-net.c'))
+ specific_ss.add(when: 'CONFIG_PSERIES', if_true: files('spapr_llan.c'))
+ specific_ss.add(when: 'CONFIG_XILINX_ETHLITE', if_true: files('xilinx_ethlite.c'))
+ 
+diff --git a/hw/net/next-net.c b/hw/net/next-net.c
+new file mode 100644
+index 0000000000..d9ffa5bf52
+--- /dev/null
++++ b/hw/net/next-net.c
+@@ -0,0 +1,556 @@
++/*
++ * QEMU NeXT Network (MB8795) emulation
++ *
++ * Copyright (c) 2011 Bryce Lanham
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to deal
++ * in the Software without restriction, including without limitation the rights
++ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++ * copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++ * THE SOFTWARE.
++ */
++#include "qemu/osdep.h"
++#include "exec/address-spaces.h"
++#include "sysemu/sysemu.h"
++#include "hw/irq.h"
++#include "hw/m68k/next-cube.h"
++#include "hw/sysbus.h"
++#include "hw/qdev-properties.h"
++#include "net/net.h"
++
++/* debug NeXT ethernet */
++#define DEBUG_NET
++
++#ifdef DEBUG_NET
++#define DPRINTF(fmt, ...) \
++    do { printf("NET: " fmt , ## __VA_ARGS__); } while (0)
++#else
++#define DPRINTF(fmt, ...) do { } while (0)
++#endif
++
++/* names could be better */
++typedef struct NextDMA {
++    uint32_t csr;
++    uint32_t savedbase;
++    uint32_t savedlimit;
++
++    uint32_t baser;
++    uint32_t base;
++    uint32_t limit;
++    uint32_t chainbase;
++    uint32_t chainlimit;
++    uint32_t basew;
++} NextDMA;
++
++typedef struct NextNetState {
++    SysBusDevice parent_obj;
++
++    MemoryRegion mr[4];
++    qemu_irq irq[NEXTNET_NUM_IRQS];
++    uint8_t mac[6];
++
++    NICState *nic;
++    NICConf conf;
++
++    NextDMA tx_dma;
++    uint8_t tx_stat;
++    uint8_t tx_mask;
++    uint8_t tx_mode;
++
++    NextDMA rx_dma;
++    uint8_t rx_stat;
++    uint8_t rx_mask;
++    uint8_t rx_mode;
++
++    uint8_t rst_mode;
++} NextNetState;
++
++#define NEXT_NET(obj) OBJECT_CHECK(NextNetState, (obj), TYPE_NEXT_NET)
++
++static bool nextnet_can_rx(NetClientState *nc);
++static ssize_t nextnet_rx(NetClientState *nc, const uint8_t *buf, size_t size);
++
++
++static uint64_t nextnet_mmio_rd_dma(void *opaque, hwaddr addr, unsigned size)
++{
++    NextNetState *s = (NextNetState *)opaque;
++
++    g_assert(size == 4);
++
++    addr += 0x110;
++    switch (addr) {
++    case 0x110:
++        DPRINTF("TXCSR Read\n");
++        return s->tx_dma.csr;
++    case 0x150:
++        DPRINTF("RXCSR Read %x\n", s->rx_dma.csr);
++        return s->rx_dma.csr;
++    default:
++        g_assert_not_reached();
++    }
++}
++
++static void nextnet_mmio_wr_dma(void *opaque, hwaddr addr, uint64_t value,
++                                unsigned size)
++{
++    NextNetState *s = (NextNetState *)opaque;
++
++    g_assert(size == 4);
++
++    addr += 0x110;
++    switch (addr) {
++    case 0x110:
++        DPRINTF("TXDMA \tWrite: %"HWADDR_PRIx"\n", value);
++        if (value & DMA_SETENABLE) {
++            size_t len = (0xFFFFFFF & s->tx_dma.limit) - s->tx_dma.base;
++            uint8_t buf[len]; /* needs to be in dma struct? */
++
++            DPRINTF("TXDMA: DMA_SETENABLE: %x len: %zu\n", s->tx_dma.base, len);
++            cpu_physical_memory_read(s->tx_dma.base, buf, len);
++
++            qemu_send_packet(qemu_get_queue(s->nic), buf, len);
++
++            s->tx_dma.csr |= DMA_COMPLETE | DMA_SUPDATE;
++            s->tx_stat = 0x80;
++
++            qemu_set_irq(s->irq[NEXTNET_TX_I_DMA], true);
++            //qemu_flush_queued_packets(qemu_get_queue(s->nic)); // FIXME: flush qemu packets to VM. not the best place but it works better.
++        }
++        if (value & DMA_SETSUPDATE) {
++            DPRINTF("TXDMA: DMA_SETSUPDATE\n");
++            s->tx_dma.csr |= DMA_SUPDATE;
++        }
++        if (value & DMA_CLRCOMPLETE) {
++            DPRINTF("TXDMA: DMA_CLRCOMPLETE\n");
++            s->tx_dma.csr &= ~DMA_COMPLETE;
++            qemu_set_irq(s->irq[NEXTNET_TX_I_DMA], false); /* TODO: OK here? */
++        }
++        if (value & DMA_RESET) {
++            DPRINTF("TXDMA: DMA_RESET\n");
++            s->tx_dma.csr &= ~(DMA_COMPLETE | DMA_SUPDATE | DMA_ENABLE);
++        }
++        break;
++
++    case 0x150:
++        DPRINTF("RXCSR \tWrite: %"HWADDR_PRIx"\n", value);
++        if (value & DMA_DEV2M) {
++            DPRINTF("RXCSR: DMA_DEV2M\n");
++        }
++
++        if (value & DMA_SETENABLE) {
++            DPRINTF("RXCSR: DMA_SETENABLE\n");
++            s->rx_dma.csr |= DMA_ENABLE;
++        }
++        if (value & DMA_SETSUPDATE) {
++            DPRINTF("RXCSR: DMA_SETSUPDATE\n");
++            s->rx_dma.csr |= DMA_SUPDATE;
++        }
++
++        if (value & DMA_CLRCOMPLETE) {
++            DPRINTF("RXCSR: DMA_CLRCOMPLETE\n");
++            s->rx_dma.csr &= ~DMA_COMPLETE;
++            qemu_set_irq(s->irq[NEXTNET_RX_I_DMA], false); /* TODO: OK here? */
++        }
++        if (value & DMA_RESET) {
++            DPRINTF("RXCSR: DMA_RESET\n");
++            s->rx_dma.csr &= ~(DMA_COMPLETE | DMA_SUPDATE | DMA_ENABLE);
++        }
++
++        //qemu_flush_queued_packets(qemu_get_queue(s->nic)); // FIXME: flush qemu packets to VM. maybe it works better here.
++        break;
++
++    default:
++        g_assert_not_reached();
++    }
++}
++
++static const MemoryRegionOps nextnet_mmio_ops_dma = {
++    .read = nextnet_mmio_rd_dma,
++    .write = nextnet_mmio_wr_dma,
++    .valid.min_access_size = 4,
++    .valid.max_access_size = 4,
++    .endianness = DEVICE_NATIVE_ENDIAN,
++};
++
++static uint64_t nextnet_mmio_rd_chan1(void *opaque, hwaddr addr, unsigned size)
++{
++    NextNetState *s = (NextNetState *)opaque;
++
++    g_assert(size == 4);
++
++    addr += 0x4100;
++    switch (addr) {
++    case 0x4100:
++        DPRINTF("SAVEDBASE Read\n");
++        return s->tx_dma.savedbase;
++    case 0x4104:
++        DPRINTF("SAVELIMIT Read\n");
++        return s->tx_dma.savedlimit;
++    case 0x4114:
++        DPRINTF("TXLIMIT Read\n");
++        return s->tx_dma.limit;
++    case 0x4140:
++        return s->rx_dma.savedbase;
++    case 0x4144:
++        DPRINTF("SAVELIMIT %x @ x\n",s->rx_dma.savedlimit);
++//        DPRINTF("SAVELIMIT %x @ %x\n",s->rx_dma.savedlimit, s->pc);
++        return s->rx_dma.savedlimit;
++    default:
++        DPRINTF("NET Read l @ %x\n", (unsigned int)addr);
++        return 0;
++    }
++}
++
++static void nextnet_mmio_wr_chan1(void *opaque, hwaddr addr, uint64_t val,
++                                  unsigned size)
++{
++    NextNetState *s = (NextNetState *)opaque;
++    uint32_t value = val;
++
++    g_assert(size == 4);
++
++    addr += 0x4100;
++    switch (addr) {
++    case 0x4100:
++        DPRINTF("Write l @ %x with %x\n", (unsigned int)addr, value);
++        s->tx_dma.savedbase = value;
++        break;
++    case 0x4104:
++        DPRINTF("Write l @ %x with %x\n", (unsigned int)addr, value);
++        s->tx_dma.savedlimit = value;
++        break;
++    case 0x4110:
++        DPRINTF("Write l @ %x with %x\n", (unsigned int)addr, value);
++        s->tx_dma.base = value;
++        break;
++    case 0x4114:
++        DPRINTF("Write l @ %x with %x\n", (unsigned int)addr, value);
++        s->tx_dma.limit = value;
++        break;
++    case 0x4150:
++        DPRINTF("Write l @ %x with %x\n",(unsigned int)addr,value);
++        s->rx_dma.base = value;
++        // s->rx_dma.savedbase = value;
++        break;
++    case 0x4154:
++        s->rx_dma.limit = value;
++        DPRINTF("Write l @ %x with %x\n",(unsigned int)addr,value);
++        break;
++    case 0x4158:
++        s->rx_dma.chainbase = value;
++        DPRINTF("Write l @ %x with %x\n",(unsigned int)addr,value);
++        break;
++    case 0x415c:
++        s->rx_dma.chainlimit = value;
++        DPRINTF("Write l @ %x with %x\n",(unsigned int)addr,value);
++        DPRINTF("Pointer write %x w %x\n",(unsigned int)addr,value);
++        break;
++    default:
++        DPRINTF("Write l @ %x with %x\n", (unsigned int)addr, value);
++    }
++}
++
++static const MemoryRegionOps nextnet_mmio_ops_chan1 = {
++    .read = nextnet_mmio_rd_chan1,
++    .write = nextnet_mmio_wr_chan1,
++    .valid.min_access_size = 4,
++    .valid.max_access_size = 4,
++    .endianness = DEVICE_NATIVE_ENDIAN,
++};
++
++static uint64_t nextnet_mmio_rd_chan2(void *opaque, hwaddr addr, unsigned size)
++{
++    NextNetState *s = (NextNetState *)opaque;
++
++    g_assert(size == 4);
++
++    addr += 0x4310;
++    switch (addr) {
++    case 0x4310:
++        DPRINTF("TXBASE Read\n");
++        /* FUTURE :return nextdma_read(device, addr); */
++        return s->tx_dma.basew;
++    default:
++        DPRINTF("NET Read l @ %x\n", (unsigned int)addr);
++        return 0;
++    }
++}
++
++static void nextnet_mmio_wr_chan2(void *opaque, hwaddr addr, uint64_t val,
++                                  unsigned size)
++{
++    NextNetState *s = (NextNetState *)opaque;
++
++    g_assert(size == 4);
++
++    addr += 0x4310;
++    switch (addr) {
++    case 0x4310:
++        DPRINTF("Write l @ %x with %"HWADDR_PRIx"\n", (unsigned int)addr, val);
++        s->tx_dma.base = val;
++        /* FUTURE :nextdma_write(device, addr, value); */
++        break;
++    default:
++        DPRINTF("Write l @ %x with %"HWADDR_PRIx"\n", (unsigned int)addr, val);
++    }
++}
++
++static const MemoryRegionOps nextnet_mmio_ops_chan2 = {
++    .read = nextnet_mmio_rd_chan2,
++    .write = nextnet_mmio_wr_chan2,
++    .valid.min_access_size = 4,
++    .valid.max_access_size = 4,
++    .endianness = DEVICE_NATIVE_ENDIAN,
++};
++
++/* It's likely that all register reads are bytes, while all CSR r/w are longs */
++static uint64_t nextnet_mmio_rd_cnf(void *opaque, hwaddr addr, unsigned size)
++{
++    NextNetState *s = (NextNetState *)opaque;
++
++    g_assert(size == 1);
++
++    addr += 0x6000;
++
++    switch (addr) {
++    case 0x6000: /* TXSTAT */
++        DPRINTF("TXSTAT \tRead\n");
++        return s->tx_stat;
++    case 0x6001:
++        DPRINTF("TXMASK \tRead\n");
++        return s->tx_mask;
++    case 0x6002:
++        DPRINTF("RXSTAT \tRead %x\n", s->rx_stat);
++        return s->rx_stat;
++    case 0x6003:
++        DPRINTF("RXMASK \tRead\n");
++        return s->rx_mask;
++    case 0x6004:
++        DPRINTF("TXMODE \tRead\n");
++        return s->tx_mode;
++    case 0x6005:
++        DPRINTF("RXMODE \tRead\n");
++        return s->rx_mode;
++    case 0x6006:
++        DPRINTF("RSTMODE \tRead\n");
++        return s->rst_mode;
++    default:
++        DPRINTF("NET Read B @ %x\n", (unsigned int)addr);
++        return 0;
++    }
++}
++
++#define NET_TXSTAT_CLEAR 0xFF
++#define NET_RXSTAT_CLEAR 0xFF
++static void nextnet_mmio_wr_cnf(void *opaque, hwaddr addr, uint64_t val,
++                                unsigned size)
++{
++    NextNetState *s = (NextNetState *)opaque;
++    uint32_t value = val;
++
++    g_assert(size == 1);
++
++    addr += 0x6000;
++
++    switch (addr) {
++    case 0x6000:
++        DPRINTF("TXSTAT \tWrite: %x\n", value);
++        if (value == NET_TXSTAT_CLEAR) {
++            s->tx_stat = 0x80;
++        } else {
++            s->tx_stat = value;
++        }
++        break;
++    case 0x6001:
++        DPRINTF("TXMASK \tWrite: %x\n", value);
++        s->tx_mask = value;
++        break;
++    case 0x6002:
++        DPRINTF("RXSTAT \tWrite: %x\n", value);
++        if (value == NET_RXSTAT_CLEAR) {
++            s->rx_stat = 0x80;
++        } else {
++            s->rx_stat = value;
++        }
++        break;
++    case 0x6003:
++        DPRINTF("RXMASK \tWrite: %x\n", value);
++        s->rx_mask = value;
++        break;
++    case 0x6004:
++        DPRINTF("TXMODE \tWrite: %x\n", value);
++        s->tx_mode = value;
++        break;
++    case 0x6005:
++        DPRINTF("RXMODE \tWrite: %x\n", value);
++        s->rx_mode = value;
++//        if (s->rx_mode & 0x3)
++//            qemu_flush_queued_packets(qemu_get_queue(s->nic)); // flush qemu packets to VM. doesn't work very well here.
++        break;
++    case 0x6006:
++        DPRINTF("RSTMODE \tWrite: %x\n", value);
++        s->rst_mode = value;
++        break;
++    case 0x600d:
++        s->mac[(addr & 0xF) - 8] = value;
++        DPRINTF("Set MAC ADDR %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", s->mac[0],
++                s->mac[1], s->mac[2], s->mac[3], s->mac[4], s->mac[5]);
++        qemu_macaddr_default_if_unset((MACAddr *)&s->mac);
++        break;
++    case 0x6008:
++    case 0x6009:
++    case 0x600a:
++    case 0x600b:
++    case 0x600c:
++        s->mac[(addr & 0xF) - 8] = value;
++        break;
++    case 0x6010:
++    case 0x6011:
++    case 0x6012:
++    case 0x6013:
++    case 0x6014:
++        break;
++    default:
++        DPRINTF(" Write B @ %x with %x\n", (unsigned int)addr, value);
++        g_assert_not_reached();
++    }
++}
++
++static const MemoryRegionOps nextnet_mmio_ops_cnf = {
++    .read = nextnet_mmio_rd_cnf,
++    .write = nextnet_mmio_wr_cnf,
++    .valid.min_access_size = 1,
++    .valid.max_access_size = 4,
++    .endianness = DEVICE_NATIVE_ENDIAN,
++};
++
++static bool nextnet_can_rx(NetClientState *nc)
++{
++    NextNetState *s = qemu_get_nic_opaque(nc);
++
++    bool ret = (s->rx_mode & 0x3) != 0;
++    ret = true;
++    DPRINTF("nextnet_can_rx: %d s->rx_mode=%x\n", ret, s->rx_mode);
++
++    return ret;
++}
++
++static ssize_t nextnet_rx(NetClientState *nc, const uint8_t *buf, size_t size)
++{
++    NextNetState *s = qemu_get_nic_opaque(nc);
++
++    DPRINTF("received packet %zu\n", size);
++
++    /* Ethernet DMA is supposedly 32 byte aligned */
++    if ((size % 32) != 0) {
++        size -= size % 32;
++        size += 32;
++    }
++
++    /* Write the packet into memory */
++    cpu_physical_memory_write(s->rx_dma.base, buf, size);
++
++    /*
++     * Saved limit is checked to calculate packet size by both the rom
++     * and netbsd
++     */
++    s->rx_dma.savedlimit = (s->rx_dma.base + size);
++    s->rx_dma.savedbase = (s->rx_dma.base);
++
++    /*
++     * 32 bytes under savedbase seems to be some kind of register
++     * of which the purpose is unknown as of yet
++     */
++    //stl_phys(s->rx_dma.base-32, 0xFFFFFFFF);
++
++    if ((s->rx_dma.csr & DMA_SUPDATE)) {
++        s->rx_dma.base = s->rx_dma.chainbase;
++        s->rx_dma.limit = s->rx_dma.chainlimit;
++    }
++    /* we received a packet */
++    s->rx_stat = 0x80;
++
++    /* Set dma registers and raise an irq */
++    s->rx_dma.csr |= DMA_COMPLETE; /* DON'T CHANGE THIS! */
++    qemu_set_irq(s->irq[NEXTNET_RX_I_DMA], true);
++
++    return size;
++}
++
++static NetClientInfo nextnet_info = {
++    .type = NET_CLIENT_DRIVER_NIC,
++    .size = sizeof(NICState),
++    .can_receive = nextnet_can_rx,
++    .receive = nextnet_rx,
++};
++
++static void nextnet_realize(DeviceState *dev, Error **errp)
++{
++    NextNetState *s = NEXT_NET(dev);
++    SysBusDevice *sbd = SYS_BUS_DEVICE(dev);
++    uint8_t mac[6] = { 0x00, 0x00, 0x0f, 0x00, 0xf3, 0x02 };
++    int i;
++
++    memcpy(&s->mac, mac, 6);  
++    s->nic = qemu_new_nic(&nextnet_info, &s->conf, "NeXT MB8795", dev->id, s);
++    qemu_format_nic_info_str(qemu_get_queue(s->nic), s->mac);
++
++    /* Init device register spaces */
++    memory_region_init_io(&s->mr[0], NULL, &nextnet_mmio_ops_dma, s,
++                          "next.net.dma", 0x60);
++    sysbus_init_mmio(sbd, &s->mr[0]);
++    memory_region_init_io(&s->mr[1], NULL, &nextnet_mmio_ops_chan1, s,
++                          "next.net.chan1", 0x80);
++    sysbus_init_mmio(sbd, &s->mr[1]);
++    memory_region_init_io(&s->mr[2], NULL, &nextnet_mmio_ops_chan2, s,
++                          "next.net.chan2", 0x60);
++    sysbus_init_mmio(sbd, &s->mr[2]);
++    memory_region_init_io(&s->mr[3], NULL, &nextnet_mmio_ops_cnf, s,
++                          "next.net.cnf", 0x20);
++    sysbus_init_mmio(sbd, &s->mr[3]);
++
++    for (i = 0; i < NEXTNET_NUM_IRQS; i++) {
++        sysbus_init_irq(sbd, &s->irq[i]);
++    }
++}
++
++static Property nextnet_properties[] = {
++    DEFINE_NIC_PROPERTIES(NextNetState, conf),
++    DEFINE_PROP_END_OF_LIST(),
++};
++
++static void nextnet_class_init(ObjectClass *oc, void *data)
++{
++    DeviceClass *dc = DEVICE_CLASS(oc);
++
++    set_bit(DEVICE_CATEGORY_NETWORK, dc->categories);
++    dc->realize = nextnet_realize;
++    dc->desc = "NeXT Ethernet Controller";
++    device_class_set_props(dc, nextnet_properties);
++}
++
++static const TypeInfo nextnet_typeinfo = {
++    .name          = TYPE_NEXT_NET,
++    .parent        = TYPE_SYS_BUS_DEVICE,
++    .instance_size = sizeof(NextNetState),
++    .class_init    = nextnet_class_init,
++};
++
++static void nextnet_register_types(void)
++{
++    type_register_static(&nextnet_typeinfo);
++}
++
++type_init(nextnet_register_types)
+diff --git a/include/hw/m68k/next-cube.h b/include/hw/m68k/next-cube.h
+index 43577282d1..710b90e4b2 100644
+--- a/include/hw/m68k/next-cube.h
++++ b/include/hw/m68k/next-cube.h
+@@ -16,6 +16,16 @@
+ 
+ #define TYPE_NEXTKBD "next-kbd"
+ 
++#define TYPE_NEXT_NET "next-net"
++
++enum nextnet_irqs {
++    NEXTNET_TX_I_DMA,
++    NEXTNET_RX_I_DMA,
++    NEXTNET_TX_I,
++    NEXTNET_RX_I,
++    NEXTNET_NUM_IRQS
++};
++
+ enum next_dma_chan {
+     NEXTDMA_FD,
+     NEXTDMA_ENRX,

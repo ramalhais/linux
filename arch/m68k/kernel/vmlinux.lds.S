@@ -7,6 +7,8 @@ PHDRS
 }
 #ifdef CONFIG_SUN3
 #include "vmlinux-sun3.lds"
+#elif defined(CONFIG_NEXT)
+#include "vmlinux-next.lds"
 #else
 #include "vmlinux-std.lds"
 #endif

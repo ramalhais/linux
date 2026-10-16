@@ -265,7 +265,11 @@ static void esp_reset_esp(struct esp *esp)
 			esp->rev = FSC;
 			/* Enable Active Negation */
 			esp_write8(ESP_CONFIG4_RADE, ESP_CFG4);
+		} else if (family_code == ESP_UID_F100A) {
+			esp->rev = FAS100A;
 		} else {
+			shost_printk(KERN_ALERT, esp->host,
+				"Chip with unknown family_code=0x%x. Defaulting to FAS100A!\n", family_code);
 			esp->rev = FAS100A;
 		}
 		esp->min_period = ((4 * esp->ccycle) / 1000);
@@ -392,6 +396,9 @@ static void esp_map_dma(struct esp *esp, struct scsi_cmnd *cmd)
 		}
 	} else {
 		spriv->num_sg = scsi_dma_map(cmd);
+		if (spriv->num_sg <= 0) {
+			dev_warn(esp->dev, "esp_map_dma(): Error DMA mapping sg with scsi_dma_map\n");
+		}
 		scsi_for_each_sg(cmd, s, spriv->num_sg, i)
 			total += sg_dma_len(s);
 	}
@@ -534,16 +541,24 @@ static u32 esp_dma_length_limit(struct esp *esp, u32 dma_addr, u32 dma_len)
 		 * in the ESP_CFG2 register but that causes other unwanted
 		 * changes so we don't use it currently.
 		 */
-		if (dma_len > (1U << 16))
+		if (dma_len > (1U << 16)) {
+			dev_warn(esp->dev, "esp_dma_length_limit(): dma_len 0x%x truncated to 16bits: 0x%x\n",
+				dma_len, (1U << 16));
+
 			dma_len = (1U << 16);
+		}
 
 		/* All of the DMA variants hooked up to these chips
 		 * cannot handle crossing a 24-bit address boundary.
 		 */
 		base = dma_addr & ((1U << 24) - 1U);
 		end = base + dma_len;
-		if (end > (1U << 24))
+		if (end > (1U << 24)) {
+			dev_warn(esp->dev, "esp_dma_length_limit(): dma end 0x%x truncated to 24bits: 0x%x\n",
+				end, (1U <<24));
+
 			end = (1U <<24);
+		}
 		dma_len = end - base;
 	}
 	return dma_len;
@@ -826,7 +841,7 @@ build_identify:
 		select_and_stop = true;
 	}
 
-	if (select_and_stop) {
+	if (select_and_stop && !(esp->flags&ESP_FLAG_NO_SELAS)) {
 		esp->cmd_bytes_left = cmd->cmd_len;
 		esp->cmd_bytes_ptr = &cmd->cmnd[0];
 
@@ -843,7 +858,7 @@ build_identify:
 		esp->select_state = ESP_SELECT_MSGOUT;
 	} else {
 		start_cmd = ESP_CMD_SELA;
-		if (ent->tag[0]) {
+		if (ent->tag[0] && !(esp->flags&ESP_FLAG_NO_SA3)) {
 			*p++ = ent->tag[0];
 			*p++ = ent->tag[1];
 
@@ -987,7 +1002,8 @@ static int esp_check_gross_error(struct esp *esp)
 		 * - improper phase change
 		 */
 		shost_printk(KERN_ERR, esp->host,
-			     "Gross error sreg[%02x]\n", esp->sreg);
+			"Gross error sreg[%02x] seqreg[%02x] ireg[%02x]\n",
+			esp->sreg, esp->seqreg, esp->ireg);
 		/* XXX Reset the chip. XXX */
 		return 1;
 	}
@@ -1003,6 +1019,10 @@ static int esp_check_spur_intr(struct esp *esp)
 		 * be trusted on these revisions.
 		 */
 		esp->sreg &= ~ESP_STAT_INTR;
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+		shost_printk(KERN_INFO, esp->host,
+			"esp_check_spur_intr(): ESP_STATUS=0x%hhx", esp->sreg);
+#endif
 		break;
 
 	default:
@@ -1069,6 +1089,9 @@ static struct esp_cmd_entry *esp_reconnect_with_tag(struct esp *esp,
 
 	esp->sreg = esp_read8(ESP_STATUS);
 	esp->ireg = esp_read8(ESP_INTRPT);
+	shost_printk(KERN_INFO, esp->host,
+		"esp_reconnect_with_tag(): ESP_STATUS=0x%hhx ESP_INTRPT=0x%hhx",
+		esp->sreg, esp->ireg);
 
 	esp_log_reconnect("IRQ(%d:%x:%x), ",
 			  i, esp->ireg, esp->sreg);
@@ -1098,6 +1121,9 @@ static struct esp_cmd_entry *esp_reconnect_with_tag(struct esp *esp,
 		if (esp->ops->irq_pending(esp)) {
 			esp->sreg = esp_read8(ESP_STATUS);
 			esp->ireg = esp_read8(ESP_INTRPT);
+			shost_printk(KERN_INFO, esp->host,
+				"esp_reconnect_with_tag(): irq_pending(): ESP_STATUS=0x%hhx ESP_INTRPT=0x%hhx",
+				esp->sreg, esp->ireg);
 			if (esp->ireg & ESP_INTR_FDONE)
 				break;
 		}
@@ -1388,6 +1414,9 @@ static int esp_data_bytes_sent(struct esp *esp, struct esp_cmd_entry *ent,
 			 * target in synchronous mode.
 			 */
 			esp->sreg = esp_read8(ESP_STATUS);
+			shost_printk(KERN_INFO, esp->host,
+				"esp_data_bytes_sent(): ESP_STATUS=0x%hhx",
+				esp->sreg);
 			phase = esp->sreg & ESP_STAT_PMASK;
 			fflags = esp_read8(ESP_FFLAGS);
 
@@ -1690,10 +1719,18 @@ static int esp_process_event(struct esp *esp)
 {
 	int write, i;
 
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+	esp_debug = 8191;
+#endif
 again:
 	write = 0;
 	esp_log_event("process event %d phase %x\n",
 		      esp->event, esp->sreg & ESP_STAT_PMASK);
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+	shost_printk(KERN_INFO, esp->host,
+		"process event %d phase %x\n",
+		esp->event, esp->sreg & ESP_STAT_PMASK);
+#endif
 	switch (esp->event) {
 	case ESP_EVENT_CHECK_PHASE:
 		switch (esp->sreg & ESP_STAT_PMASK) {
@@ -1740,6 +1777,28 @@ again:
 		struct scsi_cmnd *cmd = ent->cmd;
 		dma_addr_t dma_addr = esp_cur_dma_addr(ent, cmd);
 		unsigned int dma_len = esp_cur_dma_len(ent, cmd);
+
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+		// FIXME: NeXT: i had this commented out to work on previous
+		if (dma_mapping_error(esp->dev, dma_addr)) {
+			dev_warn(esp->dev, "Error mapping DMA 0x%x\n",
+				 dma_addr);
+
+			struct esp_cmd_priv *p = ESP_CMD_PRIV(cmd);
+
+			if (ent->flags & ESP_CMD_FLAG_AUTOSENSE) {
+				dev_warn(esp->dev, "Error mapping DMA: autosense: sense_dma=0x%x sense_ptr=0x%x sense_buffer=0x%x\n",
+					 ent->sense_dma, (unsigned int )(ent->sense_ptr), (unsigned int)(cmd->sense_buffer));
+				return ent->sense_dma +
+					(ent->sense_ptr - cmd->sense_buffer);
+			} else {
+				dev_warn(esp->dev, "Error mapping DMA: Not autosense: sg_dma_address(p->cur_sg)=0x%x sg_dma_len(p->cur_sg)=0x%x p->cur_residue=0x%x\n",
+					 sg_dma_address(p->cur_sg), sg_dma_len(p->cur_sg), p->cur_residue);
+			}
+
+			return 0;
+		}
+#endif
 
 		if (esp->rev == ESP100)
 			scsi_esp_cmd(esp, ESP_CMD_NULL);
@@ -1796,11 +1855,13 @@ again:
 		esp->ops->dma_invalidate(esp);
 
 		if (esp->ireg != ESP_INTR_BSERV) {
+		// if (esp->ireg != ESP_INTR_BSERV && esp->ireg != ESP_INTR_FDONE) {
 			/* We should always see exactly a bus-service
 			 * interrupt at the end of a successful transfer.
 			 */
 			shost_printk(KERN_INFO, esp->host,
 				     "data done, not BSERV, resetting\n");
+				//      "data done, not BSERV nor FDONE. resetting\n");
 			esp_schedule_reset(esp);
 			return 0;
 		}
@@ -2103,7 +2164,16 @@ static void __esp_interrupt(struct esp *esp)
 	esp->seqreg = esp_read8(ESP_SSTEP);
 	esp->ireg = esp_read8(ESP_INTRPT);
 
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+	shost_printk(KERN_INFO, esp->host,
+		"__esp_interrupt(): ESP_STATUS=0x%hhx ESP_SSTEP=0x%hhx ESP_INTRPT=0x%hhx",
+		esp->sreg, esp->seqreg, esp->ireg);
+#endif
+
 	if (esp->flags & ESP_FLAG_RESETTING) {
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+		shost_printk(KERN_INFO, esp->host, "ESP_FLAG_RESETTING");
+#endif
 		finish_reset = 1;
 	} else {
 		if (esp_check_gross_error(esp))
@@ -2155,17 +2225,34 @@ static void __esp_interrupt(struct esp *esp)
 		esp_schedule_reset(esp);
 	} else {
 		if (esp->ireg & ESP_INTR_RSEL) {
-			if (esp->active_cmd)
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+			shost_printk(KERN_INFO, esp->host, "ESP_INTR_RSEL");
+#endif
+			if (esp->active_cmd) {
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+				shost_printk(KERN_INFO, esp->host,
+					"esp->active_cmd");
+#endif
 				(void) esp_finish_select(esp);
+			}
 			intr_done = esp_reconnect(esp);
 		} else {
 			/* Some combination of FDONE, BSERV, DC. */
-			if (esp->select_state != ESP_SELECT_NONE)
+			if (esp->select_state != ESP_SELECT_NONE) {
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+				shost_printk(KERN_INFO, esp->host,
+					"esp->select_state != ESP_SELECT_NONE");
+#endif
 				intr_done = esp_finish_select(esp);
+			}
 		}
 	}
-	while (!intr_done)
+	while (!intr_done) {
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+		shost_printk(KERN_INFO, esp->host, "esp_process_event");
+#endif
 		intr_done = esp_process_event(esp);
+	}
 }
 
 irqreturn_t scsi_esp_intr(int irq, void *dev_id)
@@ -2174,6 +2261,9 @@ irqreturn_t scsi_esp_intr(int irq, void *dev_id)
 	unsigned long flags;
 	irqreturn_t ret;
 
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+	shost_printk(KERN_INFO, esp->host, "scsi_esp_intr()");
+#endif
 	spin_lock_irqsave(esp->host->host_lock, flags);
 	ret = IRQ_NONE;
 	if (esp->ops->irq_pending(esp)) {
@@ -2194,6 +2284,15 @@ irqreturn_t scsi_esp_intr(int irq, void *dev_id)
 				break;
 		}
 	}
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+	else {
+		shost_printk(KERN_INFO, esp->host,
+			"irq_pending returned 0 !!! Handling anyway. ESP_STATUS=0x%x",
+			*(volatile u8 *)(esp->regs + ESP_STATUS));
+		ret = IRQ_HANDLED;
+		// __esp_interrupt(esp);
+	}
+#endif
 	spin_unlock_irqrestore(esp->host->host_lock, flags);
 
 	return ret;
@@ -2740,6 +2839,9 @@ static struct spi_function_template esp_transport_ops = {
 
 static int __init esp_init(void)
 {
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+	esp_debug = 8191;
+#endif
 	esp_transport_template = spi_attach_transport(&esp_transport_ops);
 	if (!esp_transport_template)
 		return -ENODEV;
@@ -2805,6 +2907,10 @@ static inline int esp_wait_for_intr(struct esp *esp)
 
 	do {
 		esp->sreg = esp_read8(ESP_STATUS);
+#if defined(CONFIG_NEXT_SCSI_DEBUG)
+		shost_printk(KERN_INFO, esp->host,
+			"esp_wait_for_intr(): ESP_STATUS=0x%hhx", esp->sreg);
+#endif
 		if (esp->sreg & ESP_STAT_INTR)
 			return 0;
 

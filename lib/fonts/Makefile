@@ -14,6 +14,7 @@ font-$(CONFIG_FONT_8x16)      += font_8x16.o
 font-$(CONFIG_FONT_10x18)     += font_10x18.o
 font-$(CONFIG_FONT_ACORN_8x8) += font_acorn_8x8.o
 font-$(CONFIG_FONT_MINI_4x6)  += font_mini_4x6.o
+font-$(CONFIG_FONT_OHLFS8x12) += font_ohlfs_8x12.o
 font-$(CONFIG_FONT_PEARL_8x8) += font_pearl_8x8.o
 font-$(CONFIG_FONT_SUN8x16)   += font_sun8x16.o
 font-$(CONFIG_FONT_SUN12x22)  += font_sun12x22.o
