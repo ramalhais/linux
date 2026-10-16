@@ -90,15 +90,16 @@ struct __attribute__((packed)) next68k_disklabel {
 #define	NEXT68K_LABEL_cd_v3_checksum	cd_un.CD_v3_checksum
 #define	NEXT68K_LABEL_cd_bad		cd_un.CD_bad
 
-#define	NEXT68K_LABEL_SECTOR		0	/* sector containing label */
-#define	NEXT68K_LABEL_OFFSET		0	/* offset of label in sector */
-#define	NEXT68K_LABEL_SIZE		8192	/* size of label */
-#define	NEXT68K_LABEL_CD_V1		0x4e655854 /* version #1: "NeXT" */
-#define	NEXT68K_LABEL_CD_V2		0x646c5632 /* version #2: "dlV2" */
-#define	NEXT68K_LABEL_CD_V3		0x646c5633 /* version #3: "dlV3" */
-#define	NEXT68K_LABEL_DEFAULTFRONTPORCH	(160 * 2) // 160*2*512byte based. it's *2 to match 1024 blocksize. a bit crazy.
-#define	NEXT68K_LABEL_DEFAULTBOOT0_1	(32 * 2)
-#define	NEXT68K_LABEL_DEFAULTBOOT0_2	(96 * 2)
+#define NEXT68K_LABEL_SECTOR		0	/* sector containing label */
+#define NEXT68K_LABEL_OFFSET		0	/* offset of label in sector */
+#define NEXT68K_LABEL_SIZE		8192	/* size of label */
+#define NEXT68K_LABEL_CD_V1		0x4e655854 /* version #1: "NeXT" */
+#define NEXT68K_LABEL_CD_V2		0x646c5632 /* version #2: "dlV2" */
+#define NEXT68K_LABEL_CD_V3		0x646c5633 /* version #3: "dlV3" */
+#define NEXT68K_LABEL_DEFAULTFRONTPORCH	160 // in 512byte sectors. multiply by 2 to match 1024 blocksize
+#define NEXT68K_LABEL_DEFAULTBOOT0_1	32
+#define NEXT68K_LABEL_DEFAULTBOOT0_2	96
+#define NEXT68K_LABEL_DEFAULTRPM	3600
 
 void p_32(char *name, uint32_t value) {
 	printf("%-17s 0x%-8x (%d)\n", name, ntohl(value), ntohl(value));
@@ -173,6 +174,10 @@ static uint16_t checksum(struct next68k_disklabel *dl, bool validate)
 	else
 		csump = &dl->cd_checksum;
 
+	sum += ntohs(*buf++); // add cd_version
+	sum += ntohs(*buf++); // add cd_version
+	buf++; // skip cd_label_blkno
+	buf++; // skip cd_label_blkno
 	while (buf < csump)
 		sum += ntohs(*buf++);
 
@@ -284,9 +289,9 @@ void create_dl(struct next68k_disklabel *dl, FILE *diskf, char *label, char *ker
 	uint32_t usable_bytes = ntohl(dl->cd_ncylinders)*ntohl(dl->cd_nsectors)*ntohl(dl->cd_ntracks)*ntohl(dl->cd_secsize);
 	printf("Usable Disk size is %jd\n", (intmax_t)usable_bytes);
 
-	dl->cd_rpm = htonl(3600);
+	dl->cd_rpm = htonl(NEXT68K_LABEL_DEFAULTRPM);
 
-	dl->cd_front = htons(160);
+	dl->cd_front = htons(NEXT68K_LABEL_DEFAULTFRONTPORCH);
 	dl->cd_back = htons(0);
 
 	dl->cd_ngroups = htons(0);
@@ -294,8 +299,8 @@ void create_dl(struct next68k_disklabel *dl, FILE *diskf, char *label, char *ker
 	dl->cd_ag_alts = htons(0);
 	dl->cd_ag_off = htons(0);
 
-	dl->cd_boot_blkno[0] = htonl(32);
-	dl->cd_boot_blkno[1] = htonl(96);
+	dl->cd_boot_blkno[0] = htonl(NEXT68K_LABEL_DEFAULTBOOT0_1);
+	dl->cd_boot_blkno[1] = htonl(NEXT68K_LABEL_DEFAULTBOOT0_2);
 
 	bzero(dl->cd_kernel, NEXT68K_LABEL_MAXBFLEN);
 	strncpy(dl->cd_kernel, kernel, NEXT68K_LABEL_MAXBFLEN-1);
