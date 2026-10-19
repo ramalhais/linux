@@ -7,7 +7,6 @@
 
 #include <linux/fb.h>
 #include <linux/platform_device.h>
-
 #include <asm/nexthw.h>
 
 MODULE_DESCRIPTION("NeXT Frambuffer driver");
@@ -95,7 +94,7 @@ static int nextfb_probe_030(struct platform_device *dev)
 	// let's see if we can write to framebuffer memory and blow up here instead.
 	*(volatile unsigned char *)(info->screen_base) = 0x00;
 
-	strncpy(info->fix.id, "NeXT (030) Mono", 16);
+	strscpy(info->fix.id, "NeXT (030) Mono", sizeof(info->fix.id));
 	info->fix.line_length	= NEXTFB_WIDTH_V>>2;	// 1152 * 2bits per pixel / 8bits per byte = 1152*1/4. >> 2 divides by 2 two times (4).
 	info->fix.type		= FB_TYPE_PACKED_PIXELS;
 	info->fix.visual	= FB_VISUAL_TRUECOLOR;
@@ -221,18 +220,18 @@ static int nextfb_probe(struct platform_device *dev)
 	info->pseudo_palette = info->par; // par is allocated in framebuffer_alloc()
 
 	if (bpp == 16) {
-		strncpy(info->fix.id,	"NeXT C16", 16);
+		strscpy(info->fix.id, "NeXT C16", sizeof(info->fix.id));
 		info->var.red		= (struct fb_bitfield){12, 4, 0};
 		info->var.green		= (struct fb_bitfield){8, 4, 0};
 		info->var.blue		= (struct fb_bitfield){4, 4, 0};
 	} else if (bpp == 2) {
-		strncpy(info->fix.id,	"NeXT Mono", 16);
+		strscpy(info->fix.id, "NeXT Mono", sizeof(info->fix.id));
 		info->var.red		= (struct fb_bitfield){0, 2, 0};
 		info->var.green		= (struct fb_bitfield){0, 2, 0};
 		info->var.blue		= (struct fb_bitfield){0, 2, 0};
 		fb_invert_cmaps();
 	} else
-		strncpy(info->fix.id,	"NeXT Unknown", 16);
+		strscpy(info->fix.id, "NeXT Unknown", sizeof(info->fix.id));
 
 
 	if (register_framebuffer(info) < 0) {

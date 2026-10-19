@@ -253,8 +253,8 @@ void __init setup_arch(char **cmdline_p)
 #ifdef CONFIG_NEXT
 	if (MACH_IS_NEXT) {
 		if (strlen(m68k_command_line))
-			strncpy(m68k_command_line+strlen(m68k_command_line), " ", 1);
-		strncpy(m68k_command_line+strlen(m68k_command_line), (char *)prom_info.inputline, CL_SIZE-strlen(m68k_command_line)-1);
+			strscpy(m68k_command_line + strlen(m68k_command_line), " ", CL_SIZE - strlen(m68k_command_line));
+		strscpy(m68k_command_line + strlen(m68k_command_line), (char *)prom_info.inputline, CL_SIZE - strlen(m68k_command_line));
 	}
 #endif
 

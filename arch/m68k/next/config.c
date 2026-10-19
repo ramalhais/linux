@@ -37,7 +37,7 @@ char *next_machine_names[] = {
 static void next_get_model(char *model)
 {
 #define MODEL_MAX 80
-       strncpy(model, next_machine_names[prom_info.mach_type], MODEL_MAX-1);
+       strscpy(model, next_machine_names[prom_info.mach_type], MODEL_MAX);
 }
 
 static void __init next_meminit(void)
