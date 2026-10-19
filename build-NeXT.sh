@@ -35,6 +35,18 @@ export _MODULES_DIR=~/next/modules
 export _BUILDROOT_DIR=~/git/buildroot
 export _BUILDROOT_OVERLAY_DIR=$_BUILDROOT_DIR/linux-modules/
 
+# Cherry Pick patches for a new kernel version
+# git log --author="amalhais" --oneline > ../next-commits-7.1.txt
+
+# Create new branch for the new kernel version
+# git checkout -b linux-7.3.y-NeXT kernelorg/linux-7.3.y
+# OR create new branch from tag
+# git checkout -b linux-7.3-NeXT v7.3
+
+# Apply patches from previous kernel version
+# tac ../next-commits-7.1.txt | awk '{print $1}' | xargs git cherry-pick
+# git cherry-pick --continue
+
 # sync tags with upstream linux repo
 # initial: git remote add --fetch --tags upstream https://github.com/torvalds/linux.git
 #
