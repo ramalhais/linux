@@ -234,7 +234,7 @@ irqreturn_t next_scsi_dma_intr(int irq, void *dev_id)
 		csr, *(volatile u8 *)(esp->dma_regs));
 	spin_lock_irqsave(esp->host->host_lock, flags);
 
-	if (csr&DMA_CINT) {
+	if ((csr&DMA_CINT) && (csr&DMA_ENABLED)) {
 		scsi_dma->csr = csr|DMA_CLEARCHAINI;
 	} else {
 		scsi_dma->csr = DMA_RESET;

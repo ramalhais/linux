@@ -97,6 +97,15 @@ config SERIAL_EARLYCON_RISCV_SBI
 	  with "earlycon=sbi" on the kernel command line. The console is
 	  enabled when early_param is processed.
 
+config SERIAL_NEXT
+	tristate "NeXT on-chip Z8530 serial port support"
+	depends on M68K && NEXT
+	select SERIAL_CORE
+	help
+	  This enables the Zilog Z8530 serial controller used on NeXT
+	  workstations and cubes. The driver exposes a polling-based serial
+	  port through the Linux tty serial core.
+
 config SERIAL_SB1250_DUART
 	tristate "BCM1xxx on-chip DUART serial support"
 	depends on SIBYTE_SB1xxx_SOC=y
