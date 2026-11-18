@@ -106,6 +106,30 @@ config SERIAL_NEXT
 	  workstations and cubes. The driver exposes a polling-based serial
 	  port through the Linux tty serial core.
 
+config SERIAL_NEXT_ZS
+	tristate "NeXT Z8530 SCC serial support"
+	depends on M68K && NEXT
+	depends on SERIAL_NEXT = n
+	select SERIAL_CORE
+	help
+	  This enables the interrupt-driven serial driver for the Zilog Z8530
+	  SCC used on NeXT workstations and cubes. It is based on the generic
+	  Z85C30 driver and supports both SCC channels, modem control lines,
+	  and a serial console.
+
+	  This replaces the polling-based SERIAL_NEXT driver; do not enable
+	  both drivers at the same time. If unsure, say Y.
+
+config SERIAL_NEXT_ZS_CONSOLE
+	bool "Support for console on a NeXT Z8530 serial port"
+	depends on SERIAL_NEXT_ZS=y
+	select SERIAL_CORE_CONSOLE
+	default y
+	help
+	  This enables support for using a NeXT Z8530 serial port as the
+	  system console. The console is selected with console=ttyS0 (SCC
+	  channel A) or console=ttyS1 (SCC channel B).
+
 config SERIAL_SB1250_DUART
 	tristate "BCM1xxx on-chip DUART serial support"
 	depends on SIBYTE_SB1xxx_SOC=y

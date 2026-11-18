@@ -40,6 +40,7 @@ obj-$(CONFIG_SERIAL_DZ)			+= dz.o
 obj-$(CONFIG_SERIAL_FSL_LINFLEXUART)	+= fsl_linflexuart.o
 obj-$(CONFIG_SERIAL_FSL_LPUART)		+= fsl_lpuart.o
 obj-$(CONFIG_SERIAL_NEXT)		+= next.o
+obj-$(CONFIG_SERIAL_NEXT_ZS)		+= next-zs.o
 obj-$(CONFIG_SERIAL_ICOM)		+= icom.o
 obj-$(CONFIG_SERIAL_IMX)		+= imx.o
 obj-$(CONFIG_SERIAL_IMX_EARLYCON)	+= imx_earlycon.o

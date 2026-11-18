@@ -220,12 +220,16 @@ struct fd_cntrl_regs {
 	u_char	srb;	/* (R/O) status register B */
 	u_char	dor;	/* (R/W) digital output register */
 	u_char	rsvd3;	/* reserved */
-	u_char	msr;	/* (R/O) main status register */
-#define dsr	msr	/* (W/O) data rate select register */
+	union {
+		u_char	msr;	/* (R/O) main status register */
+		u_char	dsr;	/* (W/O) data rate select register */
+	};
 	u_char	fifo;	/* (R/W) data FIFO */
 	u_char	rsvd6;	/* reserved */
-	u_char	dir;	/* (R/O) digital input register */
-#define ccr	dir	/* (W/O) configuration control reg */
+	union {
+		u_char	dir;	/* (R/O) digital input register */
+		u_char	ccr;	/* (W/O) configuration control reg */
+	};
 	u_char	flpctl;	/* (W/O) control (not in 82077) */
 };
 
