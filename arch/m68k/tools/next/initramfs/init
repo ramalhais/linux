@@ -12,16 +12,31 @@ echo "Running from initramfs: $0 with kernel parameters: $*"
 /bin/busybox --install -s /bin
 
 mount -t devtmpfs devtmpfs /dev
+mkdir -p /dev/pts
 mount -t devpts devpts /dev/pts
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 
-dmesg | grep -A 20 "RTC NVRAM"
+#dmesg | grep -A 20 "RTC NVRAM"
 #sleep 600
 
 function initrescue() {
 	echo "Starting rescue shell"
-	exec setsid sh -c 'exec sh </dev/tty1 >/dev/tty1 2>&1'
+
+#1
+#	exec setsid sh -c 'exec sh </dev/tty1 >/dev/tty1 2>&1'
+
+#2
+#	exec setsid cttyhack sh
+
+#3
+	(while true; do getty -L -n -l /bin/sh 0 tty1; echo "Restarting shell on tty1"; sleep 1; done) &
+	(while true; do getty -L -n -l /bin/sh 0 ttyS0; echo "Restarting shell on ttyS0"; sleep 1; done) &
+	(while true; do getty -L -n -l /bin/sh 0 ttyS1; echo "Restarting shell on ttyS1"; sleep 1; done) &
+
+	while true; do
+		sleep 60
+	done
 }
 
 if echo $* | busybox grep -E "(^| )initrescue( |$)" &> /dev/null; then

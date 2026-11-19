@@ -685,7 +685,7 @@ static int zs_startup(struct uart_port *uport)
 	irq_guard = atomic_add_return(1, &scc->irq_guard);
 	if (irq_guard == 1) {
 		ret = request_irq(uport->irq, zs_interrupt,
-				  IRQF_SHARED, "next-scc", scc);
+				  0, "next-scc", scc);
 		if (ret) {
 			atomic_add(-1, &scc->irq_guard);
 			pr_err("next-zs: can't get irq %d\n", uport->irq);

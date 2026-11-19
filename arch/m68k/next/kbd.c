@@ -246,7 +246,7 @@ static irqreturn_t next_kbd_int(int irq, void *dev_id)
 					continue;
 
 				scan = CTRL_BASE_CODE+index;
-				is_pressed = !(data&KD_DIRECTION); // FIXME: could try sending data&KD_FLAGKEYS&mask instead
+				is_pressed = oldflagmap&(KD_CNTL<<index);
 				input_report_key(input, kbd->keycodes[scan], is_pressed);
 			}
 		}
