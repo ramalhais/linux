@@ -80,6 +80,9 @@ static char zs_version[] __initdata = "0.01";
 
 static struct zs_scc zs_sccs[ZS_NUM_SCCS];
 static struct uart_driver zs_reg;
+#ifdef CONFIG_SERIAL_NEXT_ZS_CONSOLE
+static struct console zs_console[ZS_NUM_CHAN];
+#endif
 static void __iomem *zs_membase;
 
 /*
@@ -1006,6 +1009,10 @@ static int __init zs_probe(struct platform_device *pdev)
 		for (i = 0; i < ZS_NUM_REGS; i++)
 			zport->regs[i] = zs_init_regs[i];
 
+#ifdef CONFIG_SERIAL_NEXT_ZS_CONSOLE
+		/* uart_add_one_port() copies drv->cons into uport->cons. */
+		zs_reg.cons = &zs_console[side];
+#endif
 		ret = uart_add_one_port(&zs_reg, uport);
 		if (ret) {
 			uport->dev = NULL;
@@ -1147,17 +1154,30 @@ static int __init zs_console_setup(struct console *co, char *options)
 	return uart_set_options(uport, co, baud, parity, bits, flow);
 }
 
-static struct console zs_console = {
-	.name	= "ttyS",
-	.write	= zs_console_write,
-	.device	= uart_console_device,
-	.setup	= zs_console_setup,
-	.flags	= CON_PRINTBUFFER,
-	.index	= -1,
-	.data	= &zs_reg,
+/*
+ * Each channel needs its own struct console: register_console() matches a
+ * single console object against one "console=" entry and only sets it up once.
+ * A shared object would be enabled for ttyS0 when the first port is added and
+ * never registered again for ttyS1.
+ */
+#define ZS_CONSOLE_INIT(chan) {				\
+	.name	= "ttyS",				\
+	.write	= zs_console_write,			\
+	.device	= uart_console_device,			\
+	.setup	= zs_console_setup,			\
+	.flags	= CON_PRINTBUFFER,			\
+	.index	= (chan),				\
+	.data	= &zs_reg,				\
+}
+
+static struct console zs_console[ZS_NUM_CHAN] = {
+	[ZS_CHAN_A]	= ZS_CONSOLE_INIT(ZS_CHAN_A),
+	[ZS_CHAN_B]	= ZS_CONSOLE_INIT(ZS_CHAN_B),
 };
 
-#define SERIAL_NEXT_ZS_CONSOLE	(&zs_console)
+#undef ZS_CONSOLE_INIT
+
+#define SERIAL_NEXT_ZS_CONSOLE	(&zs_console[ZS_CHAN_A])
 #else
 #define SERIAL_NEXT_ZS_CONSOLE	NULL
 #endif /* CONFIG_SERIAL_NEXT_ZS_CONSOLE */
